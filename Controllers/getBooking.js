@@ -1,7 +1,10 @@
 const { randomUUID } = require('crypto');
 const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
-const db = require('../Data/dummyDB.js') ;
+const SETTINGS = require('../settings.json') ;
+
+const dbPath = SETTINGS.DATA_STORAGE.PATH ;
+const db = require(`../${dbPath}`) ;
 
 
 

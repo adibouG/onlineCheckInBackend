@@ -3,16 +3,16 @@ require('dotenv').config();
 const { randomUUID } = require('crypto');
 
 const express = require('express');
-const fs = require('fs') // this engine requires the fs module
 
 const app = express();
 
 const cors = require('cors');
 
-const morgan  = require('morgan');
-const winston = require('winston');
+const {morgan , winstonLogger} = require('./Logger/loggers.js');
 
-const winstonLogger =  winston.createLogger();
+const api = require('./Routes/routes.js');
+
+
 
 app.use(morgan(process.env.NODE_ENV)) ;
  
@@ -24,16 +24,12 @@ const myStream = {
 
 app.use(morgan('combined', { stream: myStream }));
 
-//const {morgan , winstonLogger} = require('./Logger/loggers.js');
-const api = require('./Routes/routes.js');
 
 const port =  process.env.PORT ;
 const host = process.env.HOST ;
 const scheme = process.env.SCHEME ;
 
 app.use(cors()) ;
-
-//app.use(morgan);
 
 app.use((req, res, next) => { 
     res.header("Access-Control-Allow-Origin", "*");
