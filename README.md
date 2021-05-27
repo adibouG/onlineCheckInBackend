@@ -1,4 +1,3 @@
-
 First use : 
 
 1 - run :
@@ -40,7 +39,6 @@ actual available "tokens" (e.g. uuid in the meanwhile jsonwebtoken are generated
 "3a4e4236-01fe-4d1a-b104-d4ded4e96c6b" 
 "38dd6554-d344-45ad-bd0d-9f4c256c5c13" 
         
-<<<<<<< HEAD
+
 /reset 
-=======
 accept POST : reset the DB , and set new dates.
