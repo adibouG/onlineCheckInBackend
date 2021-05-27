@@ -85,6 +85,7 @@ const getBooking = (req , res) => {
         
         let error ;
         if (e instanceof jwt.TokenExpiredError)  error = new Models.ExpiredLink(e) ;
+        else error = e ;
         console.log(error) ;
         return res.status(400).send(error) ;
     }
@@ -136,6 +137,8 @@ const postBooking = (req , res) => {
     catch(e) {
 
         let error ;
+        error = e ;
+     
         console.log(error) ;
         return res.status(400).send(error) ;
     }
