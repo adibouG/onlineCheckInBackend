@@ -11,7 +11,8 @@ npm install
 3 - run :
 npm run dev 
 
-
+Note :
+A call to the /reset endpoint should be made manually at startup to reset the db reservations with dates relative to Today checkin dates
 
 /reservation : 
 accept GET and POST requests
