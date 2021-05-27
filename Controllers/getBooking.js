@@ -1,11 +1,7 @@
 const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
-
 const {getInDataStore , setInDataStore} = require('../Utilities/utilities.js');
-
 const SETTINGS = require('../settings.json') ;
-
-
 const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
 
 
