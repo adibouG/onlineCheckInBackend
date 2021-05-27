@@ -1,6 +1,7 @@
 {
     "API_ENDPOINT" : {
         "FETCH_BOOKING" : "/reservation" ,
+        "RESET_BOOKING" : "/reset" ,
         "GET_QRCODE" : "/getQR" 
     },
     "DATA_STORAGE" : {
