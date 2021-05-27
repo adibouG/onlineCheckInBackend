@@ -201,12 +201,6 @@ const resetBookings = (req , res) => {
 
 
 
-const getEmail = (req , res) =>  {
-
-
-
-}
-
 module.exports = {
 
     getBooking ,
