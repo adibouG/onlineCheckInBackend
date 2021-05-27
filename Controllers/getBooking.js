@@ -116,6 +116,7 @@ const postBooking = (req , res) => {
 
 
 const resetBookings = (req , res) => {
+<<<<<<< HEAD
 
     const makeCheckDates = (past = false) => {
         
@@ -152,6 +153,44 @@ const resetBookings = (req , res) => {
 
         }
 
+=======
+
+    const makeCheckDates = (past = false) => {
+        
+        let len = Math.floor(Math.random() * 10)   ;
+        len = past ? -1 * len : len ;
+ 
+        let today = new Date();
+        let otherDate = new Date(new Date().setDate(today.getDate() +  len)) ;
+
+        
+        return ({ 
+            today: today.toISOString().split('T')[0] ,
+            otherDate: otherDate.toISOString().split('T')[0] 
+        }) ;
+    }
+
+
+    const resetBookingDate = (book) => {
+        
+        let newDates ;
+        
+        if ("arrivalDate" in book.reservation) {
+            
+            newDates = makeCheckDates(true) ; 
+            book.reservation.arrivalDate = newDates.otherDate ;
+            book.reservation.startDate = newDates.otherDate ;
+            book.reservation.endDate = newDates.today ;
+        }
+        else {
+
+            newDates = makeCheckDates(false) ; 
+            book.reservation.startDate = newDates.today ;
+            book.reservation.endDate = newDates.otherDate ;
+
+        }
+
+>>>>>>> e36172d96427f04d5a0dc0463dcf2e05983c8ce2
         return book ;
     };
  

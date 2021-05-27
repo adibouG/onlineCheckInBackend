@@ -1,5 +1,3 @@
-
-
 First use : 
 
 1 - run :
@@ -14,12 +12,21 @@ npm run dev
 Note :
 A call to the /reset endpoint should be made manually at startup to reset the db reservations with dates relative to Today checkin dates
 "
+<<<<<<< HEAD
 
 /email 
 accept GET request 
 
 GET : with email query parameter (e,g .../email?email=qwerty@azerty.com)
 
+=======
+
+/email 
+accept GET request 
+
+GET : with email query parameter (e,g .../email?email=qwerty@azerty.com)
+
+>>>>>>> e36172d96427f04d5a0dc0463dcf2e05983c8ce2
 If a valid reservation (that can be checked in) is found , an email is triggered. This email contains a link to the checkin app with a jsonwebtoken (2 hours validity) as query parameter. This token contains all the data needed to pursue the check in flow but ... it should be, encrypted and signed with a ssl certificate , in order to be verified before being used to start the checkin process.
 
 
@@ -41,5 +48,11 @@ actual available "tokens" (e.g. uuid in the meanwhile jsonwebtoken are generated
 "3a4e4236-01fe-4d1a-b104-d4ded4e96c6b" 
 "38dd6554-d344-45ad-bd0d-9f4c256c5c13" 
         
+<<<<<<< HEAD
 /reset 
 accept POST : reset the DB , and set new dates.
+=======
+
+/reset 
+accept POST : reset the DB , and set new dates.
+>>>>>>> e36172d96427f04d5a0dc0463dcf2e05983c8ce2
