@@ -9,6 +9,27 @@ const SETTINGS = require('../settings.json') ;
 const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
 
 
+
+const getInDataStore = (key , store) => {
+
+    if (!(key in store)) return null ;
+
+    return store[key] ;
+}
+
+
+const setInDataStore = (key , upd , store) => {
+
+    if (!getInDataStore(key, store)) return null ;
+
+    store[key] = upd  ;
+    
+    return store[key] ;
+
+}
+
+
+
 const getBooking = (req , res) => {
 
     try{

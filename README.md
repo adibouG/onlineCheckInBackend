@@ -41,5 +41,9 @@ actual available "tokens" (e.g. uuid in the meanwhile jsonwebtoken are generated
 "3a4e4236-01fe-4d1a-b104-d4ded4e96c6b" 
 "38dd6554-d344-45ad-bd0d-9f4c256c5c13" 
         
+<<<<<<< HEAD
 /reset 
+=======
+/reset : 
+>>>>>>> a5175e76bebb2111ff65a2847a9153cde39d8ee1
 accept POST : reset the DB , and set new dates.
