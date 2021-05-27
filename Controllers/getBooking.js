@@ -1,43 +1,12 @@
-const { randomUUID } = require('crypto');
 const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
+
+const {getInDataStore , setInDataStore} = require('../Utilities/utilities.js');
+
 const SETTINGS = require('../settings.json') ;
 
-const dbPath = SETTINGS.DATA_STORAGE.PATH ;
-const db = require(`../${dbPath}`) ;
 
-
-
-function generateReservation() {
-
-
-
-    let uuid = randomUUID() ; 
-    return uuid //new Reservation() ;
-
-
-}  
-
-
-
-const getInDataStore = (key , store) => {
-
-    if (!(key in store)) return null ;
-
-    return store[key] ;
-}
-
-
-const setInDataStore = (key , upd , store) => {
-
-    if (!getInDataStore(key, store)) return null ;
-
-    store[key] = upd  ;
-    
-    return store[key] ;
-
-}
-
+const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
 
 
 const getBooking = (req , res) => {
@@ -184,7 +153,7 @@ const resetBookings = (req , res) => {
         }
 
         return book ;
-    }
+    };
  
     try{
 
@@ -202,28 +171,22 @@ const resetBookings = (req , res) => {
             setInDataStore("checkins" , originalDb.checkins ,  db) ;
             console.log(originalDb)
         }
-     // else if (name) {
-     //     let originalGuest = getInDataStore(name , db.backup.guests);
-     //     let originalBooking = setInDataStore(name , db.backup.checkins) ;
-     //     let bck = setInDataStore(name , original ,  db.guests) ;
-     //     let bck = setInDataStore(name , original ,  db.checkins ) ;
-     // }        
-
-     // else if (uuid) {
-     //     let originalBooking = getInDataStore(uuid , db.backup.checkins);
-     //     originalBooking
-     //     let res = setInDataStore(name , db.checkins) ;
-     //     let bck = setInDataStore(name , original ,  db.guests) ;
-     //     let bck = setInDataStore(name , original ,  db.checkins ) ;
- 
-
-     // }
+  
      return res.status(200).send();
     }
     catch(e) {
         console.log(e)
         return res.status(500).end();
     }
+
+}
+
+
+
+
+const getEmail = (req , res) =>  {
+
+
 
 }
 

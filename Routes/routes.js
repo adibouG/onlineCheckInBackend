@@ -1,14 +1,17 @@
 const api = require('express').Router() ;
-const controllers = require('../Controllers/getBooking.js') ;
+const bookingControllers = require('../Controllers/getBooking.js') ;
+const emailControllers = require('../Controllers/getEmail.js') ;
 const SETTINGS = require('../settings.json');
 
 
 
 
-api.get( SETTINGS.API_ENDPOINT.FETCH_BOOKING , controllers.getBooking)
-api.post( SETTINGS.API_ENDPOINT.FETCH_BOOKING , controllers.postBooking)
-api.post( SETTINGS.API_ENDPOINT.RESET_BOOKING , controllers.resetBookings )
+api.post( SETTINGS.API_ENDPOINT.FETCH_BOOKING , bookingControllers.postBooking)
+api.post( SETTINGS.API_ENDPOINT.RESET_BOOKING , bookingControllers.resetBookings )
 
+
+api.get( SETTINGS.API_ENDPOINT.FETCH_BOOKING , bookingControllers.getBooking)
+api.get( SETTINGS.API_ENDPOINT.SEND_EMAIL , emailControllers.getEmail)
 
 
 

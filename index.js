@@ -13,7 +13,7 @@ const {morgan , winstonLogger} = require('./Logger/loggers.js');
 const api = require('./Routes/routes.js');
 
 
-
+console.log(process.env.NODE_ENV)
 app.use(morgan(process.env.NODE_ENV)) ;
  
 const myStream = {
