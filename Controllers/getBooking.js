@@ -153,7 +153,7 @@ const resetBookings = (req , res) => {
         let today = new Date();
         let otherDate = new Date(new Date().setDate(today.getDate() +  len)) ;
 
-        console.log(otherDate)
+        
         return ({ 
             today: today.toISOString().split('T')[0] ,
             otherDate: otherDate.toISOString().split('T')[0] 
@@ -174,7 +174,7 @@ const resetBookings = (req , res) => {
         }
         else {
 
-            newDates = makeCheckDates(true) ; 
+            newDates = makeCheckDates(false) ; 
             book.reservation.startDate = newDates.today ;
             book.reservation.endDate = newDates.otherDate ;
 
@@ -197,6 +197,7 @@ const resetBookings = (req , res) => {
                 originalDb.checkins[check] = newBook ;    
             }
             setInDataStore("checkins" , originalDb.checkins ,  db) ;
+            console.log(originalDb)
         }
      // else if (name) {
      //     let originalGuest = getInDataStore(name , db.backup.guests);
