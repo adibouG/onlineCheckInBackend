@@ -1,13 +1,12 @@
 require('dotenv').config();
 const SETTINGS = require('../settings.json') ;
+
 const axios = require('axios');
 const Logger = require('../Logger/loggers.js');
 
 
 
-const {START_CHECK_IN , GET_QRCODE} = SETTINGS.API_ENDPOINT ;
 const EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE;
-const LINK_URL = process.env.LINK_URL;
 
 const attachmentFormat = {
                         
@@ -23,22 +22,20 @@ const MAILTYPES = {
 
  } ;
 
-const mailFormat = (  type ,   mail , token , user = null  ) => {
+const mailFormat = (  type ,   mail , message , token  ) => {
 
 let TITLE = '';
-let MESSAGE = '' ;
 
-
-if (type === 'qrCode' && user ) {
+if (type === 'qrCode') {
     
-    TITLE = 'CheckIn successful : QR code for checkin and key pickup at the kiosk' ;
-    MESSAGE = `<p>QRCODE</p>` ;
+    TITLE = 'Email confirmation with QR-code for online pre-check-in' ;
+    MESSAGE = message ;
   
  }   
  
 else if (type === 'startCheckIn' ) {
-    TITLE = 'Your can start checkin' ;
-    MESSAGE = `<p>Click the link below to  start checkin</p> <p><a href="${LINK_URL}${START_CHECK_IN}?token=${token}">Start my check-in</a></p>` ;
+    TITLE = 'Email invitation for online pre-check-in' ;
+    MESSAGE = message ;
   
  }   
 
@@ -48,11 +45,11 @@ else if (type === 'startCheckIn' ) {
 return ({
     "attachments": [],
     "body": {
-        "html":`<h2>${TITLE}</h2> ${MESSAGE}` ,
+        "html": `{${MESSAGE}}` ,
     },
     "from": "no-reply@enzosystems.com",
     "messageId": `{${token}}`,
-    "subject": `Check IN`,
+    "subject": `{${TITLE}}`,
     "to": [mail],
      "cc": ['adrien@enzosystems.com']
 })

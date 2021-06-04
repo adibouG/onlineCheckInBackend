@@ -2,6 +2,8 @@ require('dotenv').config();
 
 const { randomUUID } = require('crypto');
 
+const SETTINGS = require('./settings.json') ;
+
 const express = require('express');
 
 const app = express();
@@ -45,6 +47,30 @@ app.use(express.urlencoded({ extended: true })); // for parsing application/x-ww
 //app.use(express.static('public')); 
 
 app.use(api);
+
+const {START_CHECK_IN , GET_QRCODE} = SETTINGS.API_ENDPOINT ;
+const LINK_URL = process.env.LINK_URL;
+
+
+app.engine('html', (filePath, options, callback) => { // define a template engine to update the form submit to the correct host 
+    fs.readFile(filePath,  (err, content) => {
+
+      if (err) return callback(err)
+      // this is an extremely simple template engine
+      
+        let minify = content.toString().replace(/[\n\r\t]/g,"");
+        let uricompatible = minify.replace('%','%25');
+        let rendered = uricompatible
+                      //.replace('#scheme#', scheme)
+                      //.replace('#host#', host)
+                      //.replace('#port#', port)
+      return callback(null, rendered)
+    })
+  })
+  
+  app.set('views', './Views') // specify the views directory
+  app.set('view engine', 'html') // register the template engine
+  
 
 //start the app server on defined port 
 app.listen(port , () => {
