@@ -56,7 +56,7 @@ const appScheme = process.env.APP_SCHEME ;
 const linkUrl = process.env.LINK_URL ;
 
 const link_url = `${appScheme}://${appHost}:${appPort}` ;
-const appUrl = `http://ec2-52-17-51-8.eu-west-1.compute.amazonaws.com:3000`//${appHost}:${appPort}` ;
+const appUrl = `ec2-52-17-51-8.eu-west-1.compute.amazonaws.com:3000`//${appHost}:${appPort}` ;
 
 
 
