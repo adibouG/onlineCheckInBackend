@@ -1,3 +1,4 @@
+require('dotenv').config();
 
 const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
@@ -44,7 +45,7 @@ const getBookingFromEmail = (email) => {
 
     
 
-const getEmail = async (req , res) => {
+const getEmail = async (req , res , next) => {
 
 
     try{
@@ -60,17 +61,21 @@ const getEmail = async (req , res) => {
             subject : 'check-in' ,
             audience : email  
         } ;
-
+        let guestName =  booking.guest.firstName + " " + booking.guest.lastName ;  
         let secret = JSON.stringify(booking) ;
         
         let payload = {booking} ; 
         
         let token = jwt.sign(payload , secret , sign ) ;
 
-        await sendEmailRequest( MAILTYPES.START , email , token );
+        res.locals.booking = booking ;
+        res.locals.bookingUuid = booking.uuid ;
+        res.locals.guestName = guestName ;
+        res.locals.token = token ;
+        res.locals.email = email ;
+        res.locals.mailType = MAILTYPES.START ;
 
-        return res.status(200).send();
-
+        next() ;
 
     } catch(e) {
         
@@ -79,13 +84,69 @@ const getEmail = async (req , res) => {
         console.log(error) ;
         return res.status(400).send(error) ;
     }
-
 }
 
 
+const renderAndSendMail = (req , res , next)  => {
+
+
+    const port =  process.env.PORT ;
+    const host = process.env.HOST ;
+    const scheme = process.env.SCHEME ;
+    
+    const appPort =  process.env.APP_PORT ;
+    const appHost = process.env.APP_HOST ;
+    const appScheme = process.env.APP_SCHEME ;
+    const linkUrl = process.env.LINK_URL ;
+    
+    const link_url = `${appScheme}://${appHost}:${appPort}` ;
+    const appUrl = `${appHost}:${appPort}` ;
+    
+    const hotelName = "Enzo Hotel";
+    const hotelAddress = "Test 20";
+    const hotelPostcode = "7894 DF";
+    const hotelCity = "city";
+    const hotelCountry = "TEst";
+    const hotelPhone = "TEst";
+    const hotelEmail = "TEst";
+
+    const values = {
+
+        guestFullName : res.locals.guestName ,
+        token : res.locals.token ,
+        booking : res.locals.bookingUuid ,
+        hotelName : hotelName ,
+        hotelAddress : hotelAddress ,
+        hotelPostcode : hotelPostcode ,
+        hotelCity : hotelCity ,
+        hotelCountry : hotelCountry , 
+        hotelPhone : hotelPhone ,
+        hotelEmail : hotelEmail
+      
+    }
+
+    
+
+    res.render( 'startMail'  , values , async ( err , content ) => {
+
+        if (err) { 
+            console.log(err)
+            return res.status(500).send(err) 
+        }
+        console.log('******************************')
+        console.log(content)
+        try{
+            await sendEmailRequest(  res.locals.mailType , content , res.locals.email ,  res.locals.bookingUuid ,  res.locals.guestName );
+            return res.status(200).send();
+        }catch(e){
+            console.log(e)
+            return res.status(500).send(e) 
+        }
+    })
+}
 
 
 module.exports = {
-    getEmail,
-  
+    getEmail, 
+    renderAndSendMail
 }
