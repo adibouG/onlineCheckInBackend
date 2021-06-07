@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
+<html xmlns='https://www.w3.org/1999/xhtml' lang='en' xml:lang='en' xmlns:v='urn:schemas-microsoft-com:vml' xmlns:o='urn:schemas-microsoft-com:office:office'>
+
+<head></head>
+
+<head>
+
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
+<!--[if !mso]><!-->
+<meta http-equiv='X-UA-Compatible' content='IE=edge'>
+<!--<![endif]-->
+<meta name='viewport' content='width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0'>
+<title>Email confirmation with QR-code for online pre-check-in</title>
+
+<meta name='x-apple-disable-message-reformatting' />
+
+<style type='text/css'>
+
+* {box-sizing: border-box; margin: 0; padding: 0; user-select: none;}
+
+html {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-spacing: 0px;
+    border-collapse: collapse;
+    vertical-align: top;
+}
+
+
+table {
+    border-collapse: collapse;
+    mso-table-lspace: 0pt;
+    mso-table-rspace: 0pt;
+}
+
+.tablescale {
+    width:550px; 
+}
+
+img {     
+    display: block;
+}
+
+a[x-apple-data-detectors='true'] {
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+
+@media only screen and (max-width: 550px) {
+
+    .tablescale {
+        width: 100% !important;
+        margin-top: 0px;
+    }
+}
+
+</style>
+
+</head>
+
+
+
+
+<body style='background-color: #ffffff; margin: 0; padding: 0; user-select: none;'>
+            
+
+<table class='tablescale' align='center' cellpadding='0' cellspacing='0' style='background-color: #ffffff; border: 0; margin-left: auto; margin-right:auto; font-family: open sans, -apple-system, Arial, Helvetica, sans-serif; '>
+
+    <tr><td>
+        <table align='center' cellpadding='0' cellspacing='0' style='border: 0; border-collapse: collapse; border-spacing: 0px; background-color: rgb(237, 120 , 41); width:100%; color:rgb(255, 255, 255); text-align: center;'>
+            <tr><td style='font-size: 16px; font-weight: 200; padding: 10px 10px 5px;'>Check-in</td></tr>
+            <tr><td style='font-size: 24px; font-weight: 600; padding: 0px 10px;'><span id='checkInDate'>#checkInDate#</span></td></tr> 
+            <tr><td style='font-size: 16px; font-weight: 200; padding: 5px 10px 10px;'>from <span id='checkInTime'>#checkInTime#</span></td></tr>
+        </table>
+    </td></tr>
+
+ 
+    <tr><td>
+        <table cellpadding='0' cellspacing='0' style='color:#000000; border: 0; width:100%; text-align: center;'>
+            <tr><td>
+
+                <table cellpadding='0' cellspacing='0' style='border: 0; margin: auto;'>
+                    <tr><td colspan='3' style='height: 25px'></td></tr>        
+                    <tr><td></td>
+                        <td style='width:250px; height:250px; '>
+                        <img id='qrCode' width='100%' height='100%' src='data:image/png;base64,#base64qrCode#'>
+                    </td>
+                    <td></td></tr>        
+                    <tr><td colspan='3' style='height:25px;'></td></tr>        
+                </table>
+            </td></tr>
+
+            <tr><td style='font-size: 24px; font-weight: 600; padding-top: 15px; padding: 0px 10px 25px;'>Scan code at kiosk in lobby<br>to get your room key</td></tr>
+            <tr><td style='color: #ed7829; font-size: 16px; font-weight: 400; padding: 0px 10px;'><span id='guestFullName'>#guestFullName#</span> / booking <span id='bookingId'>#bookingId#</span></td></tr>
+            <tr><td style='color: #ed7829; font-size: 16px; font-weight: 400; padding: 0px 10px;'><span id='roomType'>#roomType#</span></td></tr> 
+            <tr><td style='color: #ed7829; font-size: 16px; font-weight: 400;  padding: 0px 10px 20px;'><span id='numNights'>#numNights#</span> nights, <span id='numGuests'>#numGuests#</span> persons</td></tr>
+        </table>
+    </td></tr>
+
+   
+    <tr><td style='background-color: #ed7829;'>
+        <table align='center' cellpadding='0' cellspacing='0' style='color:rgb(255, 255, 255); border: 0; width: 100%; text-align: center;'>
+            <tr><td style='font-size: 24px; font-weight: 600; padding: 15px 10px 5px;'><span id='hotelName'>#hotelName#</span></td></tr>
+            <tr><td style='font-size: 16px; font-weight: 200; padding: 0px 10px'><span id='hotelAddress'>#hotelAddress#</span> - <span id='hotelPostcode'>#hotelPostcode#</span> <span id='hotelCity'>#hotelCity#</span> - <span id='hotelCountry'>#hotelCountry#</span></td></tr>
+            <tr><td style='font-size: 16px; font-weight: 200; padding: 0px 10px 15px;'><span  id='hotelPhone'>#hotelPhone#</span> - <span id='hotelEmail'>#hotelEmail#</span></td></tr>
+        </table>
+    </td></tr>
+</table>
+
+</body>
+</html>
