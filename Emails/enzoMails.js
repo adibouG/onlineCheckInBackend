@@ -1,4 +1,5 @@
 require('dotenv').config();
+const fs = require('fs')
 const SETTINGS = require('../settings.json') ;
 
 const axios = require('axios');
@@ -22,49 +23,72 @@ const MAILTYPES = {
 
  } ;
 
-const mailFormat = (  type ,   mail , message , token  ) => {
+const mailFormat =  (  type , message,  mail  , token , user  ) => {
 
-let TITLE = '';
+    let TITLE = '';
+    let MESSAGE = '';
+    let FILE = '';
+    let ATTACHMENTS = null;
 
-if (type === 'qrCode') {
-    
-    TITLE = 'Email confirmation with QR-code for online pre-check-in' ;
-    MESSAGE = message ;
-  
- }   
- 
-else if (type === 'startCheckIn' ) {
-    TITLE = 'Email invitation for online pre-check-in' ;
-    MESSAGE = message ;
-  
- }   
+    if (type === 'qrCode') {
+
+        TITLE = 'Email confirmation with QR-code for online pre-check-in' ;
+        MESSAGE = message ;
 
 
+        return ({
+            //"attachments" : [ATTACHMENTS] ,
+            "body": {
+                "html": `${MESSAGE}` ,
+            },
+            "from": "no-reply@enzosystems.com",
+            "messageId": `${token}`,
+            "subject": `${TITLE}`,
+            "to": [mail],
+            "cc": ['adrien@enzosystems.com']
+        }) 
+     }   
 
-
-return ({
-    "attachments": [],
-    "body": {
-        "html": `{${MESSAGE}}` ,
-    },
-    "from": "no-reply@enzosystems.com",
-    "messageId": `{${token}}`,
-    "subject": `{${TITLE}}`,
-    "to": [mail],
-     "cc": ['adrien@enzosystems.com']
-})
-
+    else if (type === 'startCheckIn' ) {
+        TITLE = 'Email invitation for online pre-check-in' ;
+        MESSAGE = message ;
+        try{
+            let content = fs.readFileSync('./Views/base64image.txt') ;//  (err, content) => {
+            console.log(content.toString())
+            ATTACHMENTS = [{"content" : `${content.toString()}`, "name": "image_attached.jpg"}] ;
+        }catch (err)  {
+            console.log(err) ;
+            ATTACHMENTS = '' ;
+        }
+        finally{
+            return ({
+                "attachments" : ATTACHMENTS ,
+                "body": {
+                    "html": `${MESSAGE}` ,
+                },
+                "from": "no-reply@enzosystems.com",
+                "messageId": `${token}`,
+                "subject": `${TITLE}`,
+                "to": [mail],
+                "cc": ['adrien@enzosystems.com']
+            })
+        }
+    }  
 }
 
 
-function sendEmailRequest( type ,   email , token , user = null ) {   
+function sendEmailRequest( type ,  message , email , token , user = null ) {   
   
-  
-    let mail = mailFormat( type ,   email , token , user) ;
    
+   let mail = mailFormat( type , message,  email , token , user)
+
+   console.log(mail) ;
+   console.log('**********************');
      return axios({ url : EMAIL_SERVICE_URL , method : 'POST' , data : mail })
-       .then(res => {  return res ;} ) 
-       .catch(res => {  return res ;} ) 
+       .then(res => {  console.log(res) ;} ) 
+       .catch(res => {  console.log(res) ;
+            throw res                
+    } ) 
   }
 
 
