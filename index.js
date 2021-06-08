@@ -55,8 +55,9 @@ const appHost = process.env.APP_HOST ;
 const appScheme = process.env.APP_SCHEME ;
 const linkUrl = process.env.LINK_URL ;
 
-const link_url = `${appScheme}://${appHost}:${appPort}` ;
-const appUrl = `ec2-52-17-51-8.eu-west-1.compute.amazonaws.com:3000`//${appHost}:${appPort}` ;
+
+const app_link_baseUrl = `${appScheme}://${appHost}:${appPort}` ;
+
 
 
 
@@ -68,10 +69,11 @@ app.engine('htm', (filePath, options, callback) => { // define a template engine
         let minifyText = content.toString().replace(/[\n\r\t]/g,"");
         let uriCompatible = minifyText.replaceAll('%','%25');
         let rendered = uriCompatible
-                      .replaceAll('#app_scheme#', appScheme)
-                      .replaceAll('#app_url#', appUrl)
+                      .replaceAll('#checkDates#', options.checkDates)
+                      .replaceAll('#app_url#', app_link_baseUrl)
                       .replaceAll('#token#', options.token)
                       .replaceAll('#guestFullName#', options.guestFullName)
+                      .replaceAll('#guestLinkName#', options.guestLinkName)
                       .replaceAll('#booking#', options.booking)
                       .replaceAll('#hotelName#', options.hotelName)
                       .replaceAll('#hotelAddress#', options.hotelAddress)
@@ -80,7 +82,7 @@ app.engine('htm', (filePath, options, callback) => { // define a template engine
                       .replaceAll('#hotelCountry#', options.hotelCountry)
                       .replaceAll('#hotelPhone#', options.hotelPhone)
                       .replaceAll('#hotelEmail#', options.hotelEmail)
-                     // .replaceAll('#port#', port)
+                    
                      
         return callback(null, rendered)
     })

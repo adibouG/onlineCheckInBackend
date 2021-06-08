@@ -32,12 +32,13 @@ const getBookingFromEmail = (email) => {
 
     for (let b of  bookings) {
 
+    
         if (isBookingValid(b)) {
+
             booking = b ;
             break;
         }
     }
-
     return booking ;
 }
 
@@ -54,7 +55,8 @@ const getEmail = async (req , res , next) => {
         let booking = getBookingFromEmail(email) ;
        
         if (!booking)  throw new Models.NotFound() ;   
-
+  
+        console.log(booking.uuid) ;
         let sign = { 
             expiresIn : SETTINGS.TOKEN.VALIDITY ,
             issuer : 'ENZOSYSTEMS' ,
@@ -63,16 +65,17 @@ const getEmail = async (req , res , next) => {
         } ;
 
         let guestName =  booking.guest.firstName + " " + booking.guest.lastName ;  
-       
-        let secret = JSON.stringify(booking) ;
+        let uuid = booking.uuid
+        let secret = uuid //JSON.stringify(booking) ;
         
-        let payload = {booking} ; 
+        let payload = {uuid} ; 
         
         let token = jwt.sign(payload , secret , sign ) ;
 
         res.locals.booking = booking ;
         res.locals.bookingUuid = booking.uuid ;
-        res.locals.guestName =  guestName.replaceAll(' ' , '.' ) ;
+        res.locals.guestName =  guestName ;
+        res.locals.guestLinkName =  guestName.replaceAll(' ' , '.' ) ;
         res.locals.token = token ;
         res.locals.email = email ;
         res.locals.mailType = MAILTYPES.START ;
@@ -92,18 +95,6 @@ const getEmail = async (req , res , next) => {
 const renderAndSendMail = (req , res , next)  => {
 
 
-    const port =  process.env.PORT ;
-    const host = process.env.HOST ;
-    const scheme = process.env.SCHEME ;
-    
-    const appPort =  process.env.APP_PORT ;
-    const appHost = process.env.APP_HOST ;
-    const appScheme = process.env.APP_SCHEME ;
-    const linkUrl = process.env.LINK_URL ;
-    
-    const link_url = `${appScheme}://${appHost}:${appPort}` ;
-    const appUrl = `${appHost}:${appPort}` ;
-    
     const hotelName = "Enzo Hotel";
     const hotelAddress = "Test 20";
     const hotelPostcode = "7894 DF";
@@ -112,8 +103,11 @@ const renderAndSendMail = (req , res , next)  => {
     const hotelPhone = "TEst";
     const hotelEmail = "TEst";
 
-    const values = {
+    const checkDates = "TEst/654 - tesy/255";
 
+    const values = {
+        checkDates :checkDates,
+        guestLinkName : res.locals.guestLinkName ,
         guestFullName : res.locals.guestName ,
         token : res.locals.token ,
         booking : res.locals.bookingUuid ,
@@ -135,8 +129,7 @@ const renderAndSendMail = (req , res , next)  => {
             console.log(err)
             return res.status(500).send(err) 
         }
-        console.log('******************************')
-        console.log(content)
+   
         try{
             await sendEmailRequest(  res.locals.mailType , content , res.locals.email ,  res.locals.bookingUuid ,  res.locals.guestName );
             return res.status(200).send();

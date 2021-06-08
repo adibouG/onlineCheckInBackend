@@ -85,8 +85,8 @@ function sendEmailRequest( type ,  message , email , token , user = null ) {
    console.log(mail) ;
    console.log('**********************');
      return axios({ url : EMAIL_SERVICE_URL , method : 'POST' , data : mail })
-       .then(res => {  console.log(res) ;} ) 
-       .catch(res => {  console.log(res) ;
+       .then(res => {  console.log('ok') ;} ) 
+       .catch(res => {  console.log('ko') ;
             throw res                
     } ) 
   }
