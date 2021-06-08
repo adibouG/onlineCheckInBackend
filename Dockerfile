@@ -5,7 +5,7 @@ FROM node:16-alpine
 # apk add --no-cache libc6-compat
 
 ENV PORT 3003
-EXPOSE 3003 # replace this with your application's default port, if necessary
+EXPOSE 3003
 
 ARG NODE_ENV=dev
 ENV NODE_ENV $NODE_ENV
