@@ -61,7 +61,9 @@ const getEmail = async (req , res , next) => {
             subject : 'check-in' ,
             audience : email  
         } ;
+
         let guestName =  booking.guest.firstName + " " + booking.guest.lastName ;  
+       
         let secret = JSON.stringify(booking) ;
         
         let payload = {booking} ; 
@@ -70,7 +72,7 @@ const getEmail = async (req , res , next) => {
 
         res.locals.booking = booking ;
         res.locals.bookingUuid = booking.uuid ;
-        res.locals.guestName = guestName ;
+        res.locals.guestName =  guestName.replaceAll(' ' , '.' ) ;
         res.locals.token = token ;
         res.locals.email = email ;
         res.locals.mailType = MAILTYPES.START ;
