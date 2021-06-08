@@ -12,7 +12,7 @@ function generateReservation() {
 }  
 
 
-const isBookingValid = (book) =>  ("arrivalDate" in book.reservation)  ;
+const isBookingValid = (book) =>  !("arrivalDate" in book.reservation)  ;
         
 
 const findValueInDataStore = ( { value , key , store }) => {

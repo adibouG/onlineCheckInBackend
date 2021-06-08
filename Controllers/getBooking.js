@@ -9,15 +9,16 @@ const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
 const getBooking = (req , res) => {
 
     try{
+
         let {token} = req?.query ;
+        console.log(req.query) ;
 
         if (!token) throw new Models.EnzoError('no token') ;
-        /*
-        let decoded = jwt.verify(token) ;
         
-        decoded
-        */
-        let uuidKey = token ;
+        let decoded = jwt.decode(token) ; //.verify(token) ;
+        console.log(decoded) ;
+        let uuidKey = decoded.uuid ;
+        console.log(uuidKey)
 
         let booking = getInDataStore(uuidKey, db.checkins) ;
        
@@ -29,7 +30,8 @@ const getBooking = (req , res) => {
         if ("arrivalDate" in booking.reservation) complete = true ;
         
         if (complete) {
-            response = { 
+        let {token} = req?.query ;
+        response = { 
                 type: 'success',
                 status: 'complete',
                 stay: { 
@@ -53,6 +55,8 @@ const getBooking = (req , res) => {
         if (e instanceof jwt.TokenExpiredError)  error = new Models.ExpiredLink(e) ;
         else error = e ;
         console.log(error) ;
+        console.log(error.stack) ;
+        
         return res.status(400).send(error) ;
     }
 
