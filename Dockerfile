@@ -17,7 +17,7 @@ ENV LINK_URL http://ec2-52-17-51-8.eu-west-1.compute.amazonaws.com:3000
 ENV SCHEME http
 
 
-WORKDIR /home/ec2-user/gitTest/checkin_docker
+WORKDIR /home/ec2-user/gitTest/checkin_nackend_docker
 COPY package.json .
 RUN npm install
 COPY . .
