@@ -5,6 +5,7 @@ const SETTINGS = require('../settings.json') ;
 const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
 
 
+
 const getBooking = (req , res) => {
 
     try{
@@ -64,7 +65,7 @@ const postBooking = (req , res) => {
     try{
 
         let bookingUpdt = req?.body ;
-
+        console.log(bookingUpdt)
         if (!bookingUpdt) throw new  Models.EnzoError('no booking nor update')
 
         let uuidKey = bookingUpdt.uuid ;
@@ -95,7 +96,7 @@ const postBooking = (req , res) => {
                 checkin : updt 
             };
         } 
-
+        console.log(response)
         return res.status(200).send(response);
 
     }
@@ -179,12 +180,6 @@ const resetBookings = (req , res) => {
 
 
 
-
-const getEmail = (req , res) =>  {
-
-
-
-}
 
 module.exports = {
 
