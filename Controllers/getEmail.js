@@ -95,18 +95,6 @@ const getEmail = async (req , res , next) => {
 const renderAndSendMail = (req , res , next)  => {
 
 
-    // const port =  process.env.PORT ;
-    // const host = process.env.HOST ;
-    // const scheme = process.env.SCHEME ;
-    
-    // const appPort =  process.env.APP_PORT ;
-    // const appHost = process.env.APP_HOST ;
-    // const appScheme = process.env.APP_SCHEME ;
-    // const linkUrl = process.env.LINK_URL ;
-    
-    // const link_url = `${appScheme}://${appHost}:${appPort}` ;
-    // const appUrl = `${appHost}:${appPort}` ;
-    
     const hotelName = "Enzo Hotel";
     const hotelAddress = "Test 20";
     const hotelPostcode = "7894 DF";

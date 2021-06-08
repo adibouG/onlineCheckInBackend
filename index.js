@@ -73,6 +73,7 @@ app.engine('htm', (filePath, options, callback) => { // define a template engine
                       .replaceAll('#app_url#', app_link_baseUrl)
                       .replaceAll('#token#', options.token)
                       .replaceAll('#guestFullName#', options.guestFullName)
+                      .replaceAll('#guestLinkName#', options.guestLinkName)
                       .replaceAll('#booking#', options.booking)
                       .replaceAll('#hotelName#', options.hotelName)
                       .replaceAll('#hotelAddress#', options.hotelAddress)
