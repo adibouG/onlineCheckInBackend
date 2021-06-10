@@ -69,11 +69,20 @@ app.engine('htm', (filePath, options, callback) => { // define a template engine
         let minifyText = content.toString().replace(/[\n\r\t]/g,"");
         let uriCompatible = minifyText.replaceAll('%','%25');
         let rendered = uriCompatible
-                      .replaceAll('#checkDates#', options.checkDates)
-                      .replaceAll('#app_url#', app_link_baseUrl)
+           .replaceAll('#app_url#', app_link_baseUrl)
+                   
+           .replaceAll('#checkDates#', options.checkDates)
+           .replaceAll('#checkInDate#', options.checkInDate)
+           .replaceAll('#checkInTime#', options.checkInTime)
                       .replaceAll('#token#', options.token)
+                      .replaceAll('#base64qrCode#', options.base64qrCode)
                       .replaceAll('#guestFullName#', options.guestFullName)
                       .replaceAll('#guestLinkName#', options.guestLinkName)
+                      .replaceAll('#booking#', options.booking)
+                      .replaceAll('#roomType#', options.roomType)
+                      .replaceAll('#numNights#', options.numNights)
+                      .replaceAll('#numGuests#', options.numGuests)
+                      .replaceAll('#booking#', options.booking)
                       .replaceAll('#booking#', options.booking)
                       .replaceAll('#hotelName#', options.hotelName)
                       .replaceAll('#hotelAddress#', options.hotelAddress)
@@ -82,6 +91,9 @@ app.engine('htm', (filePath, options, callback) => { // define a template engine
                       .replaceAll('#hotelCountry#', options.hotelCountry)
                       .replaceAll('#hotelPhone#', options.hotelPhone)
                       .replaceAll('#hotelEmail#', options.hotelEmail)
+
+                 
+                 
                     
                      
         return callback(null, rendered)
