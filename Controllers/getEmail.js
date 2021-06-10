@@ -20,17 +20,17 @@ const TEMPLATES = {
 
 
 
-const makeQrCode = (booking) => {
+const makeQrCode = async (booking) => {
     
     let qr = QRCode.create(JSON.stringify(booking));
-    console.log(qr)
     
-    QRCode.toDataURL( JSON.stringify(booking) , function (err, url) {
-        if (err) console.log(err)
-        console.log(url)
-        return url ;
-    
-    })
+    let code = {
+        bookingId:booking.uuid, 
+        guest:booking.guest, 
+        reservation:booking.reservation
+    };
+
+    return await QRCode.toDataURL(JSON.stringify(code))
 
 }
 
@@ -142,7 +142,23 @@ const renderAndSendQrCode = async (req , res , next)  => {
 
     const url = await makeQrCode(booking) ;
     
-
+    console.log('url')
+    console.log('url')
+    console.log('url')
+    console.log('url')
+    console.log(url)
+    console.log('url')
+    console.log('url')
+    console.log('url')
+    console.log('url')
+    
+    const makeDate = () => {
+        let date1 = new Date(((new Date().getTime()) + (24 * 60 * 60 * 1000 ))).toLocaleDateString()
+        let date2 = new Date(((new Date(date1).getTime()) + (24 * 60 * 60 * 1000 ))).toLocaleDateString() 
+        return {date1 , date2}
+    }
+    const getDay = (d) =>  new Date(d).toLocaleDateString(false, { weekday: 'long' });
+   
     const d1 = booking.reservation.startDate;
     const d2 = booking.reservation.endDate;
  
@@ -150,15 +166,13 @@ const renderAndSendQrCode = async (req , res , next)  => {
     const date2 = new Date(d2) ;
 
 
+
     const numNights = dateDiffInDays(date1 , date2)
-  // let new Date(((new Date().getTime()) + (24 * 60 * 60 * 1000 ))).toLocaleDateString()
-  // let day = new Date(date).toLocaleDateString(false, { weekday: 'long' });
-  //
-  // let date1 = new new Date(date).toLocaleDateString(false, { weekday: 'long' });
+
     const checkDates =  d1 + " - " + d2 ;
 
-    const roomType = 'Double' ;
-    const numGuests = 2 ;
+    const roomType =  booking.reservation.roomType ;
+    const numGuests = booking.reservation.guestCount ;
     const checkInTime = '15h' ;
 
     const values = {
