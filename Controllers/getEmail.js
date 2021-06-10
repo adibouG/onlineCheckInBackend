@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
+var QRCode = require('qrcode') ;
 
 const {findValueInDataStore , isBookingValid} = require('../Utilities/utilities.js');
 
@@ -14,6 +15,26 @@ const TEMPLATES = {
     START : "" ,
     QR : "" 
 } 
+
+
+
+
+
+const makeQrCode = (booking) => {
+    
+    let qr = QRCode.create(JSON.stringify(booking));
+    console.log(qr)
+    
+    QRCode.toDataURL( JSON.stringify(booking) , function (err, url) {
+        if (err) console.log(err)
+        console.log(url)
+        return url ;
+    
+    })
+
+}
+
+
 
 const getBookingFromEmail = (email) => {
     
@@ -92,21 +113,111 @@ const getEmail = async (req , res , next) => {
 }
 
 
+
+const hotelName = "EnzoHotel";
+const hotelAddress = "Camerastraat 2";
+const hotelPostcode = "1322 BC";
+const hotelCity = "Almere";
+const hotelCountry = "The Netherlands";
+const hotelPhone = " +31 36 546 1040";
+const hotelEmail = "info@enzosystems.com";
+
+
+function dateDiffInDays(a, b) {
+    const _MS_PER_DAY = 1000 * 60 * 60 * 24;
+    // Discard the time and time-zone information.
+    const utc1 = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+    const utc2 = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  
+    return Math.floor((utc2 - utc1) / _MS_PER_DAY);
+  }
+
+const renderAndSendQrCode = async (req , res , next)  => {
+
+
+    let booking = req.body ;
+
+    let guestName = booking.guest.firstName + " " + booking.guest.lastName ;
+    let bookingUuid = booking.uuid ;
+
+    const url = await makeQrCode(booking) ;
+    
+
+    const d1 = booking.reservation.startDate;
+    const d2 = booking.reservation.endDate;
+ 
+    const date1 = new Date(d1) ;
+    const date2 = new Date(d2) ;
+
+
+    const numNights = dateDiffInDays(date1 , date2)
+  // let new Date(((new Date().getTime()) + (24 * 60 * 60 * 1000 ))).toLocaleDateString()
+  // let day = new Date(date).toLocaleDateString(false, { weekday: 'long' });
+  //
+  // let date1 = new new Date(date).toLocaleDateString(false, { weekday: 'long' });
+    const checkDates =  d1 + " - " + d2 ;
+
+    const roomType = 'Double' ;
+    const numGuests = 2 ;
+    const checkInTime = '15h' ;
+
+    const values = {
+        checkInDate : d1 ,
+        checkInTime : checkInTime,
+        base64qrCode : url ,
+        guestFullName : guestName ,
+        booking : bookingUuid ,
+        roomType : roomType ,
+        numNights : numNights ,
+        numGuests : numGuests ,
+        hotelName : hotelName ,
+        hotelAddress : hotelAddress ,
+        hotelPostcode : hotelPostcode ,
+        hotelCity : hotelCity ,
+        hotelCountry : hotelCountry , 
+        hotelPhone : hotelPhone ,
+        hotelEmail : hotelEmail
+      
+    }
+    let mailType = MAILTYPES.QR; 
+    let email = booking.guest.email ;
+    res.render( 'qrCodeMail'  , values , async ( err , content ) => {
+
+        if (err) { 
+            console.log(err)
+            return res.status(500).send(err) 
+        }
+   
+        try{
+            await sendEmailRequest(  mailType , content , email  );
+            return res.status(200).send();
+        }catch(e){
+            console.log(e)
+            return res.status(500).send(e) 
+        }
+    })
+}
+
+
+
+
+
 const renderAndSendMail = (req , res , next)  => {
 
 
-    const hotelName = "Enzo Hotel";
-    const hotelAddress = "Test 20";
-    const hotelPostcode = "7894 DF";
-    const hotelCity = "city";
-    const hotelCountry = "TEst";
-    const hotelPhone = "TEst";
-    const hotelEmail = "TEst";
 
-    const checkDates = "TEst/654 - tesy/255";
+    let d1 = res.locals.booking.reservation.startDate;
+    let d2 = res.locals.booking.reservation.endDate;
+ 
+    
+  // let new Date(((new Date().getTime()) + (24 * 60 * 60 * 1000 ))).toLocaleDateString()
+  // let day = new Date(date).toLocaleDateString(false, { weekday: 'long' });
+  //
+  // let date1 = new new Date(date).toLocaleDateString(false, { weekday: 'long' });
+    const checkDates =  d1 + " - " + d2 ;
 
     const values = {
-        checkDates :checkDates,
+        checkDates : checkDates,
         guestLinkName : res.locals.guestLinkName ,
         guestFullName : res.locals.guestName ,
         token : res.locals.token ,
@@ -141,7 +252,12 @@ const renderAndSendMail = (req , res , next)  => {
 }
 
 
+
+
+
+
 module.exports = {
     getEmail, 
-    renderAndSendMail
+    renderAndSendMail ,
+    renderAndSendQrCode
 }

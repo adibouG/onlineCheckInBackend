@@ -77,7 +77,7 @@ const mailFormat =  (  type , message,  mail  , token , user  ) => {
 }
 
 
-function sendEmailRequest( type ,  message , email , token , user = null ) {   
+function sendEmailRequest( type ,  message , email , token = null , user = null ) {   
   
    
    let mail = mailFormat( type , message,  email , token , user)

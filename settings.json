@@ -2,7 +2,7 @@
     "API_ENDPOINT" : {
         "FETCH_BOOKING" : "/reservation" ,
         "RESET_BOOKING" : "/reset" ,
-        "GET_QRCODE" : "/getQR" ,
+        "GET_QRCODE" : "/qrcode" ,
         "SEND_EMAIL" : "/email" ,
         "START_CHECK_IN" : ""
     },
@@ -16,7 +16,7 @@
         "PATH" : "./Data/text.json"
     } ,
     "TOKEN" : {
-        "VALIDITY" : "2h"
+        "VALIDITY" : "6h"
     }
 
      
