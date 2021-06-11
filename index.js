@@ -42,7 +42,7 @@ app.use((req, res, next) => {
    
 app.use(express.json()) ;// for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
-   //app.use(express.static('public')); 
+app.use(express.static('public')); 
    
 app.use(api);
 
@@ -69,11 +69,11 @@ app.engine('htm', (filePath, options, callback) => { // define a template engine
         let minifyText = content.toString().replace(/[\n\r\t]/g,"");
         let uriCompatible = minifyText.replaceAll('%','%25');
         let rendered = uriCompatible
-           .replaceAll('#app_url#', app_link_baseUrl)
-                   
-           .replaceAll('#checkDates#', options.checkDates)
-           .replaceAll('#checkInDate#', options.checkInDate)
-           .replaceAll('#checkInTime#', options.checkInTime)
+                      .replaceAll('#app_url#', app_link_baseUrl)
+
+                      .replaceAll('#checkDates#', options.checkDates)
+                      .replaceAll('#checkInDate#', options.checkInDate)
+                      .replaceAll('#checkInTime#', options.checkInTime)
                       .replaceAll('#token#', options.token)
                       .replaceAll('#base64qrCode#', options.base64qrCode)
                       .replaceAll('#guestFullName#', options.guestFullName)
@@ -92,10 +92,6 @@ app.engine('htm', (filePath, options, callback) => { // define a template engine
                       .replaceAll('#hotelPhone#', options.hotelPhone)
                       .replaceAll('#hotelEmail#', options.hotelEmail)
 
-                 
-                 
-                    
-                     
         return callback(null, rendered)
     })
 })

@@ -22,7 +22,7 @@ const TEMPLATES = {
 
 const makeQrCode = async (booking) => {
     
-    let qr = QRCode.create(JSON.stringify(booking));
+   // let qr = QRCode.create(JSON.stringify(booking));
     
     let code = {
         bookingId:booking.uuid, 
@@ -142,16 +142,6 @@ const renderAndSendQrCode = async (req , res , next)  => {
 
     const url = await makeQrCode(booking) ;
     
-    console.log('url')
-    console.log('url')
-    console.log('url')
-    console.log('url')
-    console.log(url)
-    console.log('url')
-    console.log('url')
-    console.log('url')
-    console.log('url')
-    
     const makeDate = () => {
         let date1 = new Date(((new Date().getTime()) + (24 * 60 * 60 * 1000 ))).toLocaleDateString()
         let date2 = new Date(((new Date(date1).getTime()) + (24 * 60 * 60 * 1000 ))).toLocaleDateString() 
@@ -220,8 +210,8 @@ const renderAndSendMail = (req , res , next)  => {
 
 
 
-    let d1 = res.locals.booking.reservation.startDate;
-    let d2 = res.locals.booking.reservation.endDate;
+    let d1 = new Date(res.locals.booking.reservation.startDate).toLocaleDateString();
+    let d2 = new Date(res.locals.booking.reservation.endDate).toLocaleDateString();
  
     
   // let new Date(((new Date().getTime()) + (24 * 60 * 60 * 1000 ))).toLocaleDateString()
