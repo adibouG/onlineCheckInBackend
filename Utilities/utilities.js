@@ -54,10 +54,32 @@ const setInDataStore = (key , upd , store) => {
 
 }
 
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+
+const dateDiffInDays = (a, b) => {
+   
+    // Discard the time and time-zone information.
+    const utc1 = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+    const utc2 = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+    return Math.floor((utc2 - utc1) / MS_PER_DAY);
+  }
+
+  const makeDate = () => {
+    let date1 = new Date(((new Date().getTime()) + (MS_PER_DAY))).toLocaleDateString()
+    let date2 = new Date(((new Date(date1).getTime()) + (MS_PER_DAY))).toLocaleDateString() 
+    return {date1 , date2}
+}
+
+const getDay = (d) =>  new Date(d).toLocaleDateString(false, { weekday: 'long' });
+
 
 module.exports = {
     isBookingValid,
     findValueInDataStore ,
     getInDataStore , 
-    setInDataStore
+    setInDataStore ,
+    dateDiffInDays,
+    makeDate,
+    getDay
 }

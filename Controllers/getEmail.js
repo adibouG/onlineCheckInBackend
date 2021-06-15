@@ -2,11 +2,13 @@ require('dotenv').config();
 
 const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
-var QRCode = require('qrcode') ;
+let QRCode = require('qrcode') ;
 
-const {findValueInDataStore , isBookingValid} = require('../Utilities/utilities.js');
+const {findValueInDataStore , isBookingValid , dateDiffInDays, makeDate, getDay} = require('../Utilities/utilities.js');
 
 const SETTINGS = require('../settings.json') ;
+const HOTEL = require('../hotel.settings.json') ;
+
 const { MAILTYPES , sendEmailRequest } = require('../Emails/enzoMails.js');
 
 const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
@@ -15,9 +17,6 @@ const TEMPLATES = {
     START : "" ,
     QR : "" 
 } 
-
-
-
 
 
 const makeQrCode = async (booking) => {
@@ -114,23 +113,25 @@ const getEmail = async (req , res , next) => {
 
 
 
-const hotelName = "EnzoHotel";
-const hotelAddress = "Camerastraat 2";
-const hotelPostcode = "1322 BC";
-const hotelCity = "Almere";
-const hotelCountry = "The Netherlands";
-const hotelPhone = " +31 36 546 1040";
-const hotelEmail = "info@enzosystems.com";
+const { NAME , ADDRESS , POSTCODE , CITY , COUNTRY , PHONE ,EMAIL , CHECKINTIME} = HOTEL ;
 
+const hotelName = NAME ; //"EnzoHotel";
+const hotelAddress = ADDRESS ; //"Camerastraat 2";
+const hotelPostcode = POSTCODE ;//"1322 BC";
+const hotelCity =  CITY; //"Almere";
+const hotelCountry = COUNTRY; //"The Netherlands";
+const hotelPhone = PHONE ; //" +31 36 546 1040";
+const hotelEmail = EMAIL ; //"info@enzosystems.com";
 
-function dateDiffInDays(a, b) {
-    const _MS_PER_DAY = 1000 * 60 * 60 * 24;
-    // Discard the time and time-zone information.
-    const utc1 = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
-    const utc2 = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
-  
-    return Math.floor((utc2 - utc1) / _MS_PER_DAY);
-  }
+const hotelValues = {
+    hotelName : hotelName ,
+    hotelAddress : hotelAddress ,
+    hotelPostcode : hotelPostcode ,
+    hotelCity : hotelCity ,
+    hotelCountry : hotelCountry , 
+    hotelPhone : hotelPhone ,
+    hotelEmail : hotelEmail
+}
 
 const renderAndSendQrCode = async (req , res , next)  => {
 
@@ -142,12 +143,6 @@ const renderAndSendQrCode = async (req , res , next)  => {
 
     const url = await makeQrCode(booking) ;
     
-    const makeDate = () => {
-        let date1 = new Date(((new Date().getTime()) + (24 * 60 * 60 * 1000 ))).toLocaleDateString()
-        let date2 = new Date(((new Date(date1).getTime()) + (24 * 60 * 60 * 1000 ))).toLocaleDateString() 
-        return {date1 , date2}
-    }
-    const getDay = (d) =>  new Date(d).toLocaleDateString(false, { weekday: 'long' });
    
     const d1 = booking.reservation.startDate;
     const d2 = booking.reservation.endDate;
@@ -155,17 +150,15 @@ const renderAndSendQrCode = async (req , res , next)  => {
     const date1 = new Date(d1) ;
     const date2 = new Date(d2) ;
 
-
-
     const numNights = dateDiffInDays(date1 , date2)
 
     const checkDates =  d1 + " - " + d2 ;
 
     const roomType =  booking.reservation.roomType ;
     const numGuests = booking.reservation.guestCount ;
-    const checkInTime = '15h' ;
+    const checkInTime = CHECKINTIME ;
 
-    const values = {
+    const guestValues = {
         checkInDate : d1 ,
         checkInTime : checkInTime,
         base64qrCode : url ,
@@ -173,16 +166,11 @@ const renderAndSendQrCode = async (req , res , next)  => {
         booking : bookingUuid ,
         roomType : roomType ,
         numNights : numNights ,
-        numGuests : numGuests ,
-        hotelName : hotelName ,
-        hotelAddress : hotelAddress ,
-        hotelPostcode : hotelPostcode ,
-        hotelCity : hotelCity ,
-        hotelCountry : hotelCountry , 
-        hotelPhone : hotelPhone ,
-        hotelEmail : hotelEmail
-      
+        numGuests : numGuests
     }
+
+    const values = { ...guestValues , ...hotelValues }
+
     let mailType = MAILTYPES.QR; 
     let email = booking.guest.email ;
     res.render( 'qrCodeMail'  , values , async ( err , content ) => {
@@ -191,7 +179,6 @@ const renderAndSendQrCode = async (req , res , next)  => {
             console.log(err)
             return res.status(500).send(err) 
         }
-   
         try{
             await sendEmailRequest(  mailType , content , email  );
             return res.status(200).send();
@@ -204,38 +191,21 @@ const renderAndSendQrCode = async (req , res , next)  => {
 
 
 
-
-
 const renderAndSendMail = (req , res , next)  => {
-
-
 
     let d1 = new Date(res.locals.booking.reservation.startDate).toLocaleDateString();
     let d2 = new Date(res.locals.booking.reservation.endDate).toLocaleDateString();
  
-    
-  // let new Date(((new Date().getTime()) + (24 * 60 * 60 * 1000 ))).toLocaleDateString()
-  // let day = new Date(date).toLocaleDateString(false, { weekday: 'long' });
-  //
-  // let date1 = new new Date(date).toLocaleDateString(false, { weekday: 'long' });
     const checkDates =  d1 + " - " + d2 ;
 
-    const values = {
+    const guestValues = {
         checkDates : checkDates,
         guestLinkName : res.locals.guestLinkName ,
         guestFullName : res.locals.guestName ,
         token : res.locals.token ,
-        booking : res.locals.bookingUuid ,
-        hotelName : hotelName ,
-        hotelAddress : hotelAddress ,
-        hotelPostcode : hotelPostcode ,
-        hotelCity : hotelCity ,
-        hotelCountry : hotelCountry , 
-        hotelPhone : hotelPhone ,
-        hotelEmail : hotelEmail
-      
+        booking : res.locals.bookingUuid 
     }
-
+    const values = {...guestValues , ... hotelValues}  ;
     
 
     res.render( 'startMail'  , values , async ( err , content ) => {
@@ -254,9 +224,6 @@ const renderAndSendMail = (req , res , next)  => {
         }
     })
 }
-
-
-
 
 
 
