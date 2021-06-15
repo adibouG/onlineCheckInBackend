@@ -5,13 +5,18 @@ module.exports =  {
    
    options: [] ,
 
-   
+   emails : [
+      {
+         booking :  "43c98ac2-8493-49b0-95d8-de843d90e6ca" ,
+         startEmailSent : null ,
+         qrCodeEmailSent : null , 
+      }
+   ] ,
    
    checkins :  {
       "43c98ac2-8493-49b0-95d8-de843d90e6ca" : {
          uuid: "43c98ac2-8493-49b0-95d8-de843d90e6ca",
          guest:  {
-           
             firstName: "Derk" ,
             lastName: "Simon Esselink" ,
             address: null,
@@ -27,7 +32,7 @@ module.exports =  {
             roomType: 'single' ,
             options: [] 
            },
-         
+
          privacyPolicy: {
      
              content: "Terms and conditions\n\nSmoking is not permitted in any apartment or apartment building, this includes the use of electronic cigarettes. There is a € 240 deep cleaning fee applied if \
@@ -41,7 +46,8 @@ module.exports =  {
             amount: 90.58,
             currency: "€",
             paid: false
-         }
+         } ,
+
       },
 
       "0be8c80a-82b7-4d0e-a6f2-4b96fb50a8b2" : {
