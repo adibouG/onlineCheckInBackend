@@ -34,7 +34,10 @@ aws_deploy_job:
       - mkdir -p ~/.ssh
       - echo -e "$DEPLOY_SERVER_SSH_PRIV_KEY" > ~/.ssh/id_rsa
       - chmod 600 ~/.ssh/id_rsa
+      - echo -e "$APP_SERVER_PRIVATE_KEY" > ~/.ssh/id_rsa_app
+      - chmod 600 ~/.ssh/id_rsa_app
+
       - '[ -f /.dockerenv ] && echo -e "HOST *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
 
     script:
-      - bash .gitlab-deploy.sh $CI_DEPLOY_USER $CI_DEPLOY_PASSWORD  
+      - bash .gitlab-deploy.sh $CI_DEPLOY_USER $CI_DEPLOY_PASSWORD  $APP_SERVER_URL
