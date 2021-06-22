@@ -2,44 +2,58 @@ const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
 const {getInDataStore , setInDataStore} = require('../Utilities/utilities.js');
 const SETTINGS = require('../settings.json') ;
-const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
 
+const dynamoDB = require('../AWS/awsDynamoDb.js')
 
+const {RESERVATION , TOKEN} = SETTINGS.DYNAMODB_TABLE ;
+const {morgan , winstonLogger} = require('../Logger/loggers.js');
+const winston = require('winston/lib/winston/config');
 
-const getBooking = (req , res) => {
+const getBooking = async (req , res) => {
+
 
     try{
 
         let {token} = req?.query ;
+        
+        winstonLogger.info(req.query)
         console.log(req.query) ;
 
         if (!token) throw new Models.EnzoError('no token') ;
         
-        let decoded = jwt.decode(token) ; //.verify(token) ;
+        let decoded = jwt.decode(token) ;
         console.log(decoded) ;
+        winstonLogger.info(decoded)
         let uuidKey = decoded.uuid ;
         console.log(uuidKey)
+        winstonLogger.info(uuidKey)
 
-        let booking = getInDataStore(uuidKey, db.checkins) ;
-       
+        let verified = jwt.verify(token , uuidKey) ; 
+        
+//        let booking = getInDataStore(uuidKey, db.checkins) ;
+
+        let booking = await dynamoDB.getDynamoDBItem(RESERVATION , { reservationID : {S : uuidKey } } )
+  
+        console.log(booking)
+      
         if (!booking)  throw new Models.NotFound() ;        
 
         let complete = false ;
         let response ;
 
-        if ("arrivalDate" in booking.reservation) complete = true ;
+        if ("arrivalDate" in booking.reservation || ("status" in booking.reservation && booking.reservation.status === 'CHECKIN')) complete = true ;
         
         if (complete) {
-        let {token} = req?.query ;
-        response = { 
+          
+            response = { 
                 type: 'success',
                 status: 'complete',
                 stay: { 
                     arrivalDate: booking.reservation.arrivalDate 
                 } 
             };
-        }
-        else {
+        } else {
+          
             response = {
                 type: 'success',
                 status: 'pending',
@@ -52,38 +66,42 @@ const getBooking = (req , res) => {
     } catch(e) {
         
         let error ;
-        if (e instanceof jwt.TokenExpiredError)  error = new Models.ExpiredLink(e) ;
+        if (e instanceof jwt.TokenExpiredError)  error = new Models.ExpiredLink() ;
         else error = e ;
-        console.log(error) ;
-        console.log(error.stack) ;
         
-        return res.status(400).send(error) ;
+        console.log(error) ;
+        winstonLogger.error(error)
+        return res.status(error.code || 401).send(error) ;
     }
 
 }
 
 
 
-const postBooking = (req , res) => {
+const postBooking = async (req , res) => {
 
     try{
 
         let bookingUpdt = req?.body ;
+
         console.log(bookingUpdt)
         if (!bookingUpdt) throw new  Models.EnzoError('no booking nor update')
 
         let uuidKey = bookingUpdt.uuid ;
-
+     
         
-        let updt = setInDataStore(bookingUpdt.uuid , bookingUpdt , db.checkins) 
+        await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : uuidKey , ...bookingUpdt   } ) 
+
+        let updt = await dynamoDB.getDynamoDBItem(RESERVATION , { reservationID : {S : uuidKey } } )
+  
         
         if (!updt) throw new Models.NotFound() ;
 
         let complete = false ;
         let response ;
         
-        if ("arrivalDate" in updt.reservation) complete = true ;
-        
+        if ("arrivalDate" in updt.reservation || ("status" in updt.reservation && updt.reservation.status === 'CHECKIN')) complete = true ;
+           
         if (complete) {
             response = { 
                 type: 'success',
@@ -116,8 +134,9 @@ const postBooking = (req , res) => {
 }
 
 
-const resetBookings = (req , res) => {
+const resetBookings = async (req , res) => {
 
+    const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
     const makeCheckDates = (past = false) => {
         
         let len = Math.floor(Math.random() * 10)   ;
@@ -167,10 +186,12 @@ const resetBookings = (req , res) => {
            for ( const check in  originalDb.checkins) {
                console.log(check)
                 let newBook = resetBookingDate(originalDb.checkins[check]) ;
-                originalDb.checkins[check] = newBook ;    
+             //   originalDb.checkins[check] = newBook ;    
+                await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : check , ...newBook   } )
             }
-            setInDataStore("checkins" , originalDb.checkins ,  db) ;
-            console.log(originalDb)
+         //  setInDataStore("checkins" , originalDb.checkins ,  db) ;   
+     
+        
         }
   
      return res.status(200).send();

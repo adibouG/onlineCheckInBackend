@@ -6,9 +6,14 @@ let QRCode = require('qrcode') ;
 
 const {findValueInDataStore , isBookingValid , dateDiffInDays, makeDate, getDay} = require('../Utilities/utilities.js');
 
+const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
+
 const SETTINGS = require('../settings.json') ;
 const HOTEL = require('../hotel.settings.json') ;
 
+const dynamoDB = require('../AWS/awsDynamoDb.js')
+
+const {RESERVATION , TOKEN} = SETTINGS.DYNAMODB_TABLE ;
 const { MAILTYPES , sendEmailRequest } = require('../Emails/enzoMails.js');
 
 const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
@@ -26,7 +31,6 @@ const makeQrCode = async (booking) => {
     let code = {
         bookingId:booking.uuid, 
         guest:booking.guest, 
-        reservation:booking.reservation
     };
 
     return await QRCode.toDataURL(JSON.stringify(code))
@@ -35,16 +39,24 @@ const makeQrCode = async (booking) => {
 
 
 
-const getBookingFromEmail = (email) => {
+const getBookingFromEmail = async (email) => {
     
     let booking ;
     let bookings = [] ; 
     let validEmail = email.length > 0 || false ;
+
+    try {
     if (!email || !validEmail) throw new Models.EnzoError('no email or invalid email') ;
     
-    for (let k in db.checkins) {
-       if (db.checkins[k]["guest"]["email"] === email) bookings.push(db.checkins[k]) ;
-    }
+    let results = await dynamoDB.findDynamoDBItems(RESERVATION ,  "email" , email  )
+
+ //await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : uuidKey , ...bookingUpdt   } ) 
+    results.Items.forEach((item) => {
+        let b = unmarshall(item) ;
+   // for (let k in db.checkins) {
+       if (b["email"] == email || b["guest"]["email"] === email) bookings.push(b) //db.checkins[k]) ;
+    })
+    
     console.log(bookings) ;
     // bookings = findValueInDataStore(email , 'email' , db.checkins) ;
    
@@ -52,7 +64,6 @@ const getBookingFromEmail = (email) => {
 
     for (let b of  bookings) {
 
-    
         if (isBookingValid(b)) {
 
             booking = b ;
@@ -60,19 +71,47 @@ const getBookingFromEmail = (email) => {
         }
     }
     return booking ;
+    } catch(e) {
+
+        console.log(e)
+        throw e
+    }    
 }
 
 
 
     
 
+const { ID , NAME , ADDRESS , POSTCODE , CITY , COUNTRY , PHONE ,EMAIL , CHECKINTIME} = HOTEL ;
+
+const hotelID = ID ; 
+const hotelName = NAME ; 
+const hotelAddress = ADDRESS ; 
+const hotelPostcode = POSTCODE ;
+const hotelCity =  CITY; 
+const hotelCountry = COUNTRY; 
+const hotelPhone = PHONE ; 
+const hotelEmail = EMAIL ; 
+
+const hotelValues = {
+    hotelName : hotelName ,
+    hotelAddress : hotelAddress ,
+    hotelPostcode : hotelPostcode ,
+    hotelCity : hotelCity ,
+    hotelCountry : hotelCountry , 
+    hotelPhone : hotelPhone ,
+    hotelEmail : hotelEmail
+}
+
+
 const getEmail = async (req , res , next) => {
 
 
     try{
+
         let {email} = req?.query ;
 
-        let booking = getBookingFromEmail(email) ;
+        let booking = await getBookingFromEmail(email) ;
        
         if (!booking)  throw new Models.NotFound() ;   
   
@@ -88,7 +127,7 @@ const getEmail = async (req , res , next) => {
         let uuid = booking.uuid
         let secret = uuid //JSON.stringify(booking) ;
         
-        let payload = {uuid} ; 
+        let payload = {uuid , ID} ; 
         
         let token = jwt.sign(payload , secret , sign ) ;
 
@@ -111,27 +150,6 @@ const getEmail = async (req , res , next) => {
     }
 }
 
-
-
-const { NAME , ADDRESS , POSTCODE , CITY , COUNTRY , PHONE ,EMAIL , CHECKINTIME} = HOTEL ;
-
-const hotelName = NAME ; //"EnzoHotel";
-const hotelAddress = ADDRESS ; //"Camerastraat 2";
-const hotelPostcode = POSTCODE ;//"1322 BC";
-const hotelCity =  CITY; //"Almere";
-const hotelCountry = COUNTRY; //"The Netherlands";
-const hotelPhone = PHONE ; //" +31 36 546 1040";
-const hotelEmail = EMAIL ; //"info@enzosystems.com";
-
-const hotelValues = {
-    hotelName : hotelName ,
-    hotelAddress : hotelAddress ,
-    hotelPostcode : hotelPostcode ,
-    hotelCity : hotelCity ,
-    hotelCountry : hotelCountry , 
-    hotelPhone : hotelPhone ,
-    hotelEmail : hotelEmail
-}
 
 const renderAndSendQrCode = async (req , res , next)  => {
 

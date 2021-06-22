@@ -9,11 +9,6 @@ const api = require('./Routes/routes.js');
 
 const SETTINGS = require('./settings.json') ;
 
-
-
-const {START_CHECK_IN , GET_QRCODE} = SETTINGS.API_ENDPOINT ;
-const LINK_URL = process.env.LINK_URL;
-
 const app = express();
 
 console.log(process.env.NODE_ENV)

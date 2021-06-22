@@ -7,7 +7,7 @@
         "START_CHECK_IN" : ""
     },
     "DATA_STORAGE" : {
-        "PATH" : "./Data/dummyDB.js"
+     "PATH" :  ""
     }, 
     "LOG_STORAGE" : {
         "PATH" : "./Data/logs" 
@@ -17,9 +17,13 @@
     } ,
     "TOKEN" : {
         "VALIDITY" : "6h"
+    } ,
+
+    "DYNAMODB_TABLE" : {
+        "RESERVATION" : "WebCheckIn_reservation_dev" ,
+        "TOKEN" : "WebCheckIn_token_dev" 
     }
 
-     
 
 }
 

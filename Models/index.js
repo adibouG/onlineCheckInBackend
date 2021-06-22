@@ -96,8 +96,8 @@ class SuccessBody {
 
 class EnzoError extends Error {
 
-    constructor(type,  message , code , error ) {
-        super(error) ;
+    constructor(e , error , type , message , code ) {
+        super(e) ;
         this.message = message ;
         this.code = code ;
         this.error = error ;
@@ -118,15 +118,18 @@ class NotFound extends Failure {
 
     constructor(message , code , error) {
         super(message , code ) ;
+   
         this.error = `notFound` ;
+        this.message = `notFound` ;
     }
 }
 
 class ExpiredLink extends EnzoError {
 
-    constructor(error) {
-        super(message , code , error) ;
+    constructor(message , code ) {
+        super( message , code  ) ;
         this.error = `expiredLink` ;
+        this.message = `expiredLink` ;
     }
 }
 
