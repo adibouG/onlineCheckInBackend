@@ -9,10 +9,10 @@ const SETTINGS = require('../settings.json');
 api.post( SETTINGS.API_ENDPOINT.FETCH_BOOKING , bookingControllers.postBooking)
 api.post( SETTINGS.API_ENDPOINT.RESET_BOOKING , bookingControllers.resetBookings )
 
+api.get( SETTINGS.API_ENDPOINT.FETCH_BOOKING , bookingControllers.getBooking)
+
 api.post( SETTINGS.API_ENDPOINT.GET_QRCODE , emailControllers.renderAndSendQrCode )
 
-
-api.get( SETTINGS.API_ENDPOINT.FETCH_BOOKING , bookingControllers.getBooking)
 api.get( SETTINGS.API_ENDPOINT.SEND_EMAIL , emailControllers.getEmail , emailControllers.renderAndSendMail  )
 
 
