@@ -5,17 +5,16 @@ const SETTINGS = require('../settings.json') ;
 
 const dynamoDB = require('../AWS/awsDynamoDb.js')
 
+
 const {RESERVATION , TOKEN} = SETTINGS.DYNAMODB_TABLE ;
 const {morgan , winstonLogger} = require('../Logger/loggers.js');
 const winston = require('winston/lib/winston/config');
 
 const getBooking = async (req , res) => {
 
-
     try{
-
         let {token} = req?.query ;
-        
+
         winstonLogger.info(req.query)
         console.log(req.query) ;
 
@@ -30,8 +29,6 @@ const getBooking = async (req , res) => {
 
         let verified = jwt.verify(token , uuidKey) ; 
         
-//        let booking = getInDataStore(uuidKey, db.checkins) ;
-
         let booking = await dynamoDB.getDynamoDBItem(RESERVATION , { reservationID : {S : uuidKey } } )
   
         console.log(booking)
@@ -39,12 +36,15 @@ const getBooking = async (req , res) => {
         if (!booking)  throw new Models.NotFound() ;        
 
         let complete = false ;
+        let prechecked = false ;
         let response ;
-
-        if ("arrivalDate" in booking.reservation || ("status" in booking.reservation && booking.reservation.status === 'CHECKIN')) complete = true ;
+        
+        if ("status" in booking.reservation && booking.reservation.status === 'PRECHECKED') prechecked = true ;
+           
+        if ("arrivalDate" in booking.reservation ) complete = true
+        
         
         if (complete) {
-          
             response = { 
                 type: 'success',
                 status: 'complete',
@@ -52,8 +52,16 @@ const getBooking = async (req , res) => {
                     arrivalDate: booking.reservation.arrivalDate 
                 } 
             };
-        } else {
-          
+        }
+        else if (prechecked) {
+            response = {
+                type: 'success',
+                status: 'prechecked',
+                checkin : booking 
+            };
+        } 
+        
+        else {
             response = {
                 type: 'success',
                 status: 'pending',
@@ -81,27 +89,22 @@ const getBooking = async (req , res) => {
 const postBooking = async (req , res) => {
 
     try{
-
         let bookingUpdt = req?.body ;
-
         console.log(bookingUpdt)
         if (!bookingUpdt) throw new  Models.EnzoError('no booking nor update')
-
         let uuidKey = bookingUpdt.uuid ;
-     
-        
         await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : uuidKey , ...bookingUpdt   } ) 
-
         let updt = await dynamoDB.getDynamoDBItem(RESERVATION , { reservationID : {S : uuidKey } } )
-  
-        
         if (!updt) throw new Models.NotFound() ;
-
-        let complete = false ;
-        let response ;
         
-        if ("arrivalDate" in updt.reservation || ("status" in updt.reservation && updt.reservation.status === 'CHECKIN')) complete = true ;
-           
+        let complete = false ;
+        let prechecked = false ;
+        let response ;
+
+        if ("status" in updt.reservation && updt.reservation.status.toUpperCase() === 'PRECHECKED') prechecked = true ;           
+
+        if ("arrivalDate" in updt.reservation ) complete = true
+
         if (complete) {
             response = { 
                 type: 'success',
@@ -111,6 +114,13 @@ const postBooking = async (req , res) => {
                 } 
             };
         }
+        else if (prechecked) {
+            response = {
+                type: 'success',
+                status: 'prechecked',
+                checkin : updt 
+            };
+        } 
         else {
             response = {
                 type: 'success',
@@ -120,19 +130,25 @@ const postBooking = async (req , res) => {
         } 
         console.log(response)
         return res.status(200).send(response);
-
     }
     catch(e) {
-
         let error ;
         error = e ;
-     
         console.log(error) ;
         return res.status(400).send(error) ;
     }
-
 }
 
+const resetBookingState = (book) => {
+        
+    let newDates ;
+    
+    if ("status" in book.reservation && book.reservation.status.toUpperCase() === "PRECHECKED") {
+        delete  book.reservation.status ;
+    }
+   
+    return book ;
+};
 
 const resetBookings = async (req , res) => {
 
@@ -152,28 +168,26 @@ const resetBookings = async (req , res) => {
         }) ;
     }
 
-
     const resetBookingDate = (book) => {
         
         let newDates ;
         
         if ("arrivalDate" in book.reservation) {
-            
             newDates = makeCheckDates(true) ; 
             book.reservation.arrivalDate = newDates.otherDate ;
             book.reservation.startDate = newDates.otherDate ;
             book.reservation.endDate = newDates.today ;
         }
         else {
-
             newDates = makeCheckDates(false) ; 
             book.reservation.startDate = newDates.today ;
             book.reservation.endDate = newDates.otherDate ;
-
         }
 
         return book ;
     };
+ 
+  
  
     try{
 
@@ -181,29 +195,22 @@ const resetBookings = async (req , res) => {
         let {name , uuid} = req?.query ;
 
         if (!name && !uuid ) {
-
            let originalDb = getInDataStore("backup" , db) ;
            for ( const check in  originalDb.checkins) {
                console.log(check)
                 let newBook = resetBookingDate(originalDb.checkins[check]) ;
-             //   originalDb.checkins[check] = newBook ;    
+                //originalDb.checkins[check] = newBook ;    
                 await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : check , ...newBook   } )
             }
-         //  setInDataStore("checkins" , originalDb.checkins ,  db) ;   
-     
-        
+         //  setInDataStore("checkins" , originalDb.checkins ,  db) ; 
         }
-  
      return res.status(200).send();
     }
     catch(e) {
         console.log(e)
         return res.status(500).end();
     }
-
 }
-
-
 
 
 module.exports = {
