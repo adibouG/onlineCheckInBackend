@@ -13,6 +13,8 @@ function generateReservation() {
 
 
 const isBookingValid = (book) =>  !("arrivalDate" in book.reservation)  ;
+
+const isPreCheckedBooking = (book) => ("status" in book.reservation && book.reservation.status.toUpperCase() ===  'PRECHECKED')  ;
         
 
 const findValueInDataStore = ( { value , key , store }) => {
@@ -76,6 +78,7 @@ const getDay = (d) =>  new Date(d).toLocaleDateString(false, { weekday: 'long' }
 
 module.exports = {
     isBookingValid,
+    isPreCheckedBooking,
     findValueInDataStore ,
     getInDataStore , 
     setInDataStore ,

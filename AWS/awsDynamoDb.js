@@ -17,6 +17,7 @@ const getDynamoDBItem = async (  TableName , Item ) => {
 
     
     const params = {
+        ConsistentRead: true,
         TableName : TableName,
         Key: Item
     }
@@ -61,7 +62,8 @@ const findDynamoDBItems = async ( TableName, Item , Value) => {
 
     
     const params = {
-        TableName: TableName 
+        ConsistentRead: true,
+        TableName: TableName ,
     }
 
     // Call DynamoDB to add the item to the table

@@ -4,7 +4,7 @@ const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
 let QRCode = require('qrcode') ;
 
-const {findValueInDataStore , isBookingValid , dateDiffInDays, makeDate, getDay} = require('../Utilities/utilities.js');
+const {findValueInDataStore , isBookingValid ,isPreCheckedBooking, dateDiffInDays, makeDate, getDay} = require('../Utilities/utilities.js');
 
 const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 
@@ -16,7 +16,7 @@ const dynamoDB = require('../AWS/awsDynamoDb.js')
 const {RESERVATION , TOKEN} = SETTINGS.DYNAMODB_TABLE ;
 const { MAILTYPES , sendEmailRequest } = require('../Emails/enzoMails.js');
 
-const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
+//const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
 
 const TEMPLATES = {
     START : "" ,
@@ -47,6 +47,7 @@ const getBookingFromEmail = async (email) => {
     let validEmail = email.length > 0 || false ;
 
     try {
+
     if (!email || !validEmail) throw new Models.EnzoError('no email or invalid email') ;
     
     let results = await dynamoDB.findDynamoDBItems(RESERVATION ,  "email" , email  )
@@ -54,7 +55,7 @@ const getBookingFromEmail = async (email) => {
  //await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : uuidKey , ...bookingUpdt   } ) 
     results.Items.forEach((item) => {
         let b = unmarshall(item) ;
-   // for (let k in db.checkins) {
+
        if (b["email"] == email || b["guest"]["email"] === email) bookings.push(b) //db.checkins[k]) ;
     })
     
@@ -63,15 +64,47 @@ const getBookingFromEmail = async (email) => {
    
     if (!bookings.length)  throw new Models.NotFound('no reservation with this email') ; 
 
+    //get a valid reservation
     for (let b of  bookings) {
-
-        if (isBookingValid(b)) {
+     
+        
+        if (isBookingValid(b) && !isPreCheckedBooking(b)) {
 
             booking = b ;
             break;
         }
     }
+    // if none get a prechecked reservation
+
+    if (!booking)  {
+
+        for (let b of  bookings) {
+        
+
+            if (isBookingValid(b) && isPreCheckedBooking(b)) {
+
+                booking = b ;
+                break;
+            }
+        }
+    }
+    
+    // if none get a checked reservation
+
+    if (!booking)  {
+
+        for (let b of  bookings) {
+        
+            if (!(isBookingValid(b) || isPreCheckedBooking(b))) {
+
+                booking = b ;
+                break;
+            }
+        }
+    }
+    
     return booking ;
+
     } catch(e) {
 
         console.log(e)
@@ -151,6 +184,16 @@ const getEmail = async (req , res , next) => {
     }
 }
 
+const setCheckBooking = async (bookingUpdt) => {
+
+    let uuidKey = bookingUpdt.uuid;
+
+    bookingUpdt.reservation['status'] = 'PRECHECKED';
+
+    return await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : uuidKey , ...bookingUpdt   } ) 
+
+} 
+
 
 const renderAndSendQrCode = async (req , res , next)  => {
 
@@ -161,7 +204,10 @@ const renderAndSendQrCode = async (req , res , next)  => {
     let bookingUuid = booking.uuid ;
 
     const url = await makeQrCode(booking) ;
-    
+
+   
+    await setCheckBooking(booking);
+  
    
     const d1 = booking.reservation.startDate;
     const d2 = booking.reservation.endDate;
@@ -243,6 +289,7 @@ const renderAndSendMail = (req , res , next)  => {
         }
     })
 }
+
 
 
 
