@@ -30,7 +30,8 @@ const makeQrCode = async (booking) => {
     
     let code = {
         bookingId:booking.uuid, 
-        guest:booking.guest, 
+        firstName:booking.guest.firstName , 
+        lastName:booking.guest.lastName 
     };
 
     return await QRCode.toDataURL(JSON.stringify(code))
