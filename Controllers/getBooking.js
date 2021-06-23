@@ -1,6 +1,6 @@
 const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
-const {getInDataStore , setInDataStore} = require('../Utilities/utilities.js');
+const {getInDataStore , setInDataStore , findValueInDataStore} = require('../Utilities/utilities.js');
 const SETTINGS = require('../settings.json') ;
 
 const dynamoDB = require('../AWS/awsDynamoDb.js')
@@ -192,9 +192,9 @@ const resetBookings = async (req , res) => {
     try{
 
         let success = false ;
-        let {name , uuid} = req?.query ;
+        let {email , uuid} = req?.query ;
 
-        if (!name && !uuid ) {
+        if (!email && !uuid ) {
            let originalDb = getInDataStore("backup" , db) ;
            for ( const check in  originalDb.checkins) {
                console.log(check)
@@ -204,6 +204,17 @@ const resetBookings = async (req , res) => {
             }
          //  setInDataStore("checkins" , originalDb.checkins ,  db) ; 
         }
+        else if (email || uuid ) {
+            let originalDb = getInDataStore("backup" , db) ;
+            let booking = findValueInDataStore(email , 'email' , originalDb) ;
+           
+                console.log(check)
+                 let newBook = resetBookingDate(booking) ;
+                 //originalDb.checkins[check] = newBook ;    
+                 await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : booking.uuid , email : booking.guest.email , ...newBook   } )
+        }
+          //  setInDataStore("checkins" , originalDb.checkins ,  db) ; 
+         
      return res.status(200).send();
     }
     catch(e) {

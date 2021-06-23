@@ -7,7 +7,7 @@ const SETTINGS = require('../settings.json');
 
 
 api.post( SETTINGS.API_ENDPOINT.FETCH_BOOKING , bookingControllers.postBooking)
-api.post( SETTINGS.API_ENDPOINT.RESET_BOOKING , bookingControllers.resetBookings )
+api.get( SETTINGS.API_ENDPOINT.RESET_BOOKING , bookingControllers.resetBookings )
 
 api.get( SETTINGS.API_ENDPOINT.FETCH_BOOKING , bookingControllers.getBooking)
 
