@@ -1,5 +1,8 @@
 
+const dynamoDB = require('../AWS/awsDynamoDb.js')
 
+const SETTINGS = require('../settings.json') ;
+const RESERVATION = SETTINGS.DYNAMODB_TABLE.RESERVATION
 
 function generateReservation() {
 
@@ -30,7 +33,7 @@ const findValueInDataStore = ( { value , key , store }) => {
         }
         else if (Object.keys(store[entry]) && Object.keys(store[entry]).length){
             let child = store[entry] ;
-            findInDataStore({ value , key , child }) ;
+            return findValueInDataStore({ value , key , store: child }) ;
         } 
     }
 
@@ -76,7 +79,115 @@ const dateDiffInDays = (a, b) => {
 const getDay = (d) =>  new Date(d).toLocaleDateString(false, { weekday: 'long' });
 
 
+
+
+const resetBookingState = (book) => {
+        
+    let newDates ;
+    
+    if ("status" in book.reservation && book.reservation.status.toUpperCase() === "PRECHECKED") {
+        delete  book.reservation.status ;
+    }
+   
+    return book ;
+};
+
+const makeCheckDates = (past = false) => {
+        
+    let len = Math.floor(Math.random() * 10)   ;
+    len = past ? -1 * len : len ;
+
+    let today = new Date();
+    let otherDate = new Date(new Date().setDate(today.getDate() +  len)) ;
+
+    
+    return ({ 
+        today: today.toISOString().split('T')[0] ,
+        otherDate: otherDate.toISOString().split('T')[0] 
+    }) ;
+}
+
+    const resetBookingDate = (book) => {
+        
+        let newDates ;
+        
+        if ("arrivalDate" in book.reservation) {
+            newDates = makeCheckDates(true) ; 
+            book.reservation.arrivalDate = newDates.otherDate ;
+            book.reservation.startDate = newDates.otherDate ;
+            book.reservation.endDate = newDates.today ;
+        }
+        else {
+            newDates = makeCheckDates(false) ; 
+            book.reservation.startDate = newDates.today ;
+            book.reservation.endDate = newDates.otherDate ;
+        }
+
+        return book ;
+    };
+ 
+const resetBookingStatus = async (email = null , uuid = null) => {
+
+    const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
+   
+ 
+    try{
+
+        let originalDb = getInDataStore("checkins" , db) ;
+
+   
+        if (!email && !uuid) {
+           for ( const check in  originalDb) {
+               console.log(check)
+                let newBook = resetBookingDate(originalDb.checkins[check]) ;
+                //originalDb.checkins[check] = newBook ;    
+                await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : check , ...newBook   } )
+            }
+         //  setInDataStore("checkins" , originalDb.checkins ,  db) ; 
+        }
+        else if (email) {
+            let bookings = [];
+            for ( const check in  originalDb) {
+
+           //     let bookings =   findValueInDataStore( {value: email , key :'email' , store : originalDb}) ;
+                if (originalDb[check].email === email )  {
+                      booking = originalDb[check] ;
+                
+            console.log("*********************************************")
+            console.log("*********************************************")
+            console.log(booking)
+            console.log("*********************************************")
+                 let newBook = resetBookingDate(booking) ;
+                 //originalDb.checkins[check] = newBook ;    
+                 await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : booking.uuid , email : booking.guest.email ,  ...newBook   } )
+                }
+            }
+        }
+        else if (uuid) {
+    
+            let booking = findValueInDataStore(uuid , 'uuid' , originalDb) ;
+           
+                 let newBook = resetBookingDate(booking) ;
+                 //originalDb.checkins[check] = newBook ;    
+                 await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : booking.uuid , email : booking.guest.email , ...newBook   } )
+        }
+          //  setInDataStore("checkins" , originalDb.checkins ,  db) ; 
+        return 1;
+    }
+    catch(e) {
+        console.log(e)
+        throw e
+    }
+   
+}
+
+
+
 module.exports = {
+    resetBookingDate,
+    makeCheckDates,
+    resetBookingState,
+    resetBookingStatus,
     isBookingValid,
     isPreCheckedBooking,
     findValueInDataStore ,
