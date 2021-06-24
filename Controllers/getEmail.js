@@ -15,8 +15,9 @@ const dynamoDB = require('../AWS/awsDynamoDb.js')
 
 const {RESERVATION , TOKEN} = SETTINGS.DYNAMODB_TABLE ;
 const { MAILTYPES , sendEmailRequest } = require('../Emails/enzoMails.js');
+const { resetBookings } = require('./getBooking.js');
 
-//const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
+
 
 const TEMPLATES = {
     START : "" ,
@@ -46,64 +47,62 @@ const getBookingFromEmail = async (email) => {
     let bookings = [] ; 
     let validEmail = email.length > 0 || false ;
 
+
+    console.log('routes to ')
     try {
 
-    if (!email || !validEmail) throw new Models.EnzoError('no email or invalid email') ;
-    
-    let results = await dynamoDB.findDynamoDBItems(RESERVATION ,  "email" , email  )
-
- //await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : uuidKey , ...bookingUpdt   } ) 
-    results.Items.forEach((item) => {
-        let b = unmarshall(item) ;
-
-       if (b["email"] == email || b["guest"]["email"] === email) bookings.push(b) //db.checkins[k]) ;
-    })
-    
-    console.log(bookings) ;
-    // bookings = findValueInDataStore(email , 'email' , db.checkins) ;
-   
-    if (!bookings.length)  throw new Models.NotFound('no reservation with this email') ; 
-
-    //get a valid reservation
-    for (let b of  bookings) {
-     
+        if (!email || !validEmail) throw new Models.EnzoError('no email or invalid email') ;
         
-        if (isBookingValid(b) && !isPreCheckedBooking(b)) {
+        let results = await dynamoDB.findDynamoDBItems(RESERVATION ,  "email" , email  )
+        results.Items.forEach((item) => {
+            let b = unmarshall(item) ;
 
-            booking = b ;
-            break;
-        }
-    }
-    // if none get a prechecked reservation
+           if (b["email"] == email || b["guest"]["email"] === email) bookings.push(b)  ;
+        })
 
-    if (!booking)  {
+    
+        if (!bookings.length)  throw new Models.NotFound('no reservation with this email') ; 
 
+        //get a valid reservation
         for (let b of  bookings) {
         
 
-            if (isBookingValid(b) && isPreCheckedBooking(b)) {
+            if (isBookingValid(b) && !isPreCheckedBooking(b)) {
 
                 booking = b ;
                 break;
             }
         }
-    }
-    
-    // if none get a checked reservation
+        // if none get a prechecked reservation
 
-    if (!booking)  {
+        if (!booking)  {
 
-        for (let b of  bookings) {
-        
-            if (!(isBookingValid(b) || isPreCheckedBooking(b))) {
+            for (let b of  bookings) {
+            
 
-                booking = b ;
-                break;
+                if (isBookingValid(b) && isPreCheckedBooking(b)) {
+
+                    booking = b ;
+                    break;
+                }
             }
         }
-    }
-    
-    return booking ;
+
+        // if none get a checked reservation
+
+        if (!booking)  {
+
+            for (let b of  bookings) {
+            
+                if (!(isBookingValid(b) || isPreCheckedBooking(b))) {
+
+                    booking = b ;
+                    break;
+                }
+            }
+        }
+
+        return booking ;
 
     } catch(e) {
 
@@ -113,8 +112,6 @@ const getBookingFromEmail = async (email) => {
 }
 
 
-
-    
 
 const { ID , NAME , ADDRESS , POSTCODE , CITY , COUNTRY , PHONE ,EMAIL , CHECKINTIME} = HOTEL ;
 
@@ -202,6 +199,14 @@ const renderAndSendQrCode = async (req , res , next)  => {
 
     let guestName = booking.guest.firstName + " " + booking.guest.lastName ;
     let bookingUuid = booking.uuid ;
+    console.log('routes to ')
+    if (booking.reservation.status && booking.reservation.status.toUpperCase() === 'PRECHECKED')  {
+
+        console.log('routes to reset')
+        return resetBookings(req , res)
+    }
+    
+    console.log('routes to makeQrCode')
 
     const url = await makeQrCode(booking) ;
 
