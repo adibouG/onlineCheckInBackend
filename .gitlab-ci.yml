@@ -40,4 +40,6 @@ aws_deploy_job:
   
 
     script:
+      - echo -e "$APP_SERVER_PRIVATE_KEY"
+      - echo -e "$CI_DEPLOY_PASSWORD"
       - bash .gitlab-deploy.sh $CI_DEPLOY_USER $CI_DEPLOY_PASSWORD  
