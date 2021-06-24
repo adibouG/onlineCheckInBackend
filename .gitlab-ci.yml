@@ -40,4 +40,4 @@ aws_deploy_job:
   
 
     script:
-      - bash ./gitlab-deploy.sh $CI_DEPLOY_USER $CI_DEPLOY_PASSWORD  
+      - bash .gitlab-deploy.sh $CI_DEPLOY_USER $CI_DEPLOY_PASSWORD  
