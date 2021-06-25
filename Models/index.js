@@ -52,21 +52,17 @@ class Reservation {
 
 }
 
-
-const makeFormatedDate = (d = null , l = null) =>   {
-
-
-    let date = d ? new Date(d) : new Date() ;
-
-
-
-    return date.toISOString();
-
-}
-
-const addDay = (date , d) =>  new Date(date.getTime() + d ) ;
-
-    
+const EmailTrackingObject = (reservationID , type , sendDate = null , sentDate = null , messageID = null , attempts = 1 ) => ({
+    "reservationID" :  reservationID , 
+    "emailType": type , 
+    "sendingDate" : sendDate || Date.now() ,
+    "sentDate" : sentDate || Date.now() ,
+    "messageID" : messageID || reservationID ,
+    "attempts" : attempts ,
+//    "email" : null ,
+ //   "token" : null ,
+ //   "qrCode" : null 
+  })
 
 const SUCCESS_STATUS =  [ 'pending' , 'complete' ] 
 
@@ -139,12 +135,10 @@ module.exports = {
     Checkin ,
     Payment ,
     Reservation ,
-    makeFormatedDate,
-    addDay ,
     SuccessBody ,
     EnzoError,
     Failure,
     NotFound,
-    ExpiredLink
-
+    ExpiredLink ,
+    EmailTrackingObject
 }

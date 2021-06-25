@@ -3,7 +3,8 @@ const fs = require('fs')
 const SETTINGS = require('../settings.json') ;
 
 const axios = require('axios');
-const Logger = require('../Logger/loggers.js');
+const {generateUUID} = require('../Utilities/utilities.js');
+const {winstonLogger} = require('../Logger/loggers.js');
 
 
 
@@ -23,7 +24,7 @@ const MAILTYPES = {
 
  } ;
 
-const mailFormat =  (  type , message,  mail  , token , user  ) => {
+const mailFormat =  (  type , message,  mail  , messID , user  ) => {
 
     let TITLE = '';
     let MESSAGE = '';
@@ -34,15 +35,15 @@ const mailFormat =  (  type , message,  mail  , token , user  ) => {
 
         TITLE = 'Email confirmation with QR-code for online pre-check-in' ;
         MESSAGE = message ;
-
-
+        messID = messID || generateUUID() ;
+        
         return ({
             //"attachments" : [ATTACHMENTS] ,
             "body": {
                 "html": `${MESSAGE}` ,
             },
             "from": "no-reply@enzosystems.com",
-            "messageId": `${token}`,
+            "messageId": `${messID}`,
             "subject": `${TITLE}`,
             "to": [mail],
             "cc": ['adrien@enzosystems.com']
@@ -52,14 +53,18 @@ const mailFormat =  (  type , message,  mail  , token , user  ) => {
     else if (type === 'startCheckIn' ) {
         TITLE = 'Email invitation for online pre-check-in' ;
         MESSAGE = message ;
+        
         try{
-            let content = fs.readFileSync('./Views/base64image.txt') ;//  (err, content) => {
-            console.log(content.toString())
+            let content = fs.readFileSync('./Views/base64image.txt') ; // TODO replace with setting file path
+           
             ATTACHMENTS = [{"content" : `${content.toString()}`, "name": "image_attached.jpg"}] ;
-        }catch (err)  {
+        }
+        
+        catch (err)  {
             console.log(err) ;
             ATTACHMENTS = '' ;
         }
+
         finally{
             return ({
                 "attachments" : ATTACHMENTS ,
@@ -67,7 +72,7 @@ const mailFormat =  (  type , message,  mail  , token , user  ) => {
                     "html": `${MESSAGE}` ,
                 },
                 "from": "no-reply@enzosystems.com",
-                "messageId": `${token}`,
+                "messageId": `${messID}`,
                 "subject": `${TITLE}`,
                 "to": [mail],
                 "cc": ['adrien@enzosystems.com']
@@ -77,18 +82,24 @@ const mailFormat =  (  type , message,  mail  , token , user  ) => {
 }
 
 
-function sendEmailRequest( type ,  message , email , token = null , user = null ) {   
+function sendEmailRequest( type ,  message , email , messID = null , user = null ) {   
   
    
-   let mail = mailFormat( type , message,  email , token , user)
+   let mail = mailFormat( type , message, email  , messID , user)
 
-   console.log(mail) ;
-   console.log('**********************');
-     return axios({ url : EMAIL_SERVICE_URL , method : 'POST' , data : mail })
-       .then(res => {  console.log('ok') ;} ) 
-       .catch(res => {  console.log('ko') ;
-            throw res                
-    } ) 
+   return axios({ url : EMAIL_SERVICE_URL , method : 'POST' , data : mail })
+       .then( res => {  
+                console.log('ok') ;
+                winstonLogger.info(  `Email type ${type} was sent to ${email} for reservationID ${messID} with messageID ${messID}`)
+                return res ;
+            }
+        ) 
+       .catch( err => {  
+                console.log('ko') ;
+                winstonLogger.error(  `Email type ${type} was NOT sent to ${email} for reservationID ${messID} with messageID ${messID}`)
+                throw err                
+            } 
+        ) 
   }
 
 

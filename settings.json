@@ -21,7 +21,8 @@
 
     "DYNAMODB_TABLE" : {
         "RESERVATION" : "WebCheckIn_reservation_dev" ,
-        "TOKEN" : "WebCheckIn_token_dev" 
+        "TOKEN" : "WebCheckIn_token_dev" ,
+        "EMAIL_TRACKING" : "WebCheckIn_email_tracking_dev" 
     }
 
 

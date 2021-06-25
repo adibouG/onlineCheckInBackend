@@ -1,16 +1,8 @@
 
-const SETTINGS = require('../settings.json') ;
-const { GetItemCommand , UpdateItemCommand , PutItemCommand , ScanCommand } = require("@aws-sdk/client-dynamodb");
 const { ddbClient } = require("./awsSdk.js");
-
+const { GetItemCommand , UpdateItemCommand , PutItemCommand , ScanCommand } = require("@aws-sdk/client-dynamodb");
 const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
-const {RESERVATION , TOKEN} = SETTINGS.DYNAMODB_TABLE ;
-// Set the parameters
-
-
-// Create the DynamoDB service object
-//const ddb = new AWS.DynamoDB.DocumentClient({region: 'eu-west-1'}) ; //{apiVersion: '2012-08-10'});
-
+const {winstonLogger} = require('../Logger/loggers.js') ;
 
 
 const getDynamoDBItem = async (  TableName , Item ) => {
@@ -24,19 +16,22 @@ const getDynamoDBItem = async (  TableName , Item ) => {
    
     try {
     // Call DynamoDB to get the item from the table
-        let data = await ddbClient.send(new GetItemCommand(params)); //ddb.get(params) 
+        let data = await ddbClient.send(new GetItemCommand(params)); 
+
         console.log("Success", data.Item);
+        winstonLogger.info(`Get Item From  ${TableName} : ${data.Item}`);
+        
         let {Item} = data;
         return unmarshall(Item)
     }
     catch (e){
-        console.log("Error", e);
-      throw e
+        console.log("Error" , e);
+        throw e
       }
 };
 
 
-const putDynamoDBItem = async (  TableName, Item) => {
+const putDynamoDBItem = async ( TableName, Item) => {
 
         const params = {
             TableName : TableName,
