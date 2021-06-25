@@ -1,6 +1,6 @@
 const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
-const {resetBookingStatus} = require('../Utilities/utilities.js');
+const {resetBookingStatus, isBookingValid, isPreCheckedBooking} = require('../Utilities/utilities.js');
 const SETTINGS = require('../settings.json') ;
 
 const dynamoDB = require('../AWS/awsDynamoDb.js')

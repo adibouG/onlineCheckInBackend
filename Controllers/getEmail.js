@@ -102,7 +102,8 @@ const renderAndSendQrCode = async (req , res , next)  => {
     
     if (isPreCheckedBooking(booking)) {
 
-        console.log('routes to reset')
+        console.log('routes to reset : RESET RESERVATION ')
+        
         return resetBookings(req , res)
     }
     
@@ -147,11 +148,24 @@ const renderAndSendQrCode = async (req , res , next)  => {
             console.log(err)
             return res.status(500).send(err) 
         }
+        
+        let mailTrackingObj = Models.EmailTrackingObject(bookingUuid , mailType);
+
         try{
+
             await sendEmailRequest(  mailType , content , email  );
+           
+            
+            dynamoDB.putDynamoDBItem(EMAIL_TRACKING , mailTrackingObj )
+           
             return res.status(200).send();
         }catch(e){
+         
             console.log(e)
+        
+            mailTrackingObj.sentDate = null ;
+        
+            dynamoDB.putDynamoDBItem(EMAIL_TRACKING , mailTrackingObj )
             return res.status(500).send(e) 
         }
     })
@@ -188,7 +202,6 @@ const renderAndSendMail = (req , res , next)  => {
 
         try{
             await sendEmailRequest(  res.locals.mailType , content , res.locals.email ,  res.locals.bookingUuid ,  res.locals.guestName );
-            
             
             dynamoDB.putDynamoDBItem(EMAIL_TRACKING , mailTrackingObj )
             

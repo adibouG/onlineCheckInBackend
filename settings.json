@@ -4,7 +4,9 @@
         "RESET_BOOKING" : "/reset" ,
         "GET_QRCODE" : "/qrcode" ,
         "SEND_EMAIL" : "/email" ,
-        "START_CHECK_IN" : ""
+        "START_CHECK_IN" : "",
+        "RESEND_EMAILS" : "/resend"
+        
     },
     "DATA_STORAGE" : {
      "PATH" :  "./Data/dummyDB.js"
@@ -23,7 +25,9 @@
         "RESERVATION" : "WebCheckIn_reservation_dev" ,
         "TOKEN" : "WebCheckIn_token_dev" ,
         "EMAIL_TRACKING" : "WebCheckIn_email_tracking_dev" 
-    }
+    } , 
+
+   "EMAIL_RETRY_DELAY_MINUTES" : 20 
 
 
 }
