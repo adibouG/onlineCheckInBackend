@@ -1,19 +1,114 @@
-
 const dynamoDB = require('../AWS/awsDynamoDb.js')
+const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
+const { randomUUID } = require('crypto');
+let QRCode = require('qrcode') ;
 
+const Models = require('../Models/index.js');
 const SETTINGS = require('../settings.json') ;
+const HOTEL = require('../hotel.settings.json') ;
 const RESERVATION = SETTINGS.DYNAMODB_TABLE.RESERVATION
 
-function generateReservation() {
-
-
+function generateUUID() {
 
     let uuid = randomUUID() ; 
     return uuid //new Reservation() ;
 
-
 }  
 
+
+const makeQrCode = async (booking) => {
+    
+   // let qr = QRCode.create(JSON.stringify(booking));
+    
+    let code = {
+        bookingId:booking.uuid, 
+        firstName:booking.guest.firstName , 
+        lastName:booking.guest.lastName 
+    };
+
+    return await QRCode.toDataURL(JSON.stringify(code))
+
+}
+
+const getBookingFromEmail = async (email) => {
+    
+    let booking ;
+    let bookings = [] ; 
+    let validEmail = email.length > 0 || false ;
+
+
+    console.log('routes to ')
+    try {
+
+        if (!email || !validEmail) throw new Models.EnzoError('no email or invalid email') ;
+        
+        let results = await dynamoDB.findDynamoDBItems(RESERVATION ,  "email" , email  )
+        results.Items.forEach((item) => {
+            let b = unmarshall(item) ;
+
+           if (b["email"] == email || b["guest"]["email"] === email) bookings.push(b)  ;
+        })
+
+    
+        if (!bookings.length)  throw new Models.NotFound('no reservation with this email') ; 
+
+        //get a valid reservation
+        for (let b of  bookings) {
+        
+
+            if (isBookingValid(b) && !isPreCheckedBooking(b)) {
+
+                booking = b ;
+                break;
+            }
+        }
+        // if none get a prechecked reservation
+
+        if (!booking)  {
+
+            for (let b of  bookings) {
+            
+
+                if (isBookingValid(b) && isPreCheckedBooking(b)) {
+
+                    booking = b ;
+                    break;
+                }
+            }
+        }
+
+        // if none get a checked reservation
+
+        if (!booking)  {
+
+            for (let b of  bookings) {
+            
+                if (!(isBookingValid(b) || isPreCheckedBooking(b))) {
+
+                    booking = b ;
+                    break;
+                }
+            }
+        }
+
+        return booking ;
+
+    } catch(e) {
+
+        console.log(e)
+        throw e
+    }    
+}
+
+const setCheckBooking = async (bookingUpdt) => {
+
+    let uuidKey = bookingUpdt.uuid;
+
+    bookingUpdt.reservation['status'] = 'PRECHECKED';
+
+    return await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : uuidKey , ...bookingUpdt   } ) 
+
+} 
 
 const isBookingValid = (book) =>  !("arrivalDate" in book.reservation)  ;
 
@@ -82,13 +177,9 @@ const getDay = (d) =>  new Date(d).toLocaleDateString(false, { weekday: 'long' }
 
 
 const resetBookingState = (book) => {
-        
-    let newDates ;
     
-    if ("status" in book.reservation && book.reservation.status.toUpperCase() === "PRECHECKED") {
-        delete  book.reservation.status ;
-    }
-   
+    if (isPreCheckedBooking(book)) delete  book.reservation.status ;
+    
     return book ;
 };
 
@@ -152,11 +243,7 @@ const resetBookingStatus = async (email = null , uuid = null) => {
            //     let bookings =   findValueInDataStore( {value: email , key :'email' , store : originalDb}) ;
                 if (originalDb[check].email === email )  {
                       booking = originalDb[check] ;
-                
-            console.log("*********************************************")
-            console.log("*********************************************")
-            console.log(booking)
-            console.log("*********************************************")
+ 
                  let newBook = resetBookingDate(booking) ;
                  //originalDb.checkins[check] = newBook ;    
                  await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : booking.uuid , email : booking.guest.email ,  ...newBook   } )
@@ -182,6 +269,21 @@ const resetBookingStatus = async (email = null , uuid = null) => {
 }
 
 
+const makeFormatedDate = (d = null , l = null) =>   {
+
+
+    let date = d ? new Date(d) : new Date() ;
+
+
+
+    return date.toISOString();
+
+}
+
+const addDay = (date , d) =>  new Date(date.getTime() + d ) ;
+
+    
+
 
 module.exports = {
     resetBookingDate,
@@ -194,6 +296,12 @@ module.exports = {
     getInDataStore , 
     setInDataStore ,
     dateDiffInDays,
+    makeFormatedDate ,
+    addDay ,
     makeDate,
-    getDay
+    getDay,
+    generateUUID,
+    setCheckBooking,
+    makeQrCode,
+    getBookingFromEmail
 }

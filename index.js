@@ -7,8 +7,6 @@ const cors = require('cors');
 const {morgan , winstonLogger} = require('./Logger/loggers.js');
 const api = require('./Routes/routes.js');
 
-const SETTINGS = require('./settings.json') ;
-
 const app = express();
 
 console.log(process.env.NODE_ENV)
@@ -52,9 +50,6 @@ const linkUrl = process.env.LINK_URL ;
 
 
 const app_link_baseUrl = `${appScheme}://${appHost}:${appPort}` ;
-
-
-
 
 app.engine('htm', (filePath, options, callback) => { // define a template engine to update the form submit to the correct host 
     fs.readFile(filePath,  (err, content) => {

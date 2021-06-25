@@ -7,8 +7,8 @@ const dynamoDB = require('../AWS/awsDynamoDb.js')
 
 
 const {RESERVATION , TOKEN} = SETTINGS.DYNAMODB_TABLE ;
-const {morgan , winstonLogger} = require('../Logger/loggers.js');
-const winston = require('winston/lib/winston/config');
+const {winstonLogger} = require('../Logger/loggers.js');
+
 
 const getBooking = async (req , res) => {
 
