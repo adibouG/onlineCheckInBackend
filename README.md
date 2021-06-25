@@ -45,3 +45,12 @@ POST : : with reservation JSON object ,  trigger a new qrcode email
 
 /reset 
 accept POST : reset the DB , and set new dates.
+
+
+
+Explanations:
+You can trigger a new email to start the flow by sending a GET request to https://dev.cloud.enzosystems.com:3003/email?email=frank@enzosystems.com (you can do it with the webbrowser)
+Once you receive the email, it contains a link that expire after 8 or 10 h (not sure need to check the settings on the instances)
+This link start the prechecking flow if a reservation is found and valid , once you finish the flow you receive a QRcode.
+If you reuse the link , the  prechecked reservation is still retrieve but you re notified that it is already prechcked  and allows you to continue in order to update values . At the end , instead of sending a new QRcode , this 2nd time will reset the reservation to a non -prechecked status
+Note , you can also reset a reservation by calling a GET to https://dev.cloud.enzosystems.com:3003/reset?email=frank@enzosystems.com or to https://dev.cloud.enzosystems.com:3003/reset?uuid =reservationID
