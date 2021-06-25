@@ -91,19 +91,20 @@ function sendEmailRequest( type ,  message , email , messID = null , user = null
        .then( res => {  
                 console.log('ok') ;
                 winstonLogger.info(  `Email type ${type} was sent to ${email} for reservationID ${messID} with messageID ${messID}`)
-                return res ;
+                
+                return { data : res.data , messageID : messID } ;
             }
         ) 
        .catch( err => {  
                 console.log('ko') ;
                 winstonLogger.error(  `Email type ${type} was NOT sent to ${email} for reservationID ${messID} with messageID ${messID}`)
-                throw err                
+                throw { error : err , messageID : messID } ;
             } 
         ) 
   }
 
 
-  
+
 
 
 module.exports = {
