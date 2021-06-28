@@ -17,6 +17,9 @@ const { MAILTYPES , sendEmailRequest } = require('../Emails/enzoMails.js');
 
 const { ID , NAME , ADDRESS , POSTCODE , CITY , COUNTRY , PHONE ,EMAIL , CHECKINTIME} = HOTEL ;
 
+var intervalCheckID;
+var intervalCleanID;
+
 const hotelID = ID ; 
 const hotelName = NAME ; 
 const hotelAddress = ADDRESS ; 
@@ -41,11 +44,12 @@ const  getEmailErrors = async () => {
 
     console.log('check email error table for emails to resend...')
 
-    let mailTrackingObj = Models.EmailTrackingObject(bookingUuid , mailType);
+    //let mailTrackingObj = Models.EmailTrackingObject(bookingUuid , mailType);
 
     try{
         let results = await dynamoDB.findDynamoDBItems(EMAIL_TRACKING) ;
 
+        if (!results.Items.length) return stopCheckMailErrors()
         results.Items.forEach((item) => {
             let emailSentObject = unmarshall(item) ;
             //let mailTrackingObj = Models.EmailTrackingObject(emailSentObject , res.locals.mailType);
@@ -71,11 +75,11 @@ const cleanEmailErrors = async () => {
 
     console.log('check email error table for cleaning emails resend successfully...')
 
-
     try{
         let results = await dynamoDB.findDynamoDBItems(EMAIL_TRACKING) ;
-
-        results.Items.forEach((item) => {
+        
+        if (!results.Items.length) return stopCheckMailErrors()
+        results.Items.forEach( async (item) => {
             let emailSentObject = unmarshall(item) ;
             //let mailTrackingObj = Models.EmailTrackingObject(emailSentObject , res.locals.mailType);
             console.log(emailSentObject) ;
@@ -86,7 +90,7 @@ const cleanEmailErrors = async () => {
                 await dynamoDB.deleteDynamoDBItem(EMAIL_TRACKING , { reservationID : reservationID })
 
             }
-        })
+        });
     }catch (e) {
 
        throw e
@@ -173,10 +177,10 @@ const resendStartEmail = async (emailSentObject) => {
     }
 }
 
-const resendQrEmail = (emailSentObject) => {
+const resendQrEmail = async (emailSentObject) => {
     let uuid = emailSentObject.reservationID 
     try{
-        let booking = await dynamoDB.getDynamoDBItem(RESERVATION , { reservationID : {S : uuid } } ) //axios.post() 
+        let booking = await dynamoDB.getDynamoDBItem(RESERVATION , { reservationID : { S : uuid } } ) 
 
     
 
@@ -252,13 +256,30 @@ const resendQrEmail = (emailSentObject) => {
     }
 }
 
-setInterval(getEmailErrors , SETTINGS.EMAIL_RETRY_DELAY_MINUTES * 60 * 1000)
+const startGetMailError = () => setInterval(getEmailErrors , SETTINGS.EMAIL_RETRY_DELAY_MINUTES * 60 * 1000)
+    
+const startCleanMailError = () =>  setInterval(cleanEmailErrors , SETTINGS.EMAIL_RETRY_DELAY_MINUTES * 60 * 1000)
 
-setInterval(cleanEmailErrors , SETTINGS.EMAIL_RETRY_DELAY_MINUTES * 60 * 1000)
+const startCheckMailErrors = () => {
+    
+    intervalCheckID = startGetMailError() ;
+    intervalCleanID = startCleanMailError()
+
+}
+
+
+const stopCheckMailErrors = () => {
+    clearInterval(intervalCheckID);
+    clearInterval(intervalCleanID);
+}
 
 module.exports = {
     getEmailErrors,
-    cleanEmailErrors
+    cleanEmailErrors,
+    startCheckMailErrors,
+    stopCheckMailErrors,
+    intervalCheckID,
+    intervalCleanID
 }
 
 

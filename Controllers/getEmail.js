@@ -4,8 +4,6 @@ const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
 const { makeQrCode, isPreCheckedBooking, isBookingValid , setCheckBooking , getBookingFromEmail, dateDiffInDays} = require('../Utilities/utilities.js');
 
-const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
-
 const SETTINGS = require('../settings.json') ;
 const HOTEL = require('../hotel.settings.json') ;
 
@@ -13,6 +11,7 @@ const dynamoDB = require('../AWS/awsDynamoDb.js')
 
 const {RESERVATION , TOKEN , EMAIL_TRACKING} = SETTINGS.DYNAMODB_TABLE ;
 const { MAILTYPES , sendEmailRequest } = require('../Emails/enzoMails.js');
+const { startCheckMailErrors, stopCheckMailErrors, intervalCheckID, intervalCleanID } = require('./resendEmails.js');
 const { resetBookingStatus } = require('../Utilities/utilities.js');
 
 
@@ -169,6 +168,7 @@ const renderAndSendQrCode = async (req , res , next)  => {
             dynamoDB.putDynamoDBItem(EMAIL_TRACKING , mailTrackingObj )
            
             return res.status(200).send();
+
         }catch(e){
          
             console.log(e)
@@ -176,6 +176,10 @@ const renderAndSendQrCode = async (req , res , next)  => {
             mailTrackingObj.sentDate = null ;
         
             dynamoDB.putDynamoDBItem(EMAIL_TRACKING , mailTrackingObj )
+
+            //start the checks
+            if (!intervalCheckID) startCheckMailErrors() ;
+
             return res.status(500).send(e) 
         }
     })
@@ -223,6 +227,9 @@ const renderAndSendMail = (req , res , next)  => {
             mailTrackingObj.sentDate = null ;
             
             dynamoDB.putDynamoDBItem(EMAIL_TRACKING , mailTrackingObj )
+
+            //start the checks
+            if (!intervalCheckID) startCheckMailErrors() ;
 
             return res.status(500).send(e) 
         }
