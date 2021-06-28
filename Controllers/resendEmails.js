@@ -39,6 +39,8 @@ const hotelValues = {
 
 const  getEmailErrors = async () => {
 
+    console.log('check email error table for emails to resend...')
+
     let mailTrackingObj = Models.EmailTrackingObject(bookingUuid , mailType);
 
     try{
