@@ -66,6 +66,35 @@ const  getEmailErrors = async () => {
     }
 }
 
+const cleanEmailErrors = async () => {
+
+
+    console.log('check email error table for cleaning emails resend successfully...')
+
+
+    try{
+        let results = await dynamoDB.findDynamoDBItems(EMAIL_TRACKING) ;
+
+        results.Items.forEach((item) => {
+            let emailSentObject = unmarshall(item) ;
+            //let mailTrackingObj = Models.EmailTrackingObject(emailSentObject , res.locals.mailType);
+            console.log(emailSentObject) ;
+
+            if (emailSentObject.sentDate && emailSentObject.sentDate.length) { 
+                let reservationID = emailSentObject.reservationID  ;
+
+                await dynamoDB.deleteDynamoDBItem(EMAIL_TRACKING , { reservationID : reservationID })
+
+            }
+        })
+    }catch (e) {
+
+       throw e
+
+    }
+
+}
+
 
 const resendStartEmail = async (emailSentObject) => {
 
@@ -225,9 +254,11 @@ const resendQrEmail = (emailSentObject) => {
 
 setInterval(getEmailErrors , SETTINGS.EMAIL_RETRY_DELAY_MINUTES * 60 * 1000)
 
+setInterval(cleanEmailErrors , SETTINGS.EMAIL_RETRY_DELAY_MINUTES * 60 * 1000)
 
 module.exports = {
-    getEmailErrors
+    getEmailErrors,
+    cleanEmailErrors
 }
 
 

@@ -91,7 +91,6 @@ function sendEmailRequest( type ,  message , email , messID = null , user = null
        .then( res => {  
                 console.log('ok') ;
                 winstonLogger.info(  `Email type ${type} was sent to ${email} for reservationID ${messID} with messageID ${messID}`)
-                
                 return { data : res.data , messageID : messID } ;
             }
         ) 

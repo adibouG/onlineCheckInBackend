@@ -13,7 +13,7 @@ const dynamoDB = require('../AWS/awsDynamoDb.js')
 
 const {RESERVATION , TOKEN , EMAIL_TRACKING} = SETTINGS.DYNAMODB_TABLE ;
 const { MAILTYPES , sendEmailRequest } = require('../Emails/enzoMails.js');
-const { resetBookings } = require('./getBooking.js');
+const { resetBookingStatus } = require('../Utilities/utilities.js');
 
 
 
@@ -104,7 +104,17 @@ const renderAndSendQrCode = async (req , res , next)  => {
 
         console.log('routes to reset : RESET RESERVATION ')
         
-        return resetBookings(req , res)
+        await resetBookings(booking.guest.email , booking.uuid)
+
+        try{
+
+            await resetBookingStatus(booking.guest.email , bookingUuid) ;
+    
+        }
+        catch(e) {
+            console.log(e)
+            return res.status(500).end();
+        }
     }
     
     console.log('routes to makeQrCode')
