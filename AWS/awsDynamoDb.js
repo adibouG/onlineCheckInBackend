@@ -1,6 +1,6 @@
 
 const { ddbClient } = require("./awsSdk.js");
-const { GetItemCommand , UpdateItemCommand , PutItemCommand , ScanCommand } = require("@aws-sdk/client-dynamodb");
+const { GetItemCommand , UpdateItemCommand , PutItemCommand , DeleteItemCommand, ScanCommand } = require("@aws-sdk/client-dynamodb");
 const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 const {winstonLogger} = require('../Logger/loggers.js') ;
 
@@ -75,8 +75,31 @@ const findDynamoDBItems = async ( TableName, Item , Value) => {
 
 };
 
+
+
+const deleteDynamoDBItem = async ( TableName, Item) => {
+
+    const params = {
+        TableName : TableName,
+        Key: Item
+    }
+    
+    try {
+    // Call DynamoDB to get the item from the table
+        let data = await ddbClient.send(new DeleteItemCommand(params)); //ddb.get(params) 
+        console.log("Success", data.Item);
+        let {Item} = data;
+        //return unmarshall(Item)
+    }
+    catch (e){
+        console.log("Error", e);
+      throw e
+      }
+};
+
 module.exports = {
     findDynamoDBItems,
     getDynamoDBItem,
-    putDynamoDBItem
+    putDynamoDBItem,
+    deleteDynamoDBItem
 }
