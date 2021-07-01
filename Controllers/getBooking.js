@@ -1,49 +1,33 @@
 const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken') ;
-const {resetBookingStatus, isBookingValid, isPreCheckedBooking} = require('../Utilities/utilities.js');
+const {resetBookingStatus, addDay} = require('../Utilities/utilities.js');
 const SETTINGS = require('../settings.json') ;
+const dynamoDB = require('../AWS/awsDynamoDb.js');
 
-const dynamoDB = require('../AWS/awsDynamoDb.js')
-
-
-const {RESERVATION , TOKEN} = SETTINGS.DYNAMODB_TABLE ;
+const {RESERVATION_TRACKING, RESERVATION} = SETTINGS.DYNAMODB_TABLE ;
 const {winstonLogger} = require('../Logger/loggers.js');
 
-
-const getBooking = async (req , res) => {
+const getBookingFromToken = async (req , res) => {
 
     try{
-        let {token} = req?.query ;
-
-        winstonLogger.info(req.query)
-        console.log(req.query) ;
-
-        if (!token) throw new Models.EnzoError('no token') ;
-        
-        let decoded = jwt.decode(token) ;
-        console.log(decoded) ;
-        winstonLogger.info(decoded)
-        let uuidKey = decoded.uuid ;
-        console.log(uuidKey)
-        winstonLogger.info(uuidKey)
-
-        let verified = jwt.verify(token , uuidKey) ; 
-        
-        let booking = await dynamoDB.getDynamoDBItem(RESERVATION , { reservationID : {S : uuidKey } } )
-  
-        console.log(booking)
+        let {token} = req?.query;
+        winstonLogger.info(req.query);
+        if (!token) throw new Models.EnzoError('no token');
+        let decoded = jwt.decode(token);
+        winstonLogger.info(decoded);
+        let uuidKey = decoded.uuid;
+        let verified = jwt.verify(token, uuidKey); 
+        let booking = await dynamoDB.getDynamoDBItem(RESERVATION, {reservationID : {S : uuidKey} });
       
         if (!booking)  throw new Models.NotFound() ;        
-
+        
+        let response ;
         let complete = false ;
         let prechecked = false ;
-        let response ;
         
         if ("status" in booking.reservation && booking.reservation.status === 'PRECHECKED') prechecked = true ;
-           
-        if ("arrivalDate" in booking.reservation ) complete = true
-        
-        
+        if ("arrivalDate" in booking.reservation ) complete = true ;
+       
         if (complete) {
             response = { 
                 type: 'success',
@@ -51,60 +35,51 @@ const getBooking = async (req , res) => {
                 stay: { 
                     arrivalDate: booking.reservation.arrivalDate 
                 } 
-            };
+            }
         }
         else if (prechecked) {
             response = {
                 type: 'success',
                 status: 'prechecked',
                 checkin : booking 
-            };
+            }
         } 
-        
         else {
             response = {
                 type: 'success',
                 status: 'pending',
                 checkin : booking 
-            };
+            }
         } 
-
         return res.status(200).send(response);
-
-    } catch(e) {
-        
+    } 
+    catch(e) {
         let error ;
         if (e instanceof jwt.TokenExpiredError)  error = new Models.ExpiredLink() ;
         else error = e ;
-        
         console.log(error) ;
-        winstonLogger.error(error)
+        winstonLogger.error(error) ;
         return res.status(error.code || 401).send(error) ;
     }
-
 }
-
-
 
 const postBooking = async (req , res) => {
 
     try{
-        let bookingUpdt = req?.body ;
-        console.log(bookingUpdt)
-        if (!bookingUpdt) throw new  Models.EnzoError('no booking nor update')
+        let bookingUpdt = req?.body;
+        if (!bookingUpdt) throw new  Models.EnzoError('no booking nor update');
         let uuidKey = bookingUpdt.uuid ;
-        await dynamoDB.putDynamoDBItem(RESERVATION , { reservationID : uuidKey , ...bookingUpdt   } ) 
-        let updt = await dynamoDB.getDynamoDBItem(RESERVATION , { reservationID : {S : uuidKey } } )
+        await dynamoDB.putDynamoDBItem(RESERVATION , {reservationID : uuidKey , ...bookingUpdt}) ;
+        let updt = await dynamoDB.getDynamoDBItem(RESERVATION , {reservationID : { S : uuidKey}});
+        
         if (!updt) throw new Models.NotFound() ;
         
+        let response ;
         let complete = false ;
         let prechecked = false ;
-        let response ;
 
         if ("status" in updt.reservation && updt.reservation.status.toUpperCase() === 'PRECHECKED') prechecked = true ;           
-
-        if ("arrivalDate" in updt.reservation ) complete = true
-
+        if ("arrivalDate" in updt.reservation ) complete = true;
         if (complete) {
             response = { 
                 type: 'success',
@@ -112,42 +87,35 @@ const postBooking = async (req , res) => {
                 stay: { 
                     arrivalDate: updt.reservation.arrivalDate 
                 } 
-            };
+            }
         }
         else if (prechecked) {
             response = {
                 type: 'success',
                 status: 'prechecked',
                 checkin : updt 
-            };
+            }
         } 
         else {
             response = {
                 type: 'success',
                 status: 'pending',
                 checkin : updt 
-            };
+            }
         } 
-        console.log(response)
         return res.status(200).send(response);
     }
     catch(e) {
-        let error ;
-        error = e ;
-        console.log(error) ;
-        return res.status(400).send(error) ;
+        console.log(e) ;
+        return res.status(400).send(e) ;
     }
 }
-
 
 const resetBookings = async (req , res) => {
   
     try{
-
         let {email , uuid} = req?.query ;
-
-        await resetBookingStatus(email||null , uuid||null) ;
-
+        await resetBookingStatus(email||null ,uuid||null) ;
         return res.status(200).send();
     }
     catch(e) {
@@ -156,10 +124,58 @@ const resetBookings = async (req , res) => {
     }
 }
 
+const getNewReservations = async () => {
+
+    try{
+       
+       // let hotelRequest = await dynamoDB.findDynamoDBItems(HOTEL) 
+       // let pmsRequest = await dynamoDB.findDynamoDBItems(PMS) 
+       // let hotelList =  hotelRequest.data 
+       // let pmsData = pmsRequest.data
+
+       // for (let hotel in hotelList ) {
+        let hotelPms = hotel.pmsId ;
+        let pmsCheckInDateName = 'startDate';
+        let pmsBookingIdName = 'reservationID';
+        let pmsBookingRefName = 'uuid';
+        let pmsGuestEmailName = 'email';
+        let results = await dynamoDB.findDynamoDBItems(RESERVATION) ;
+        //}
+        //get the reservations
+        results.Items.forEach(async (item) => {
+            let reservation = unmarshall(item) ; 
+            //compare the date if checkIn can be offer
+            if ( preCheckInDateIsValid(reservation, pmsCheckInDateName)){ 
+                //if yes then get the email address, the booking ref , and the hotel ref ( also for the pms id) 
+                let reservationID  = reservation[pmsBookingIdName]
+                let checkInDate  = reservation[pmsCheckInDateName]
+                let bookingRef  = reservation[pmsBookingRefName]
+                let guestEmail  = reservation[pmsGuestEmailName]
+                //add this booking to the list of email to send 
+                let results = await dynamoDB.putDynamoDBItem(RESERVATION_TRACKING, { }) ;
+            }
+        })
+    } catch(e) {
+        console.log(e)
+    }
+}
+
+ //compare the date if checkIn can be offer take a booking and the param name to check
+ const preCheckInDateIsValid = (booking, dateParam) => {
+    
+    let canBePreCheck = false ;
+    let startDate = new Date(booking[dateParam]);
+   
+    if ( startDate >= new Date() && startDate <= addDay(new Date(), SETTINGS.CHECKIN_REQUEST_START_DAY_OFFSET))
+    { 
+        canBePreCheck = true ;
+    }
+    return canBePreCheck ;
+}
 
 module.exports = {
-
-    getBooking ,
+    getNewReservations ,
+    getBookingFromToken ,
     postBooking ,
     resetBookings  
 }

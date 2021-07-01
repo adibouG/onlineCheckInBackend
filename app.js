@@ -3,14 +3,10 @@ const express = require('express');
 const app = express();
 const fs = require('fs');
 const cors = require('cors');
-
-
-const {morgan , winstonLogger} = require('./Logger/loggers.js');
+const {morgan, winstonLogger} = require('./Logger/loggers.js');
 const api = require('./Routes/routes.js');
 
-
 console.log(process.env.NODE_ENV)
-
 app.use(morgan(process.env.NODE_ENV)) ;
  
 const myStream = {
@@ -20,8 +16,6 @@ const myStream = {
 }
 
 app.use(morgan('combined', { stream: myStream }));
-
-
 app.use(cors()) ;
 
 app.use((req, res, next) => { 
@@ -31,12 +25,10 @@ app.use((req, res, next) => {
     req.setTimeout(0); 
     next();
 });
-
    
 app.use(express.json()) ;// for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 app.use(express.static('public')); 
-   
 app.use(api);
 
 const port =  process.env.PORT ;
@@ -47,7 +39,6 @@ const appPort =  process.env.APP_PORT ;
 const appHost = process.env.APP_HOST ;
 const appScheme = process.env.APP_SCHEME ;
 const linkUrl = process.env.LINK_URL ;
-
 
 const app_link_baseUrl = `${appScheme}://${appHost}:${appPort}` ;
 
@@ -82,12 +73,11 @@ app.engine('htm', (filePath, options, callback) => { // define a template engine
                       .replaceAll('#hotelPhone#', options.hotelPhone)
                       .replaceAll('#hotelEmail#', options.hotelEmail)
 
-        return callback(null, rendered)
+        return callback(null, rendered);
     })
 })
-  
-app.set('views', './Views') // specify the views directory
-app.set('view engine', 'htm') // register the template engine
-  
+
+app.set('views', './Views'); // specify the views directory
+app.set('view engine', 'htm'); // register the template engine
 
 module.exports = app ;
