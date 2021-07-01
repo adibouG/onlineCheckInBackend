@@ -1,11 +1,13 @@
 {
     "API_ENDPOINT" : {
-        "FETCH_BOOKING" : "/reservation" ,
+        "FETCH_BOOKING_FROM_TOKEN" : "/reservation" ,
+        "POST_BOOKING" : "/reservation" ,
         "RESET_BOOKING" : "/reset" ,
         "GET_QRCODE" : "/qrcode" ,
         "SEND_EMAIL" : "/email" ,
         "START_CHECK_IN" : "",
-        "RESEND_EMAILS" : "/resend"
+        "RESEND_EMAILS" : "/resend",
+        "GET_NEW_RESERVATIONS" : "/getReservations" 
         
     },
     "DATA_STORAGE" : {
@@ -24,10 +26,12 @@
     "DYNAMODB_TABLE" : {
         "RESERVATION" : "WebCheckIn_reservation_dev" ,
         "TOKEN" : "WebCheckIn_token_dev" ,
-        "EMAIL_TRACKING" : "WebCheckIn_email_tracking_dev" 
+        "EMAIL_TRACKING" : "WebCheckIn_email_tracking_dev" ,
+        "RESERVATION_TRACKING" : "WebCheckIn_reservation_tracking_dev" 
     } , 
-
-   "EMAIL_RETRY_DELAY_MINUTES" : 20 
+    "CHECKIN_REQUEST_START_DAY_OFFSET" : 1 ,
+    "RESERVATION_LOOKUP_INTERVAL_MINUTES" : 2 ,
+    "EMAIL_RETRY_DELAY_MINUTES" : 20 
 
 
 }
