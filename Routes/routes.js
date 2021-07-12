@@ -14,7 +14,4 @@ api.post(SETTINGS.API_ENDPOINT.GET_QRCODE, emailControllers.renderAndSendQrCode)
 //endpoint to trigger the start email request
 api.get(SETTINGS.API_ENDPOINT.SEND_EMAIL, emailControllers.getEmail, emailControllers.renderAndSendMail);
 
-//
-api.get(SETTINGS.API_ENDPOINT.GET_NEW_RESERVATIONS, bookingControllers.getNewReservations);
-
-module.exports = api  ;
+module.exports = api ;

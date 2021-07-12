@@ -1,6 +1,6 @@
 require('dotenv').config();
-const postgres = require('postgres');
 const pg = require('pg');
+const { Pool, Client, types } = pg ;
 
 const connectionSetting = {
   host     : process.env.DB_HOST ,
@@ -13,8 +13,9 @@ const connectionSetting = {
   connect_timeout : DB.CONN_TIMEOUT ,  
 };
 
-const pgsql = postgres(connectionSetting) ;
-const { Pool, Client, types } = pg ;
+const pgPool = new Pool(connectionSetting);
+const pgClient = new Client(connectionSetting);
+
 types.setTypeParser(types.builtins.INT8, (value) => {
   return parseInt(value);
 });
@@ -28,11 +29,7 @@ types.setTypeParser(types.builtins.BYTEA, (value) => {
   return value.toString();
 });
 
-const pgPool = new Pool(connectionSetting);
-const pgClient = new Client(connectionSetting);
-
 module.exports = {
-  pgsql,
   pgPool,
   pgClient
 };
