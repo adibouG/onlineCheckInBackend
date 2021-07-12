@@ -7,8 +7,12 @@
         "SEND_EMAIL" : "/email" ,
         "START_CHECK_IN" : "",
         "RESEND_EMAILS" : "/resend",
-        "GET_NEW_RESERVATIONS" : "/getReservations" 
-        
+        "GET_NEW_RESERVATIONS" : "/getReservations" ,
+        "BOOKING_CHECKIN_REQ_WEBHOOK" : "/checkInRequest"
+    },
+    "BOOKING_COM_WEBHOOK_TYPE" : {
+        "CREATE": "create",
+        "UPDATE" : "update"
     },
     "DATA_STORAGE" : {
      "PATH" :  "./Data/dummyDB.js"

@@ -8,7 +8,6 @@ const {RESERVATION_TRACKING, RESERVATION} = SETTINGS.DYNAMODB_TABLE ;
 const {winstonLogger} = require('../Logger/loggers.js');
 
 const getBookingFromToken = async (req , res) => {
-
     try{
         let {token} = req?.query;
         winstonLogger.info(req.query);

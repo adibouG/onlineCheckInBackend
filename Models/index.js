@@ -1,6 +1,5 @@
 const { randomUUID } = require('crypto');
 class Guest {
-
     constructor({ email = null, fullName = null, address = null, postalCode = null, city = null, mobile = null }){
         this.fullName = fullName;
         this.address = address ;
@@ -11,7 +10,6 @@ class Guest {
     }
 }
 class Checkin {
-
     constructor({ uuid = null, guest = null, reservation = null, privacyPolicy = null, payment = null }){
         this.uuid = uuid || randomUUID();
         this.guest = guest ;
@@ -22,7 +20,6 @@ class Checkin {
 } 
 
 class Payment {
-  
     constructor({ amount = null, currency = "€", paid = null }) {
         this.amount = amount ;
         this.currency = currency; 
@@ -31,7 +28,6 @@ class Payment {
 } 
 
 class Reservation {
-
     constructor({ startDate = null, endDate= null, guestCount = null, options = null, roomType = null }) {
         this.startDate = startDate  ;
         this.endDate = endDate; 
@@ -48,9 +44,9 @@ const EmailTrackingObject = (reservationID, type, sendDate = null, sentDate = nu
     "sentDate" : sentDate || Date.now() ,
     "messageID" : messageID || reservationID ,
     "attempts" : attempts ,
-  })
+})
 
-  class EmailTracking { 
+class EmailTracking { 
     constructor(reservationID, type, sendDate = null, sentDate = null, messageID = null, attempts = 1) {
         this.reservationID =  reservationID ; 
         this.emailType = type ; 
@@ -62,16 +58,13 @@ const EmailTrackingObject = (reservationID, type, sendDate = null, sentDate = nu
 }
 const SUCCESS_STATUS =  [ 'pending' , 'complete' ] ;
 class SuccessBody {
-
     constructor(status, {}) {
         this.type =  'success' ;
         this.status =  status ;
         this.response = {} ;
-
     }
 }
 class EnzoError extends Error {
-
     constructor(e, error, type, message, code) {
         super(e) ;
         this.message = message ;
@@ -81,14 +74,12 @@ class EnzoError extends Error {
     }
 }
 class Failure extends EnzoError {
-
     constructor(message, code, error) {
         super(message, code, error) ;
         this.type = 'failure' ;
     }
 }
 class NotFound extends Failure {
-
     constructor(message, code, error) {
         super(message , code ) ;
         this.error = `notFound` ;
@@ -96,7 +87,6 @@ class NotFound extends Failure {
     }
 }
 class ExpiredLink extends EnzoError {
-
     constructor(message, code) {
         super(message, code) ;
         this.error = `expiredLink` ;
