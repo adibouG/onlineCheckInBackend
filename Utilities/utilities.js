@@ -14,7 +14,6 @@ function generateUUID() {
 }  
 
 const makeQrCode = async (booking) => {
-    
     let code = {
         bookingId:booking.uuid, 
         firstName:booking.guest.firstName , 
@@ -24,7 +23,6 @@ const makeQrCode = async (booking) => {
 }
 
 const getBookingFromEmail = async (email) => {
-    
     let booking ;
     let bookings = [] ; 
     let validEmail = email.length > 0 || false ;
@@ -90,15 +88,13 @@ const makeCheckInAppResponseBody = (booking) => {
                 arrivalDate: booking.reservation.arrivalDate 
             } 
         }
-    }
-    else if (prechecked) {
+    } else if (prechecked) {
         response = {
             type: 'success',
             status: 'prechecked',
             checkin : booking 
         }
-    } 
-    else {
+    } else {
         response = {
             type: 'success',
             status: 'pending',
@@ -159,12 +155,10 @@ const resetBookingState = (book) => {
 };
 
 const makeCheckDates = (past = false) => {
-        
     let len = Math.floor(Math.random() * 10)   ;
     len = past ? -1 * len : len ;
     let today = new Date();
     let otherDate = new Date(new Date().setDate(today.getDate() +  len)) ;
-
     return ({ 
         today: today.toISOString().split('T')[0] ,
         otherDate: otherDate.toISOString().split('T')[0] 
@@ -172,15 +166,13 @@ const makeCheckDates = (past = false) => {
 }
 
 const resetBookingDate = (book) => {
-    
     let newDates ;
     if ("arrivalDate" in book.reservation) {
         newDates = makeCheckDates(true) ; 
         book.reservation.arrivalDate = newDates.otherDate ;
         book.reservation.startDate = newDates.otherDate ;
         book.reservation.endDate = newDates.today ;
-    }
-    else {
+    } else {
         newDates = makeCheckDates(false) ; 
         book.reservation.startDate = newDates.today ;
         book.reservation.endDate = newDates.otherDate ;
@@ -189,7 +181,6 @@ const resetBookingDate = (book) => {
 };
  
 const resetBookingStatus = async (email = null, uuid = null) => {
-
     const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
     try{
         let originalDb = getInDataStore("checkins" ,db) ;
@@ -198,8 +189,7 @@ const resetBookingStatus = async (email = null, uuid = null) => {
                 let newBook = resetBookingDate(originalDb.checkins[check]) ;
                 await dynamoDB.putDynamoDBItem(RESERVATION, { reservationID: check, ...newBook });
             }
-        }
-        else if (email) {
+        } else if (email) {
             let bookings = [];
             for ( const check in  originalDb) {
                 if (originalDb[check].email === email) {
@@ -208,26 +198,24 @@ const resetBookingStatus = async (email = null, uuid = null) => {
                     await dynamoDB.putDynamoDBItem(RESERVATION, {reservationID: booking.uuid, email: booking.guest.email, ...newBook });
                 }
             }
-        }
-        else if (uuid) {
+        } else if (uuid) {
             let booking = findValueInDataStore(uuid, 'uuid', originalDb) ;
             let newBook = resetBookingDate(booking) ;
             await dynamoDB.putDynamoDBItem(RESERVATION, { reservationID: booking.uuid, email: booking.guest.email, ...newBook});
         }
         return 1;
-    }
-    catch(e) {
+    } catch(e) {
         console.log(e);
         throw e;
     }
 }
 
-const makeFormatedDate = (d = null , l = null) =>   {
+const makeFormatedDate = (d = null, l = null) =>   {
     let date = d ? new Date(d) : new Date() ;
     return date.toISOString();
 }
 
-const addDay = (date , d) =>  new Date(date.getTime() + (d * MS_PER_DAY)) ;
+const addDay = (date, d) =>  new Date(date.getTime() + (d * MS_PER_DAY)) ;
 
 module.exports = {
     resetBookingDate,

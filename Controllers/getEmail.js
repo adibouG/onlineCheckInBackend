@@ -57,7 +57,7 @@ const getEmail = async (req, res, next) => {
         res.locals.email = email ;
         res.locals.mailType = MAILTYPES.START ;
         next() ;
-    }catch(e) {
+    } catch(e) {
         let error = e;
         console.log(error);
         return res.status(400).send(error) ;
@@ -73,8 +73,7 @@ const renderAndSendQrCode = async (req, res, next)  => {
         await resetBookings(booking.guest.email, booking.uuid);
         try{
             await resetBookingStatus(booking.guest.email, bookingUuid);
-        }
-        catch(e) {
+        } catch(e) {
             console.log(e);
             return res.status(500).end();
         }
@@ -111,8 +110,7 @@ const renderAndSendQrCode = async (req, res, next)  => {
             await sendEmailRequest(mailType, content, email);
             dynamoDB.putDynamoDBItem(EMAIL_TRACKING, mailTrackingObj);
             return res.status(200).send();
-        }
-        catch(e){
+        } catch(e) {
             console.log(e);
             mailTrackingObj.sentDate = null ;
             dynamoDB.putDynamoDBItem(EMAIL_TRACKING, mailTrackingObj);
@@ -134,7 +132,7 @@ const renderAndSendMail = (req, res, next)  => {
         token : res.locals.token ,
         booking : res.locals.bookingUuid 
     };
-    const values = {...guestValues, ... hotelValues}  ;
+    const values = {...guestValues, ... hotelValues} ;
     //TODO replace render by one func using `${MAILTYPE}Mail`
     return res.render('startCheckInMail', values, async (err, content) => {
         if (err) return res.status(500).send(err) ;
@@ -143,8 +141,7 @@ const renderAndSendMail = (req, res, next)  => {
             await sendEmailRequest(res.locals.mailType, content, res.locals.email, res.locals.bookingUuid, res.locals.guestName);
             dynamoDB.putDynamoDBItem(EMAIL_TRACKING, mailTrackingObj);
             return res.status(200).send();
-        }
-        catch(e){
+        } catch(e){
             console.log(e);
             mailTrackingObj.sentDate = null ;
             dynamoDB.putDynamoDBItem(EMAIL_TRACKING, mailTrackingObj);

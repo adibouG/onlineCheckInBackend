@@ -35,19 +35,16 @@ const mailFormat =  (type, message, mail, messID, user) => {
             "to": [mail],
             "cc": ['adrien@enzosystems.com']
         }) ;
-    }   
-    else if (type === 'startCheckIn' ) {
+    } else if (type === 'startCheckIn' ) {
         TITLE = 'Email invitation for online pre-check-in' ;
         MESSAGE = message ;
         try{
             let content = fs.readFileSync('./Views/base64image.txt') ; // TODO replace with setting file path
             ATTACHMENTS = [{"content" : `${content.toString()}`, "name": "image_attached.jpg"}];
-        }
-        catch (err)  {
+        } catch(err) {
             console.log(err) ;
             ATTACHMENTS = '' ;
-        }
-        finally{
+        } finally {
             return ({
                 "attachments": ATTACHMENTS ,
                 "body": {
@@ -62,7 +59,6 @@ const mailFormat =  (type, message, mail, messID, user) => {
         }
     }  
 }
-
 
 function sendEmailRequest(type, message, email, messID = null, user = null) {   
    let mail = mailFormat( type , message, email  , messID , user);
