@@ -1,4 +1,3 @@
-
 class EnzoError extends Error {
     constructor(message, type, code) {
         super(message) ;
@@ -6,14 +5,12 @@ class EnzoError extends Error {
         this.type = type ;
     }
 }
-
 class Failure extends EnzoError {
     constructor(message, code) {
         super(message, code) ;
         this.type = 'failure' ;
     }
 }
-
 class NotFound extends Failure {
     constructor() {
         super('notFound', 404);
