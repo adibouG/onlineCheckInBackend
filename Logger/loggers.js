@@ -1,4 +1,3 @@
-
 const morgan  = require('morgan');
 const winston = require('winston');
 const path = require('path');
@@ -16,7 +15,7 @@ const winstonLogger = winston.createLogger({
           splat(),
           myFormat
         ),
-        filename: path.join( process.cwd() ,  `${SETTINGS.LOG_STORAGE.PATH}/logs.log`) 
+        filename: path.join( process.cwd(), `${SETTINGS.LOG_STORAGE.PATH}/logs.log`) 
       })
     ]
 });
