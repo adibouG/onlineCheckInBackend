@@ -1,4 +1,5 @@
 {
+    "API_BASE_URL" : "/checkIn/api",
     "API_ENDPOINT" : {
         "FETCH_BOOKING_FROM_TOKEN" : "/reservation" ,
         "POST_BOOKING" : "/reservation" ,
@@ -8,7 +9,6 @@
         "START_CHECK_IN" : "",
         "RESEND_EMAILS" : "/resend",
         "GET_NEW_RESERVATIONS" : "/getReservations" 
-        
     },
     "DATA_STORAGE" : {
      "PATH" :  "./Data/dummyDB.js"

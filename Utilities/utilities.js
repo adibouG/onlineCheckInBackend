@@ -78,6 +78,38 @@ const isBookingValid = (book) => !("arrivalDate" in book.reservation) ;
 
 const isPreCheckedBooking = (book) => ("status" in book.reservation && book.reservation.status.toUpperCase() === 'PRECHECKED') ;
 
+const makeCheckInAppResponseBody = (booking) => {
+    let prechecked, complete;
+    if (isPreCheckedBooking(booking)) prechecked = true ;
+    if (!isBookingValid(booking)) complete = true ;
+    if (complete) {
+        response = { 
+            type: 'success',
+            status: 'complete',
+            stay: { 
+                arrivalDate: booking.reservation.arrivalDate 
+            } 
+        }
+    }
+    else if (prechecked) {
+        response = {
+            type: 'success',
+            status: 'prechecked',
+            checkin : booking 
+        }
+    } 
+    else {
+        response = {
+            type: 'success',
+            status: 'pending',
+            checkin : booking 
+        }
+    } 
+    return response;
+}
+
+
+
 const findValueInDataStore = ({ value, key, store }) => {
     let objectToFind = [] ;
     for ( const entry in store ) {
@@ -215,5 +247,6 @@ module.exports = {
     generateUUID,
     setCheckBooking,
     makeQrCode,
-    getBookingFromEmail
+    getBookingFromEmail,
+    makeCheckInAppResponseBody
 }

@@ -1,22 +1,18 @@
 require('dotenv').config();
 const Models = require('../Models/index.js');
 const jwt = require('jsonwebtoken');
-const { makeQrCode, isPreCheckedBooking, isBookingValid, setCheckBooking, getBookingFromEmail, dateDiffInDays} = require('../Utilities/utilities.js');
+const { makeQrCode, isPreCheckedBooking, setCheckBooking, getBookingFromEmail, dateDiffInDays} = require('../Utilities/utilities.js');
 const SETTINGS = require('../settings.json') ;
 const HOTEL = require('../hotel.settings.json') ;
-const dynamoDB = require('../AWS/awsDynamoDb.js')
-const { RESERVATION, TOKEN, EMAIL_TRACKING} = SETTINGS.DYNAMODB_TABLE ;
+const dynamoDB = require('../AWS/awsDynamoDb.js');
+const { EMAIL_TRACKING } = SETTINGS.DYNAMODB_TABLE ;
 const { MAILTYPES, sendEmailRequest } = require('../Emails/enzoMails.js');
-const { startCheckMailErrors, stopCheckMailErrors, intervalCheckID, intervalCleanID } = require('./resendEmails.js');
+const { startCheckMailErrors, intervalCheckID } = require('./resendEmails.js');
 const { resetBookingStatus } = require('../Utilities/utilities.js');
 
-const TEMPLATES = {
-    START : "" ,
-    QR : "" 
-} 
 
-const { ID , NAME , ADDRESS , POSTCODE , CITY , COUNTRY , PHONE ,EMAIL , CHECKINTIME} = HOTEL ;
-const hotelID = ID ; 
+const { ID, NAME, ADDRESS, POSTCODE, CITY, COUNTRY, PHONE, EMAIL, CHECKINTIME } = HOTEL ;
+const hotelID = ID ;  
 const hotelName = NAME ; 
 const hotelAddress = ADDRESS ; 
 const hotelPostcode = POSTCODE ;
@@ -72,11 +68,8 @@ const renderAndSendQrCode = async (req, res, next)  => {
     let booking = req.body;
     let guestName = booking.guest.firstName + " " + booking.guest.lastName;
     let bookingUuid = booking.uuid;
-
     if (isPreCheckedBooking(booking)) {
-
         console.log('routes to reset : RESET RESERVATION');
-
         await resetBookings(booking.guest.email, booking.uuid);
         try{
             await resetBookingStatus(booking.guest.email, bookingUuid);
@@ -86,9 +79,7 @@ const renderAndSendQrCode = async (req, res, next)  => {
             return res.status(500).end();
         }
     }
-
     console.log('routes to makeQrCode')
-
     const url = await makeQrCode(booking);
     await setCheckBooking(booking);
     const d1 = booking.reservation.startDate;
@@ -114,11 +105,7 @@ const renderAndSendQrCode = async (req, res, next)  => {
     let mailType = MAILTYPES.QR; 
     let email = booking.guest.email;
     res.render('qrCodeMail', values, async (err, content) => {
-
-        if (err) { 
-            console.log(err);
-            return res.status(500).send(err);
-        }
+        if (err) return res.status(500).send(err);
         let mailTrackingObj = Models.EmailTrackingObject(bookingUuid, mailType);
         try{
             await sendEmailRequest(mailType, content, email);
@@ -137,10 +124,8 @@ const renderAndSendQrCode = async (req, res, next)  => {
 }
 
 const renderAndSendMail = (req, res, next)  => {
-
     let d1 = new Date(res.locals.booking.reservation.startDate).toLocaleDateString();
     let d2 = new Date(res.locals.booking.reservation.endDate).toLocaleDateString();
-    
     const checkDates =  d1 + " - " + d2 ;
     const guestValues = {
         checkDates : checkDates,
@@ -152,24 +137,20 @@ const renderAndSendMail = (req, res, next)  => {
     const values = {...guestValues, ... hotelValues}  ;
     //TODO replace render by one func using `${MAILTYPE}Mail`
     return res.render('startCheckInMail', values, async (err, content) => {
-
-        if (err) { 
-            console.log(err)
-            return res.status(500).send(err) 
-        }
-        let mailTrackingObj = Models.EmailTrackingObject(res.locals.bookingUuid , res.locals.mailType);
+        if (err) return res.status(500).send(err) ;
+        let mailTrackingObj = Models.EmailTrackingObject(res.locals.bookingUuid, res.locals.mailType);
         try{
             await sendEmailRequest(res.locals.mailType, content, res.locals.email, res.locals.bookingUuid, res.locals.guestName);
             dynamoDB.putDynamoDBItem(EMAIL_TRACKING, mailTrackingObj);
             return res.status(200).send();
         }
         catch(e){
-            console.log(e)
+            console.log(e);
             mailTrackingObj.sentDate = null ;
-            dynamoDB.putDynamoDBItem(EMAIL_TRACKING , mailTrackingObj )
+            dynamoDB.putDynamoDBItem(EMAIL_TRACKING, mailTrackingObj);
             //start the checks
             if (!intervalCheckID) startCheckMailErrors() ;
-            return res.status(500).send(e) 
+            return res.status(500).send(e) ;
         }
     })
 }
