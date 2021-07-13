@@ -32,9 +32,7 @@ const hotelValues = {
     hotelEmail : hotelEmail
 }
 const  getEmailErrors = async () => {
-
     console.log('check email error table for emails to resend...')
-
     try{
         let results = await dynamoDB.findDynamoDBItems(EMAIL_TRACKING) ;
         if (!results.Items.length) return stopCheckMailErrors();
@@ -46,16 +44,13 @@ const  getEmailErrors = async () => {
             if (emailSentObject.emailType === MAILTYPES.START)  return resendStartEmail(emailSentObject);
             else if (emailSentObject.emailType === MAILTYPES.QR)  return resendQrEmail(emailSentObject);
         })
-    }
-    catch (e) {
+    } catch (e) {
        throw e;
     }
 }
 
 const cleanEmailErrors = async () => {
-
     console.log('check email error table for cleaning emails resend successfully...')
-
     try{
         let results = await dynamoDB.findDynamoDBItems(EMAIL_TRACKING) ;
         if (!results.Items.length) return stopCheckMailErrors();
@@ -66,17 +61,14 @@ const cleanEmailErrors = async () => {
                 await dynamoDB.deleteDynamoDBItem(EMAIL_TRACKING, { reservationID : reservationID });
             }
         });
-    }
-    catch (e) {
+    } catch(e) {
         console.log(e);
         throw e;
     }
 }
 
 const resendStartEmail = async (emailSentObject) => {
-
     let uuid = emailSentObject.reservationID;
-
     try{
         let booking = await dynamoDB.getDynamoDBItem(RESERVATION, { reservationID : {S : uuid }});
         let d1 = new Date(booking.reservation.startDate).toLocaleDateString();
@@ -103,12 +95,10 @@ const resendStartEmail = async (emailSentObject) => {
         const values = {...guestValues, ... hotelValues}  ;
         //TODO replace render by one func using `${MAILTYPE}Mail`
         return app.render('startCheckInMail', values, async (err, content) => {
-
             if (err) { 
                 console.log(err);
                 return res.status(500).send(err) ;
             }
-            
             let mailTrackingObj = emailSentObject ;
             try{
                 await sendEmailRequest(res.locals.mailType, content, res.locals.email, res.locals.bookingUuid, res.locals.guestName);
@@ -116,8 +106,7 @@ const resendStartEmail = async (emailSentObject) => {
                 mailTrackingObj.messageID = result.messageID;
                 await dynamoDB.putDynamoDBItem(EMAIL_TRACKING, mailTrackingObj);
                 return res.status(200).send();
-            }
-            catch(e){
+            } catch(e) {
                 console.log(e);
                 mailTrackingObj.sentDate = null ;
                 mailTrackingObj.messageID = e.messageID;
@@ -125,9 +114,9 @@ const resendStartEmail = async (emailSentObject) => {
                 return res.status(500).send(e);
             }
         })
-    }
-    catch (e){
+    } catch(e) {
         console.log(e);
+        return res.status(500).send(e);
     }
 }
 
@@ -161,12 +150,10 @@ const resendQrEmail = async (emailSentObject) => {
         let mailType = MAILTYPES.QR; 
         let email = booking.guest.email ;
         res.render('qrCodeMail' ,values , async (err, content) => {
-    
             if (err) { 
                 console.log(err);
                 return res.status(500).send(err) ;
             }
-            
             let mailTrackingObj = emailSentObject;
             try{    
                 let result = await sendEmailRequest(mailType, content, email);
@@ -174,8 +161,7 @@ const resendQrEmail = async (emailSentObject) => {
                 mailTrackingObj.messageID = result.messageID;
                 await dynamoDB.putDynamoDBItem(EMAIL_TRACKING, mailTrackingObj);
                 return res.status(200).send();
-            }
-            catch(e){ 
+            } catch(e){ 
                 console.log(e);
                 mailTrackingObj.sentDate = null ;
                 mailTrackingObj.messageID = e.messageID;
@@ -183,9 +169,9 @@ const resendQrEmail = async (emailSentObject) => {
                 return res.status(500).send(e); 
             }
         })
-    }
-    catch (e){
+    } catch (e){
         console.log(e);
+        return res.status(500).send(e); 
     }
 }
 

@@ -5,7 +5,7 @@ const path = require('path');
 const SETTINGS = require('../settings.json') ;
 
 const { splat, combine, timestamp, printf } = winston.format;
-const myFormat = printf(({ timestamp , level, message }) => (level, `${timestamp}::${level}::${message}`));
+const myFormat = printf(({ timestamp, level, message }) => (level, `${timestamp}::${level}::${message}`));
 const winstonLogger = winston.createLogger({
     transports: [
       new (winston.transports.Console)({ level:'debug' }),

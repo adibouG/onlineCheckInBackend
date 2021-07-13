@@ -5,54 +5,45 @@ const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 const { winstonLogger } = require('../Logger/loggers.js') ;
 
 const getDynamoDBItem = async ( TableName, Item ) => {
-    
     const params = {
         ConsistentRead: true,
-        TableName : TableName,
+        TableName: TableName,
         Key: Item
     };
-   
     try {
         // Call DynamoDB to get the item from the table
         let data = await ddbClient.send(new GetItemCommand(params)); 
-
-        winstonLogger.info(`Get Item From  ${TableName} : ${data.Item}`);
-        
-        let {Item} = data;
+        winstonLogger.info(`Get Item From ${TableName}: ${data.Item}`);
+        let { Item } = data;
         return unmarshall(Item);
-    }
-    catch (e){
-        console.log("Error" , e);
+    } catch(e) {
+        console.log("Error", e);
         throw e;
       }
 }
 
 const putDynamoDBItem = async (TableName, Item) => {
-
     const params = {
-        TableName : TableName,
+        TableName: TableName,
         Item: marshall(Item)
     };
-    
     try {
         // Call DynamoDB to get the item from the table
         let data = await ddbClient.send(new PutItemCommand(params)); 
-    }
-    catch (e){
+        return data;
+    } catch(e) {
         console.log("Error", e);
         throw e;
     }
 }
 
 const findDynamoDBItems = async (TableName) => {
-
     const params = {
         ConsistentRead: true,
         TableName: TableName,
     };
-   
     try {
-        // Call DynamoDB to get the item from the table
+        // Call DynamoDB to get the items from the table
         let data = await ddbClient.send(new ScanCommand(params));
         return data;
     } catch(e) {
@@ -62,17 +53,15 @@ const findDynamoDBItems = async (TableName) => {
 }
 
 const deleteDynamoDBItem = async (TableName, Item) => {
-
     const params = {
-        TableName : TableName,
+        TableName: TableName,
         Key: Item
     };
-    
     try {
         // Call DynamoDB to get the item from the table
         let data = await ddbClient.send(new DeleteItemCommand(params)); 
-    }
-    catch (e){
+        return data;
+    } catch(e) {
         console.log("Error", e);
         throw e;
     }

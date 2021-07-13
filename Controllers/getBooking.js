@@ -19,8 +19,7 @@ const getBookingFromToken = async (req , res) => {
         if (!booking)  throw new Models.NotFound() ;        
         let response = makeCheckInAppResponseBody(booking);
         return res.status(200).send(response);
-    } 
-    catch(e) {
+    } catch(e) {
         let error ;
         if (e instanceof jwt.TokenExpiredError)  error = new Models.ExpiredLink() ;
         else error = e ;
@@ -41,35 +40,29 @@ const postBooking = async (req , res) => {
         if (!updt) throw new Models.NotFound() ;
         let response = makeCheckInAppResponseBody(booking);
         return res.status(200).send(response);
-    }
-    catch(e) {
+    } catch(e) {
         console.log(e) ;
         return res.status(400).send(e) ;
     }
 }
 
 const resetBookings = async (req , res) => {
-  
     try{
         let {email , uuid} = req?.query ;
         await resetBookingStatus(email||null ,uuid||null) ;
         return res.status(200).send();
-    }
-    catch(e) {
+    } catch(e) {
         console.log(e)
         return res.status(500).end();
     }
 }
 
 const getNewReservations = async () => {
-
     try{
-       
        // let hotelRequest = await dynamoDB.findDynamoDBItems(HOTEL) 
        // let pmsRequest = await dynamoDB.findDynamoDBItems(PMS) 
        // let hotelList =  hotelRequest.data 
        // let pmsData = pmsRequest.data
-
        // for (let hotel in hotelList ) {
         let hotelPms = hotel.pmsId ;
         let pmsCheckInDateName = 'startDate';

@@ -12,7 +12,6 @@ const connectionSetting = {
   ssl  : DB.SSL ,
   connect_timeout : DB.CONN_TIMEOUT ,  
 };
-
 const pgPool = new Pool(connectionSetting);
 const pgClient = new Client(connectionSetting);
 
