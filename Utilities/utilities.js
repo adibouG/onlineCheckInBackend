@@ -1,17 +1,16 @@
 const dynamoDB = require('../AWS/awsDynamoDb.js');
 const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 const { randomUUID } = require('crypto');
+const jwt = require('jsonwebtoken');
+const { secretKey } = require('../Crypto/crypto.js');
 let QRCode = require('qrcode') ;
 const Models = require('../Models/index.js');
+const Errors = require('../Models/errors.js');
 const SETTINGS = require('../settings.json') ;
 const HOTEL = require('../hotel.settings.json') ;
 const RESERVATION = SETTINGS.DYNAMODB_TABLE.RESERVATION;
 
-function generateUUID() {
-    let uuid = randomUUID();
-    console.log(uuid);
-    return uuid;
-}  
+const generateUUID = () => randomUUID();
 
 const makeQrCode = async (booking) => {
     let code = {
@@ -22,48 +21,75 @@ const makeQrCode = async (booking) => {
     return await QRCode.toDataURL(JSON.stringify(code));
 }
 
+//function to generate customized tokens 
+const makeStartPreCheckInEmailToken = (email, uuid, reservationID, hotelID) => {
+    //TODO place the signature template in a specific module and set up a real secret with 32char/128bit entropy
+    let sign = { 
+        expiresIn: SETTINGS.TOKEN.VALIDITY,
+        issuer: 'ENZOSYSTEMS ONLINE PRECHECKIN API',
+        subject: 'precheckinapi/getBookingFromEmail',
+        audience: 'Enzosystems/online precheckin api'  
+    };
+    let reservation_id = reservationID ;
+    let hotel_id = hotelID ;
+    let payload = { reservation_id, hotel_id, uuid, email } ;
+    try {
+        let token = jwt.sign(payload, secretKey, sign) ;
+        return token;
+    } catch (e) {
+        console.log(e);
+        throw e;
+    }
+}
+
 const getBookingFromEmail = async (email) => {
     let booking ;
     let bookings = [] ; 
     let validEmail = email.length > 0 || false ;
     try {
-        if (!email || !validEmail) throw new Models.EnzoError('no email or invalid email') ;
-        let results = await dynamoDB.findDynamoDBItems(RESERVATION, "email", email)
+        if (!email || !validEmail) throw new Models.EnzoError('no email or invalid email');
+        let results = await dynamoDB.findDynamoDBItems(RESERVATION, "email", email);
         results.Items.forEach((item) => {
             let b = unmarshall(item) ;
-            if (b["email"] == email || b["guest"]["email"] === email) bookings.push(b)  ;
-        })
-        if (!bookings.length)  throw new Models.NotFound('no reservation with this email') ; 
-        //get a valid reservation
-        for (let b of  bookings) {
-            if (isBookingValid(b) && !isPreCheckedBooking(b)) {
-                booking = b ;
-                break;
-            }
-        }
-        // if none get a prechecked reservation
-        if (!booking)  {
-            for (let b of  bookings) {
-                if (isBookingValid(b) && isPreCheckedBooking(b)) {
-                    booking = b ;
-                    break;
-                }
-            }
-        }
-        // if none get a checked reservation
-        if (!booking)  {
-            for (let b of  bookings) {
-                if (!(isBookingValid(b) || isPreCheckedBooking(b))) {
-                    booking = b ;
-                    break;
-                }
-            }
-        }
+            if (b["email"] == email || b["guest"]["email"] === email) bookings.push(b) ;
+        });
+        if (!bookings.length) throw new Models.NotFound('no reservation with this email') ; 
+        //try to find a valid reservation
+        let booking = findValidBooking(bookings);
         return booking ;
     } catch(e) {
         console.log(e);
         throw e;
     } 
+}
+
+const findValidBooking = (bookings, status = null) => {
+    if (!bookings.length) throw new Models.NotFound('no reservation with this email') ; 
+    //try to find a valid reservation
+    for (let b of bookings) {
+        if (isBookingValid(b) && !isPreCheckedBooking(b)) {
+            if (!status || status.toUpperCase() === 'PENDING') booking = b ;
+            break;
+        }
+    }       
+    if (!booking) { // if none try to find a prechecked reservation
+        for (let b of bookings) {
+            if (isBookingValid(b) && isPreCheckedBooking(b)) {
+                if (!status || status.toUpperCase() === 'PRECHEKED') booking = b ;
+                break;
+            }
+        }
+    }
+    if (!booking) { // if none try to find a checked reservation
+        for (let b of bookings) {
+            if (!(isBookingValid(b) || isPreCheckedBooking(b))) {
+                if (!status || status.toUpperCase() === 'COMPLETE') booking = b ;
+                break;
+            }
+        }
+    }
+    if (!booking) throw new Errors.NotFound();
+    return booking ;
 }
 
 const setCheckBooking = async (bookingUpdt) => {
@@ -74,37 +100,18 @@ const setCheckBooking = async (bookingUpdt) => {
 
 const isBookingValid = (book) => !("arrivalDate" in book.reservation) ;
 
-const isPreCheckedBooking = (book) => ("status" in book.reservation && book.reservation.status.toUpperCase() === 'PRECHECKED') ;
+const isPreCheckedBooking = (book) => (book && book.reservation && "status" in book.reservation && book.reservation.status.toUpperCase() === 'PRECHECKED') ;
 
-const makeCheckInAppResponseBody = (booking) => {
+const makeCheckInAppResponseBody = (hotel_id, booking) => {
     let prechecked, complete;
     if (isPreCheckedBooking(booking)) prechecked = true ;
     if (!isBookingValid(booking)) complete = true ;
-    if (complete) {
-        response = { 
-            type: 'success',
-            status: 'complete',
-            stay: { 
-                arrivalDate: booking.reservation.arrivalDate 
-            } 
-        }
-    } else if (prechecked) {
-        response = {
-            type: 'success',
-            status: 'prechecked',
-            checkin : booking 
-        }
-    } else {
-        response = {
-            type: 'success',
-            status: 'pending',
-            checkin : booking 
-        }
-    } 
+    if (complete) response = { type: 'success', status: 'complete', stay: { arrivalDate: booking.reservation.arrivalDate }, hotel_id: hotel_id };
+    else if (prechecked) response = { type: 'success', status: 'prechecked', checkin : booking, hotel_id: hotel_id };
+    else response = { type: 'success', status: 'pending', checkin : booking, hotel_id: hotel_id };
+    
     return response;
 }
-
-
 
 const findValueInDataStore = ({ value, key, store }) => {
     let objectToFind = [] ;
@@ -112,8 +119,7 @@ const findValueInDataStore = ({ value, key, store }) => {
         if (store[entry] === value ) {
             if (key && key !== entry) continue ;
             objectToFind.push(store) ;
-        }
-        else if (Object.keys(store[entry]) && Object.keys(store[entry]).length){
+        } else if (Object.keys(store[entry]) && Object.keys(store[entry]).length){
             let child = store[entry] ;
             return findValueInDataStore({ value , key , store: child }) ;
         } 
@@ -147,7 +153,7 @@ const makeDate = () => {
     return {date1 , date2}
 }
 
-const getDay = (d , loc = false) => new Date(d).toLocaleDateString(loc , { weekday: 'long' });
+const getDay = (d , loc = false) => new Date(d).toLocaleDateString(loc, { weekday: 'long' });
 
 const resetBookingState = (book) => {
     if (isPreCheckedBooking(book)) delete book.reservation.status ;
@@ -182,7 +188,7 @@ const resetBookingDate = (book) => {
  
 const resetBookingStatus = async (email = null, uuid = null) => {
     const db = require(`../${SETTINGS.DATA_STORAGE.PATH}`) ;
-    try{
+    try {
         let originalDb = getInDataStore("checkins" ,db) ;
         if (!email && !uuid) {
            for ( const check in  originalDb) {
@@ -195,7 +201,7 @@ const resetBookingStatus = async (email = null, uuid = null) => {
                 if (originalDb[check].email === email) {
                     booking = originalDb[check] ;
                     let newBook = resetBookingDate(booking) ;
-                    await dynamoDB.putDynamoDBItem(RESERVATION, {reservationID: booking.uuid, email: booking.guest.email, ...newBook });
+                    await dynamoDB.putDynamoDBItem(RESERVATION, { reservationID: booking.uuid, email: booking.guest.email, ...newBook });
                 }
             }
         } else if (uuid) {
@@ -236,5 +242,6 @@ module.exports = {
     setCheckBooking,
     makeQrCode,
     getBookingFromEmail,
-    makeCheckInAppResponseBody
+    makeCheckInAppResponseBody,
+    makeStartPreCheckInEmailToken
 }

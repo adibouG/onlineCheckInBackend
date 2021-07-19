@@ -1,58 +1,36 @@
 require('dotenv').config();
 const Models = require('../Models/index.js');
-const jwt = require('jsonwebtoken');
-const { makeQrCode, isPreCheckedBooking, setCheckBooking, getBookingFromEmail, dateDiffInDays} = require('../Utilities/utilities.js');
+const { generateUUID, makeQrCode, isPreCheckedBooking, setCheckBooking, getBookingFromEmail, dateDiffInDays } = require('../Utilities/utilities.js');
 const SETTINGS = require('../settings.json') ;
-const HOTEL = require('../hotel.settings.json') ;
+const HOTEL_SETTINGS = require('../hotel.settings.json') ;
 const dynamoDB = require('../AWS/awsDynamoDb.js');
 const { EMAIL_TRACKING } = SETTINGS.DYNAMODB_TABLE ;
 const { MAILTYPES, sendEmailRequest } = require('../Emails/enzoMails.js');
 const { startCheckMailErrors, intervalCheckID } = require('./resendEmails.js');
-const { resetBookingStatus } = require('../Utilities/utilities.js');
+const { resetBookingStatus, makeStartPreCheckInEmailToken } = require('../Utilities/utilities.js');
+
+const { ID, NAME, ADDRESS, POSTCODE, CITY, COUNTRY, PHONE, EMAIL, CHECKINTIME } = HOTEL_SETTINGS ;
+const hotelID = ID, hotelName = NAME, hotelAddress = ADDRESS, hotelPostcode = POSTCODE, hotelCity = CITY, hotelCountry = COUNTRY, hotelPhone = PHONE, hotelEmail = EMAIL; 
+const hotelValues = { hotelName, hotelAddress, hotelPostcode, hotelCity, hotelCountry, hotelPhone, hotelEmail };
 
 
-const { ID, NAME, ADDRESS, POSTCODE, CITY, COUNTRY, PHONE, EMAIL, CHECKINTIME } = HOTEL ;
-const hotelID = ID ;  
-const hotelName = NAME ; 
-const hotelAddress = ADDRESS ; 
-const hotelPostcode = POSTCODE ;
-const hotelCity =  CITY; 
-const hotelCountry = COUNTRY; 
-const hotelPhone = PHONE ; 
-const hotelEmail = EMAIL ; 
-const hotelValues = {
-    hotelName : hotelName ,
-    hotelAddress : hotelAddress ,
-    hotelPostcode : hotelPostcode ,
-    hotelCity : hotelCity ,
-    hotelCountry : hotelCountry , 
-    hotelPhone : hotelPhone ,
-    hotelEmail : hotelEmail
-}
-
+// GET /email route controller function, get a valid booking, generate token and trigger the 1rst start-pre-checkin email.
 const getEmail = async (req, res, next) => {
-
+//TODO replace the email trigger by the loop search process
     try{
-        let {email} = req?.query ;
+        let { email } = req?.query;
         let booking = await getBookingFromEmail(email) ;
-    
         if (!booking)  throw new Models.NotFound() ;   
-       
-        let sign = { 
-            expiresIn : SETTINGS.TOKEN.VALIDITY ,
-            issuer : 'ENZOSYSTEMS' ,
-            subject : 'check-in' ,
-            audience : email  
-        } ;
+        //if a valid booking exist, generate the token for the 1rst email 
+        let uuid = booking.uuid || generateUUID();
+        let reservationID = booking.id || booking.reservationID;
+        let token =  makeStartPreCheckInEmailToken(email, uuid, reservationID, hotelID);
+        //TO DO: check/update the tracking to follow the new pattern and flow
         let guestName =  booking.guest.firstName + " " + booking.guest.lastName ;  
-        let uuid = booking.uuid ;
-        let secret = uuid ;
-        let payload = {uuid , ID} ; 
-        let token = jwt.sign(payload ,secret ,sign ) ;
         res.locals.booking = booking ;
         res.locals.bookingUuid = booking.uuid ;
         res.locals.guestName =  guestName ;
-        res.locals.guestLinkName =  guestName.replaceAll(' ', '.' ) ;
+        res.locals.guestLinkName =  guestName.replaceAll(' ', '.') ;
         res.locals.token = token ;
         res.locals.email = email ;
         res.locals.mailType = MAILTYPES.START ;
@@ -70,7 +48,6 @@ const renderAndSendQrCode = async (req, res, next)  => {
     let bookingUuid = booking.uuid;
     if (isPreCheckedBooking(booking)) {
         console.log('routes to reset : RESET RESERVATION');
-        await resetBookings(booking.guest.email, booking.uuid);
         try{
             await resetBookingStatus(booking.guest.email, bookingUuid);
         } catch(e) {

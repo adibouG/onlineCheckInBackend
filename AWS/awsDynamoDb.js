@@ -8,7 +8,7 @@ const getDynamoDBItem = async (TableName, Item) => {
     const params = {
         ConsistentRead: true,
         TableName: TableName,
-        Key: Item
+        Key: marshall(Item)
     };
     try {
         // Call DynamoDB to get the item from the table
@@ -71,5 +71,7 @@ module.exports = {
     findDynamoDBItems,
     getDynamoDBItem,
     putDynamoDBItem,
-    deleteDynamoDBItem
+    deleteDynamoDBItem,
+    marshall, 
+    unmarshall
 }
