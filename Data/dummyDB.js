@@ -17,7 +17,6 @@ module.exports =  {
       "43c98ac2-8493-49b0-95d8-de843d90e6ca" : {
          uuid: "43c98ac2-8493-49b0-95d8-de843d90e6ca",
          reservationID: "43c98ac2-8493-49b0-95d8-de843d90e6ca",
-         
          email: "derk@enzosystems.com",
          guest:  {
             firstName: "Derk" ,

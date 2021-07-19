@@ -16,7 +16,6 @@ class NotFound extends Failure {
         super('notFound', 404);
     }
 }
-
 class ExpiredLink extends Failure {
     constructor() {
         super(`expiredLink`, 403);

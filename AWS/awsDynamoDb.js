@@ -4,11 +4,11 @@ const { GetItemCommand, PutItemCommand, DeleteItemCommand, ScanCommand } = requi
 const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 const { winstonLogger } = require('../Logger/loggers.js') ;
 
-const getDynamoDBItem = async ( TableName, Item ) => {
+const getDynamoDBItem = async (TableName, Item) => {
     const params = {
         ConsistentRead: true,
         TableName: TableName,
-        Key: Item
+        Key: marshall(Item)
     };
     try {
         // Call DynamoDB to get the item from the table
@@ -28,7 +28,7 @@ const putDynamoDBItem = async (TableName, Item) => {
         Item: marshall(Item)
     };
     try {
-        // Call DynamoDB to get the item from the table
+        // Call DynamoDB to upadte the item from the table
         let data = await ddbClient.send(new PutItemCommand(params)); 
         return data;
     } catch(e) {
@@ -43,7 +43,7 @@ const findDynamoDBItems = async (TableName) => {
         TableName: TableName,
     };
     try {
-        // Call DynamoDB to get the items from the table
+        // Call DynamoDB to get all the items from the table
         let data = await ddbClient.send(new ScanCommand(params));
         return data;
     } catch(e) {
@@ -58,7 +58,7 @@ const deleteDynamoDBItem = async (TableName, Item) => {
         Key: Item
     };
     try {
-        // Call DynamoDB to get the item from the table
+        // Call DynamoDB to delete the item from the table
         let data = await ddbClient.send(new DeleteItemCommand(params)); 
         return data;
     } catch(e) {
@@ -71,5 +71,7 @@ module.exports = {
     findDynamoDBItems,
     getDynamoDBItem,
     putDynamoDBItem,
-    deleteDynamoDBItem
+    deleteDynamoDBItem,
+    marshall, 
+    unmarshall
 }

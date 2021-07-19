@@ -1,5 +1,5 @@
 require('dotenv').config();
-const {winstonLogger} = require('./Logger/loggers.js');
+const { winstonLogger } = require('./Logger/loggers.js');
 const app = require('./app.js') ;
 
 const port =  process.env.PORT || 3003 ;
