@@ -25,42 +25,9 @@ class SuccessBody {
         this.response = {} ;
     }
 }
-class EnzoError extends Error {
-    constructor(e, error, type, message, code) {
-        super(e) ;
-        this.message = message ;
-        this.code = code ;
-        this.error = error ;
-        this.type = type ;
-    }
-}
-class Failure extends EnzoError {
-    constructor(message, code, error) {
-        super(message, code, error) ;
-        this.type = 'failure' ;
-    }
-}
-class NotFound extends Failure {
-    constructor(message, code, error) {
-        super(message , code ) ;
-        this.error = `notFound` ;
-        this.message = `notFound` ;
-    }
-}
-class ExpiredLink extends EnzoError {
-    constructor(message, code) {
-        super(message, code) ;
-        this.error = `expiredLink` ;
-        this.message = `expiredLink` ;
-    }
-}
 
 module.exports = {
     SuccessBody ,
-    EnzoError,
-    Failure,
-    NotFound,
-    ExpiredLink ,
     EmailTracking,
     EmailTrackingObject
 }

@@ -4,7 +4,8 @@ const emailControllers = require('../Controllers/getEmail.js') ;
 const adminControllers = require('../Controllers/admin.js') ;
 const SETTINGS = require('../settings.json');
 
-//Checkim APP endpoints
+//Checkim APP endpoints 
+//TO DO : add security checks and middlewares
 //endpoint to save/update reservation data
 api.post(SETTINGS.API_ENDPOINT.POST_BOOKING, bookingControllers.postBooking) ;
 //endpoint to reset the reservation data (only for DEMO app)

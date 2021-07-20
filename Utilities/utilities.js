@@ -43,7 +43,7 @@ const makeStartPreCheckInEmailToken = (email, uuid, reservationID, hotelID) => {
 }
 
 const getBookingFromEmail = async (email) => {
-    let booking ;
+   
     let bookings = [] ; 
     let validEmail = email.length > 0 || false ;
     try {
@@ -64,6 +64,7 @@ const getBookingFromEmail = async (email) => {
 }
 
 const findValidBooking = (bookings, status = null) => {
+    let booking ;
     if (!bookings.length) throw new Models.NotFound('no reservation with this email') ; 
     //try to find a valid reservation
     for (let b of bookings) {

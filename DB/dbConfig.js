@@ -5,12 +5,11 @@ const { Pool, Client, types } = pg ;
 const connectionSetting = {
   host     : process.env.DB_HOST ,
   user     : process.env.DB_USER ,
-  password : process.env.DB_PWD ,
+  password : process.env.DB_PASS ,
   database : process.env.DB_NAME ,
   port : process.env.DB_PORT ,
-  max : DB.MAXCON ,// Max number of connections
-  ssl  : DB.SSL ,
-  connect_timeout : DB.CONN_TIMEOUT ,  
+  max : 10 ,// Max number of connections
+  ssl  : false ,
 };
 const pgPool = new Pool(connectionSetting);
 const pgClient = new Client(connectionSetting);

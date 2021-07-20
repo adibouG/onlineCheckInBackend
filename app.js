@@ -3,9 +3,8 @@ const express = require('express');
 const app = express();
 const fs = require('fs');
 const cors = require('cors');
-const {morgan, winstonLogger} = require('./Logger/loggers.js');
+const { morgan, winstonLogger } = require('./Logger/loggers.js');
 const api = require('./Routes/routes.js');
-
 app.use(morgan(process.env.NODE_ENV)) ;
 const myStream = {
   write: (text) => {
