@@ -26,6 +26,9 @@ types.setTypeParser(types.builtins.NUMERIC, (value) => {
 types.setTypeParser(types.builtins.BYTEA, (value) => {
   return value.toString();
 });
+types.setTypeParser(types.builtins.TIMESTAMP, (value) => {
+  return new Date(value);
+});
 
 module.exports = {
   pgPool,

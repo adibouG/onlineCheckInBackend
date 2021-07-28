@@ -1,19 +1,13 @@
-const EmailTrackingObject = (reservationID, type, sendDate = null, sentDate = null, messageID = null, attempts = 1) => ({
-    "reservationID" :  reservationID , 
-    "emailType": type , 
-    "sendingDate" : sendDate || Date.now() ,
-    "sentDate" : sentDate || Date.now() ,
-    "messageID" : messageID || reservationID ,
-    "attempts" : attempts ,
-})
+
 
 class EmailTracking { 
-    constructor(reservationID, type, sendDate = null, sentDate = null, messageID = null, attempts = 1) {
+    constructor({ reservationID, hotelID, emailType, sentDate = null, sendingDate = null, messageID = null, attempts = 1 } = {}) {
+        this.hotelID =  hotelID ; 
         this.reservationID =  reservationID ; 
-        this.emailType = type ; 
-        this.sendingDate = sendDate || Date.now() ;
-        this.sentDate = sentDate || Date.now() ;
-        this.messageID = messageID || reservationID ;
+        this.emailType = emailType ; 
+        this.sendingDate = new Date(sendingDate).getTime() || Date.now() ;
+        this.sentDate = new Date(sentDate).getTime() || Date.now() ;
+        this.messageID = messageID ;
         this.attempts = attempts ;
   }
 }
@@ -28,6 +22,5 @@ class SuccessBody {
 
 module.exports = {
     SuccessBody ,
-    EmailTracking,
-    EmailTrackingObject
+    EmailTracking
 }

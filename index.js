@@ -3,6 +3,10 @@ const { winstonLogger } = require('./Logger/loggers.js');
 const app = require('./app.js') ;
 const { newReservationFinder } = require('./Controllers/findNewBooking.js');
 const { RESERVATION_LOOKUP_INTERVAL_MINUTES } = require('./settings.json');
+//use the checkin API
+const api = require('./Routes/routes.js');
+app.use(api);
+
 const port =  process.env.PORT || 3003 ;
 const host = process.env.HOST || '0.0.0.0' ;
 const scheme = process.env.SCHEME || 'http' ;
@@ -10,6 +14,7 @@ const scheme = process.env.SCHEME || 'http' ;
 function handle(signal) {
     console.log(`*^!@4 => Received event: ${signal}`)
     winstonLogger.info(`*^!@4!!!!! => Received event: ${signal}`)
+    process.exit();
 }
 process.on('exit', handle) ;
 process.on('beforeExit', handle);
@@ -24,16 +29,17 @@ process.on('SIGWINCH', handle);
 process.on('SIGKILL', handle);
 process.on('SIGSTOP', handle);
 //start the reservation lookup interval
-console.log('start setInterval :' + RESERVATION_LOOKUP_INTERVAL_MINUTES * 2 * 1000);
-setInterval(newReservationFinder, RESERVATION_LOOKUP_INTERVAL_MINUTES * 2 * 1000)
+console.log('start setInterval :' + ((RESERVATION_LOOKUP_INTERVAL_MINUTES * 20 * 1000)/60));
+
+setInterval(newReservationFinder, RESERVATION_LOOKUP_INTERVAL_MINUTES * 20 * 1000);
+//trigger the reservation lookup function at start , 
+newReservationFinder();
 //start the app server on defined port 
 app.listen(port, host, () => {
     console.log('enzo checkin backendAPI is running at %s://%s:%s', scheme, host, port);
     winstonLogger.info(`++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++`);
-    winstonLogger.info(`++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++`);
     winstonLogger.info(`+                                                                        +`);
     winstonLogger.info(`+   Enzo checkin backendAPI is running at ${scheme}://${host}:${port}    +`);
     winstonLogger.info(`+                                                                        +`);
-    winstonLogger.info(`++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++`);
     winstonLogger.info(`++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++`);
 });

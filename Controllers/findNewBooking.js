@@ -1,49 +1,53 @@
-const { HotelPms } = require('../Models/database.js');
-const { PmsModuleApi } = require('../Models/pmsModuleApi.js');
-const { EnzoCheckIn } = require('../Models/enzoBooking.js');
-const { CHECKIN_REQUEST_START_DAY_OFFSET } = require('../settings.json');
-const { addDay } = require('../Utilities/utilities.js');
-
- //compare the date if checkIn can be offer take a booking and the param name to check
- const preCheckInDateIsValid = (booking, offset = CHECKIN_REQUEST_START_DAY_OFFSET ) => {
-    let canBePreCheck = false ;
-    let startDate = new Date(booking.startDate);
-    if ( startDate >= new Date() && startDate <= addDay(new Date(), offset))
-    { 
-        canBePreCheck = true ;
-    }
-    return canBePreCheck ;
-}
-
+const { HotelPmsDB } = require('../Models/database.js');
+const helpers = require('../Helpers/helpers.js')
+const { renderAndSendEmail } = require('./emails.js')
+const { makeEmailValues, newReservationFilter } = require('../Utilities/utilities.js');
+const { MAILTYPES } = require('../Emails/enzoMails.js');
 
 //get new reservation, return an array of enzoCheckIn, run at specified interval 
 const newReservationFinder = async () => {
-    console.log("Start newReservationFinder ....");
-    //Call the db to get the list of hotel clients and their pmsData
-    let hotelPms = new HotelPms();
-    let hotelPmsList = await hotelPms.getHotelPmsData();
-    console.log(hotelPmsList)
-    //let pmsModuleList = []; //store the pms objects (1 per hotel) 
-    let reservations = []; // store the reservations returned 
-    let pmsModule = new PmsModuleApi(); //we try with 1 generic manager that will do request for each hotel 
-    hotelPmsList.forEach(async (hotel) => {
-        //  {id: 1,hotel: 'test',pms: 1,login: null,pwd: null,name: 'dynamoDB',url: 'dynamoDB'},
-        //pms = { id: 2, hotel: 'mewsDemoGrossEnv', pms: 2, login: 'E0D439EE522F44368DC78E1BFB03710C-D24FB11DBE31D4621C4817E028D9E1D', pwd: 'C66EF7B239D24632943D115EDE9CB810-EA00F8FD8294692C940F6B5A8F9453D', name: 'MewsDemo', url: 'https://api.mews-demo.com' }
-        console.log(hotel.id)
-        let results = await pmsModule.getReservationData({ hotelID: hotel.id });
-        console.log(results)
-        return reservations.push(results);
-    });
-    console.log(reservations)
-    //for (let hotelReservation of reservations) {
-    //        //convert to EnzoBooking
-    //        let enzoBooking = convertBooking(hotelReservation);
-    //        if (!preCheckInDateIsValid(enzoBooking)) continue;
-    //        console.log(res);
-    //        reservations.push(res);
-    //    }
-    //
-    return reservations;
+    console.log("Start process: newReservationFinder ....");
+    try {
+        const result = await helpers.getReservations(); //{};
+        //Call the db to get the list of hotel clients and their pmsData
+        const dbManager = new HotelPmsDB();
+        const emailTracking = await dbManager.getEmailTrackingInfo();  
+         //compare the date if checkIn can be offer take a booking and the param name to check
+        // filter reservatind for valid precheck dates and status
+        // and check the actual tracking status and remove the already tracked ones
+        for (const i in result) {
+            result[i].reservations = result[i].reservations.filter((r) => newReservationFilter(r, emailTracking)) ;
+        }
+        //but only if there are actual tracked reservations
+        return newReservationsProcess(result);
+    } catch (e) {
+        console.log(e);
+        throw e;
+    }
+}
+
+
+//get the new reservations,
+const newReservationsProcess = async (newValidReservations) => {
+    console.log("Start process: newReservationsProcess ....");
+    try{
+        const dbManager = new HotelPmsDB();
+        for (const i in newValidReservations) {
+            const hotelDetails = await dbManager.getHotelDetails(i);
+            return newValidReservations[i].reservations.map(async (res) => {
+                let reservationObj = await helpers.getReservations(res.hotelId, res.reservationId);
+                let checkIn = reservationObj[res.hotelId].reservations[0]; 
+                console.log(checkIn);
+                if (checkIn.email) {
+                    let values = await makeEmailValues(MAILTYPES.START, checkIn, hotelDetails);
+                    return renderAndSendEmail(MAILTYPES.START, values);
+                }
+            });
+        }
+    } catch (e) {
+        console.log(e);
+        throw e;
+    }
 }
 
 module.exports = {

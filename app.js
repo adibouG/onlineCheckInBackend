@@ -4,7 +4,6 @@ const app = express();
 const fs = require('fs');
 const cors = require('cors');
 const { morgan, winstonLogger } = require('./Logger/loggers.js');
-const api = require('./Routes/routes.js');
 app.use(morgan(process.env.NODE_ENV)) ;
 const myStream = {
   write: (text) => {
@@ -24,8 +23,6 @@ app.use((req, res, next) => {
 app.use(express.json()) ;// for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
 app.use(express.static('public')); 
-//use the checkin API
-app.use(api);
 
 const appPort =  process.env.APP_PORT ;
 const appHost = process.env.APP_HOST ;
@@ -36,8 +33,8 @@ const app_link_baseUrl = `${appScheme}://${appHost}:${appPort}` ;
 // define a template engine for the emails rendering and value customizations 
 // this template rendering engine will work with the .htm file extensions 
 app.engine('htm', (filePath, options, callback) => { 
-    fs.readFile(filePath,  (err, content) => {
-        if (err) return callback(err)
+    fs.readFile(filePath, (err, content) => {
+        if (err) return callback(err);
         let minifyText = content.toString().replace(/[\n\r\t]/g,"");
         let uriCompatible = minifyText.replaceAll('%','%25');
         let rendered = uriCompatible
@@ -63,8 +60,9 @@ app.engine('htm', (filePath, options, callback) => {
             .replaceAll('#hotelPhone#', options.hotelPhone)
             .replaceAll('#hotelEmail#', options.hotelEmail);
         return callback(null, rendered);
-    })
-})
+    });
+});
+
 app.set('views', './Views'); // specify the views directory where the htm files are stored 
 app.set('view engine', 'htm'); // register the template engine to use  
 

@@ -1,31 +1,29 @@
 require('dotenv').config();
 const fs = require('fs');
-const SETTINGS = require('../settings.json') ;
 const axios = require('axios');
-const { generateUUID } = require('../Utilities/utilities.js');
 const { winstonLogger } = require('../Logger/loggers.js');
-
 const EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE;
 
 const attachmentFormat = {              
     "content":  "" ,
     "name": ""
 };
+
 const MAILTYPES = {
     QR : 'qrCode' ,
     START : 'startCheckIn' ,
  } ;
-const mailFormat =  (type, message, mail, messID, user) => {
+const mailFormat =  (type, message, mail, messID, attach = null) => {
     let TITLE = '';
     let MESSAGE = '';
     let FILE = '';
-    let ATTACHMENTS = null;
-    if (type === 'qrCode') {
+    let ATTACHMENTS =  attach ? [{"content" : `${attach.toString()}`, "name": "image_attached.jpg"}] : null;
+    if (type === MAILTYPES.QR) {
         TITLE = 'Email confirmation with QR-code for online pre-check-in' ;
         MESSAGE = message ;
-        messID = messID || generateUUID() ;
+        messID = messID ;
         return ({
-            //"attachments" : [ATTACHMENTS] ,
+            "attachments" : [ATTACHMENTS] ,
             "body": {
                 "html": `${MESSAGE}` ,
             },
@@ -35,7 +33,7 @@ const mailFormat =  (type, message, mail, messID, user) => {
             "to": [mail],
             "cc": ['adrien@enzosystems.com']
         }) ;
-    } else if (type === 'startCheckIn' ) {
+    } else if (type === MAILTYPES.START ) {
         TITLE = 'Email invitation for online pre-check-in' ;
         MESSAGE = message ;
         try{

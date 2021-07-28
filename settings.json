@@ -1,4 +1,5 @@
 {
+    "APP_BASE_URL" : "http://localhost:3000/",
     "API_BASE_URL" : "/checkIn/api",
     "API_ENDPOINT" : {
         "FETCH_BOOKING_FROM_TOKEN" : "/reservation" ,
@@ -24,15 +25,15 @@
     } ,
 
     "DYNAMODB_TABLE" : {
-        "RESERVATION" : "WebCheckIn_reservation_dev" ,
+        "RESERVATION" : "WebCheckIn_reservation_dev",
         "TOKEN" : "WebCheckIn_token_dev" ,
         "EMAIL_TRACKING" : "WebCheckIn_email_tracking_dev" ,
         "RESERVATION_TRACKING" : "WebCheckIn_reservation_tracking_dev" 
     } , 
-    "CHECKIN_REQUEST_START_DAY_OFFSET" : 1 ,
-    "RESERVATION_LOOKUP_INTERVAL_MINUTES" : 2 ,
-    "EMAIL_RETRY_DELAY_MINUTES" : 2 
-
-
+    "VALID_ENZO_STATUS" : ["WAITINGFORGUEST", "PRECHECKEDIN"] ,
+    "CHECKIN_REQUEST_START_DAY_OFFSET" : 2 ,
+    "RESERVATION_LOOKUP_INTERVAL_MINUTES" : 15 ,
+    "EMAIL_RETRY_DELAY_MINUTES" : 2 ,
+    "PMS_API_BASEURL": "http://localhost:3002/pmsmodule/api/reservation"
 }
 
