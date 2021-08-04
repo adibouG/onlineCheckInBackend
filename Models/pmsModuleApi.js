@@ -58,7 +58,6 @@ class PmsModuleApi {
             if (pmsLogin) params.set('pmsLogin', pmsLogin); 
             if (pmsPwd) params.set('pmsPwd', pmsPwd);
             this.pmsModuleApiUrl.search = params;
-           console.log(this.pmsModuleApiUrl.toString())
             const request = await axios.get(this.pmsModuleApiUrl.toString());
             if (parseInt(request.data.hotelId) === parseInt(hotelId)) this.data[hotelId] = request.data;
             return request.data ;
@@ -76,7 +75,7 @@ class PmsModuleApi {
         pmsId = pmsId || this.pmsId ;
         pmsLogin = pmsLogin || this.login ;
         pmsPwd = pmsPwd || this.pwd ;
-        let payload = { hotelId, reservationId, pmsId, pmsUrl, pmsLogin, pmsPwd, checkin: data };
+        let payload = { hotelId, reservationId, pmsId, pmsUrl, pmsLogin, pmsPwd, data };
         try{
             console.log(this.pmsModuleApiUrl.toString());
             let requestResult =  await axios.post(this.pmsModuleApiUrl.toString(), payload); 

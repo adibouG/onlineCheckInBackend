@@ -64,14 +64,11 @@ class HotelPmsDB {
         let client, query1, query1result;
         try {
             if (!emailTracking.hotelID || !emailTracking.reservationID) throw new Error('no ids');
+            emailTracking.sentDate = emailTracking.sentDate ? emailTracking.sentDate / 1000 : null ;
+            emailTracking.sendingDate = emailTracking.sendingDate ? emailTracking.sendingDate / 1000 : null ;
             client = await pgPool.connect();
-           // if (emailTracking.sentDate) { 
-                query1 = 'INSERT INTO email_reservation_tracking(message_id, reservation, hotel, email_type, email_sent_date, email_sending_date, attempts) VALUES ($1, $2, $3, $4, to_timestamp($5), to_timestamp($6), $7);' ;
-                query1result = await client.query(query1, [emailTracking.messageID, emailTracking.reservationID, emailTracking.hotelID, emailTracking.emailType, emailTracking.sentDate, emailTracking.sendingDate, emailTracking.attempts]);
-            /*} else {
-                query1 = 'INSERT INTO email_reservation_tracking(message_id, reservation, hotel, email_type, email_sending_date, attempts) VALUES ($1, $2, $3, $4, to_timestamp($6), $7);' ;
-                query1result = await client.query(query1, [emailTracking.messageID, emailTracking.reservationID, emailTracking.hotelID, emailTracking.emailType, emailTracking.sendingDate, emailTracking.attempts]);
-            }*/
+            query1 = 'INSERT INTO email_reservation_tracking(message_id, reservation, hotel, email_type, email_sent_date, email_sending_date, attempts) VALUES ($1, $2, $3, $4, to_timestamp($5), to_timestamp($6), $7);' ;
+            query1result = await client.query(query1, [emailTracking.messageID, emailTracking.reservationID, emailTracking.hotelID, emailTracking.emailType, emailTracking.sentDate, emailTracking.sendingDate, emailTracking.attempts]);
             client.release();
             return query1result.rows;
         }catch(e) {
@@ -86,13 +83,9 @@ class HotelPmsDB {
         try {
             if (!emailTracking.hotelID || !emailTracking.reservationID) throw new Error('no ids');
             client = await pgPool.connect();
-            //if (emailTracking.sentDate) {
-                query1 = 'UPDATE email_reservation_tracking SET message_id = $1, email_sent_date = to_timestamp($2), attempts = $3 WHERE reservation = $4 AND hotel = $5;' ;
+                 query1 = 'UPDATE email_reservation_tracking SET message_id = $1, email_sent_date = to_timestamp($2), attempts = $3 WHERE reservation = $4 AND hotel = $5;' ;
                 query1result = await client.query(query1, [emailTracking.messageID, emailTracking.sentDate, emailTracking.attempts, emailTracking.reservationID, emailTracking.hotelID]);
-            /*} else {
-                query1 = 'UPDATE email_reservation_tracking SET message_id = $1, attempts = $2 WHERE reservation = $3 AND hotel = $4;' ;
-                query1result = await client.query(query1, [emailTracking.messageID, emailTracking.attempts, emailTracking.reservationID, emailTracking.hotelID]);
-            }*/
+           
             client.release();
             return query1result.rows;
         }catch(e) {
@@ -101,14 +94,14 @@ class HotelPmsDB {
         } 
     }
 
-    async deleteEmailTrackingInfo(emailTracking){
+    async deleteEmailTrackingInfo(reservationID, hotelID){
        
         let client, query1, query1result;
         try {
-            if (!emailTracking.hotelID || !emailTracking.reservationID) throw new Error('no ids');
+            if (!hotelID || !reservationID) throw new Error('no ids');
             client = await pgPool.connect();
-            query1 = 'DELETE email_reservation_tracking WHERE reservation = $1 AND hotel = $2';
-            query1result = await client.query(query1, [emailTracking.reservationID, emailTracking.hotelID]);
+            query1 = 'DELETE FROM email_reservation_tracking WHERE reservation = $1 AND hotel = $2';
+            query1result = await client.query(query1, [reservationID, hotelID]);
             client.release();
             return query1result.rows;
         }catch(e) {

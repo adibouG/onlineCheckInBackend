@@ -5,11 +5,7 @@
         "FETCH_BOOKING_FROM_TOKEN" : "/reservation" ,
         "POST_BOOKING" : "/reservation" ,
         "RESET_BOOKING" : "/reset" ,
-        "GET_QRCODE" : "/qrcode" ,
-        "SEND_EMAIL" : "/email" ,
-        "START_CHECK_IN" : "",
-        "RESEND_EMAILS" : "/resend",
-        "GET_NEW_RESERVATIONS" : "/getReservations" 
+        "GET_QRCODE" : "/qrcode" 
     },
     "DATA_STORAGE" : {
      "PATH" :  "./Data/dummyDB.js"
@@ -34,6 +30,8 @@
     "CHECKIN_REQUEST_START_DAY_OFFSET" : 2 ,
     "RESERVATION_LOOKUP_INTERVAL_MINUTES" : 15 ,
     "EMAIL_RETRY_DELAY_MINUTES" : 2 ,
+    "KEEP_TRACKING_DAYS" : 2 ,
+    "CLEAN_TRACKING_INTERVAL_MINUTES" : 2 ,
     "PMS_API_BASEURL": "http://localhost:3002/pmsmodule/api/reservation"
 }
 

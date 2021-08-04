@@ -1,7 +1,8 @@
 const { HotelPmsDB } = require('../Models/database.js');
 const Enzo = require('../Models/enzoBooking.js');
 const PmsApi = require('../Models/pmsModuleApi.js');
-
+const { findValidBooking, resetBookingDate } = require('../Utilities/utilities.js')
+const Models = require('../Models/errors.js')
 
 //get new reservation, return an array of enzoCheckIn, run at specified interval 
 const getReservations = async (hotelId = null, reservationId = null) => { 
@@ -35,7 +36,7 @@ const postReservations = async (hotelId, reservationId, data) => {
     console.log("Start helper process: postReservations....");
     try{
         let result = {};
-        //Call the db to get the list of hotel clients and their pmsData
+        //Call the db to get the pmsData
         const dbManager = new HotelPmsDB(hotelId);
         const hotelWithPmsAccessList = await dbManager.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
         const pmsApi = new PmsApi.PmsModuleApi(hotelId); //we use 1 generic manager (no hotelID) that will do request for each hotel 
@@ -52,7 +53,65 @@ const postReservations = async (hotelId, reservationId, data) => {
 }
 
 
+
+const getBookingFromEmail = async (email) => {
+   
+    let hotelID = 1; 
+    let bookings = []; 
+    let validEmail = email.length > 0 || false;
+    try {
+        if (!email || !validEmail) throw new Models.EnzoError('no email or invalid email');
+        let results = await getReservations(hotelID) //dynamoDB.findDynamoDBItems(RESERVATION, "email", email);
+        results[hotelID].reservations.forEach((b) => {//results.Items.forEach((item) => {
+            // let b = unmarshall(item) ;
+            if (b["email"] === email) bookings.push(b) ;
+        });
+        if (!bookings.length) throw new Models.NotFound('no reservation with this email') ; 
+        //try to find a valid reservation
+        let booking = findValidBooking(bookings);
+        return booking ;
+    } catch(e) {
+        console.log(e);
+        throw e;
+    } 
+}
+
+const resetBookingStatus = async (email = null, reservationID = null) => {
+    try {
+        let track = new HotelPmsDB(); 
+        let hotelID = 1; 
+        if (reservationID || email) {
+            let newBook;
+            if (reservationID) {
+                let bookings = await getReservations(hotelID, reservationID);
+                newBook = resetBookingDate(bookings[hotelID].reservations[0]);   
+            } else {
+                let booking = await getBookingFromEmail(email);
+                newBook = resetBookingDate(booking);
+            }
+            await postReservations(hotelID, newBook.reservationId, newBook); 
+            await track.deleteEmailTrackingInfo(newBook.reservationId, hotelID);
+        } else {
+            let bookings = await getReservations(hotelID);
+            console.log(bookings)
+            for (let check of bookings[hotelID].reservations) {
+                let newBook = resetBookingDate(check) ;
+                console.log('Reset ', check, newBook);
+                await postReservations(hotelID, newBook.reservationId, newBook); 
+                await track.deleteEmailTrackingInfo(newBook.reservationId, hotelID);
+            }
+        }
+        return 1;
+    } catch(e) {
+        console.log(e);
+        throw e;
+    }
+}
+
+
 module.exports = {
     getReservations,
-    postReservations
+    postReservations,
+    resetBookingStatus,
+    getBookingFromEmail
 }

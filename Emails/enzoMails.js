@@ -58,8 +58,8 @@ const mailFormat =  (type, message, mail, messID, attach = null) => {
     }  
 }
 
-function sendEmailRequest(type, message, email, messID = null, user = null) {   
-   let mail = mailFormat( type , message, email  , messID , user);
+function sendEmailRequest(type, message, email, messID = null, attach = null) {   
+   let mail = mailFormat( type , message, email  , messID , attach);
    return axios({ url: EMAIL_SERVICE_URL, method: 'POST', data: mail })
     .then( res => {  
              console.log('ok') ;

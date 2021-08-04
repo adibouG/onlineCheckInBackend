@@ -1,6 +1,6 @@
 class EnzoAddress {
-    constructor({ address = null, addressLine1 = null, addressLine2 = null, country = null, postalCode = null, city = null } = {}) {
-        this.addressLine1 = addressLine1 || address ;
+    constructor({ addressLine1 = null, addressLine2 = null, country = null, postalCode = null, city = null } = {}) {
+        this.addressLine1 = addressLine1 ;
         this.addressLine2 = addressLine2 ;
         this.postalCode = postalCode; 
         this.city = city;
@@ -10,9 +10,9 @@ class EnzoAddress {
 class EnzoGuest extends EnzoAddress {
     constructor({ email = null, gender = null, sex = null, birthDate = null, documents = null, 
         nationality = null, firstName = null, lastName = null, fullName = null, guestId = null,
-        address = null, addressLine1 = null, addressLine2 = null, country = null,
+        addressLine1 = null, addressLine2 = null, country = null,
         mobile = null, postalCode = null, city = null } = {}) {
-       super({ address, addressLine1, addressLine2, country, postalCode, city });
+       super({ addressLine1, addressLine2, country, postalCode, city });
         this.guestId = guestId;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -27,23 +27,24 @@ class EnzoGuest extends EnzoAddress {
 }
 
 class EnzoPayment {
-    constructor({ amountToPay = null, amountPaid = null, bank= null, method = null, currency = "€", paid = null }) {
+    constructor({ amountToPay = null, amountPaid = null, bank= null, method = null, currency = "€", transaction = null, }) {
         this.amountToPay = amountToPay ;
         this.amountPaid = amountPaid ;
         this.currency = currency; 
         this.method = method;
         this.bank = bank;
+        this.transaction = transaction ;
     }
 } 
 
 class EnzoReservation extends EnzoGuest {
-    constructor({ roomNumber = null, status = null, email = null, firstName = null,
-         lastName = null, fullName = null, address = null, postalCode = null,
-          city = null, mobile = null, payment = null,
-          pmsId = null, hotelId = null, reservationId = null, bookingRef = null, 
+    constructor({ roomNumber = null, state = null, email = null, firstName = null,
+         lastName = null, fullName = null, postalCode = null,
+          city = null, mobile = null, pmsId = null, hotelId = null, reservationId = null, 
+          bookingRef = null, addressLine1 = null, addressLine2 = null,
           additionalGuest = null, startDate = null, endDate = null,
            arrivalDate = null, guestCount = null, options = null, roomType = null }) {
-        super({ email, firstName, lastName, fullName, address,  postalCode, city, mobile });
+        super({ email, firstName, lastName, addressLine1, addressLine2, fullName, postalCode, city, mobile });
         this.startDate = startDate  ;
         this.endDate = endDate; 
         this.arrivalDate = arrivalDate ; 
@@ -55,8 +56,7 @@ class EnzoReservation extends EnzoGuest {
         this.pmsId = pmsId;
         this.reservationId = reservationId;
         this.bookingRef = bookingRef;
-        this.status = status;
-        this.payment = payment ? new EnzoPayment(payment) : null ;
+        this.state = state;
         this.additionalGuest = additionalGuest;
     }
 }
@@ -72,14 +72,14 @@ class EnzoQrCode {
 }
 
 class EnzoCheckInRequest extends EnzoReservation {
-    constructor({ uuid = null, status = null, email = null, firstName = null, lastName = null, 
-        fullName = null, address = null, addressLine1 = null, addressLine2 = null, postalCode = null, city = null, mobile = null, 
+    constructor({ uuid = null, state = null, email = null, firstName = null, lastName = null, 
+        fullName = null, addressLine1 = null, addressLine2 = null, postalCode = null, city = null, mobile = null, 
         payment = null, pmsId = null, hotelId = null, reservationId = null, bookingRef = null, 
         additionalGuest = null, startDate = null, endDate = null, arrivalDate = null, 
         guestCount = null, options = null, roomType = null,
         hotelPolicies = null, other = null } = {}) {
-        super({ status, email, firstName, lastName, fullName,
-             address, addressLine1, addressLine2, postalCode, city, mobile, payment,
+        super({ state, email, firstName, lastName, fullName,
+             addressLine1, addressLine2, postalCode, city, mobile,
              pmsId, hotelId, reservationId, bookingRef,
              additionalGuest, startDate, endDate, 
              arrivalDate, guestCount, options, roomType });
@@ -87,19 +87,20 @@ class EnzoCheckInRequest extends EnzoReservation {
         this.uuid = uuid;
         this.hotelPolicies = hotelPolicies;
         this.other = other;
+        this.payment = payment ? new EnzoPayment(payment) : null ;
     }
 
 }
 
 class EnzoStay extends EnzoCheckInRequest {
 
-    constructor({ uuid = null, status = null, email = null, firstName = null, lastName = null, 
+    constructor({ uuid = null, state = null, email = null, firstName = null, lastName = null, 
         fullName = null, address = null, addressLine1 = null, addressLine2 = null, postalCode = null, city = null, mobile = null, 
         payment = null, pmsId = null, hotelId = null, reservationId = null, bookingRef = null, 
         additionalGuest = null, startDate = null, endDate = null, arrivalDate = null, 
         guestCount = null, options = null, roomType = null, 
         hotelPolicies = null, other = null } = {}) {
-        super({ uuid, status, email, firstName, lastName, fullName,
+        super({ uuid, state, email, firstName, lastName, fullName,
              address, addressLine1, addressLine2, postalCode, city, mobile, payment,
              pmsId, hotelId, reservationId, bookingRef,
              additionalGuest, startDate, endDate, 

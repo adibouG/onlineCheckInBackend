@@ -2,6 +2,7 @@ require('dotenv').config();
 const { winstonLogger } = require('./Logger/loggers.js');
 const app = require('./app.js') ;
 const { newReservationFinder } = require('./Controllers/findNewBooking.js');
+const { getEmailErrors } = require('./Controllers/emails.js');
 const { RESERVATION_LOOKUP_INTERVAL_MINUTES } = require('./settings.json');
 //use the checkin API
 const api = require('./Routes/routes.js');
@@ -28,13 +29,17 @@ process.on('SIGBREAK', handle);
 process.on('SIGWINCH', handle);
 process.on('SIGKILL', handle);
 process.on('SIGSTOP', handle);
-//start the reservation lookup interval
-console.log('start setInterval :' + ((RESERVATION_LOOKUP_INTERVAL_MINUTES * 20 * 1000)/60));
 
+
+//check at start if the tracking contains error from previous runtime that might have crashed unexpectedly
+getEmailErrors();
+//start the reservation lookup interval
+//set the lookup process interval no need to save it as this is the app purpose to run it
+console.log('start setInterval :' + ((RESERVATION_LOOKUP_INTERVAL_MINUTES * 20 * 1000)/60));
 setInterval(newReservationFinder, RESERVATION_LOOKUP_INTERVAL_MINUTES * 20 * 1000);
 //trigger the reservation lookup function at start , 
 newReservationFinder();
-//start the app server on defined port 
+//start the app server on defined port for the checkin app or other service using this api
 app.listen(port, host, () => {
     console.log('enzo checkin backendAPI is running at %s://%s:%s', scheme, host, port);
     winstonLogger.info(`++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++`);

@@ -8,7 +8,7 @@ const { MAILTYPES } = require('../Emails/enzoMails.js');
 const newReservationFinder = async () => {
     console.log("Start process: newReservationFinder ....");
     try {
-        const result = await helpers.getReservations(); //{};
+        const result = await helpers.getReservations(); 
         //Call the db to get the list of hotel clients and their pmsData
         const dbManager = new HotelPmsDB();
         const emailTracking = await dbManager.getEmailTrackingInfo();  
@@ -19,7 +19,7 @@ const newReservationFinder = async () => {
             result[i].reservations = result[i].reservations.filter((r) => newReservationFilter(r, emailTracking)) ;
         }
         //but only if there are actual tracked reservations
-        return newReservationsProcess(result);
+        return await newReservationsProcess(result);
     } catch (e) {
         console.log(e);
         throw e;
@@ -30,20 +30,20 @@ const newReservationFinder = async () => {
 //get the new reservations,
 const newReservationsProcess = async (newValidReservations) => {
     console.log("Start process: newReservationsProcess ....");
-    try{
-        const dbManager = new HotelPmsDB();
+    const dbManager = new HotelPmsDB();
+    try {
         for (const i in newValidReservations) {
             const hotelDetails = await dbManager.getHotelDetails(i);
-            return newValidReservations[i].reservations.map(async (res) => {
+            newValidReservations[i].reservations.map(async (res) => {
                 let reservationObj = await helpers.getReservations(res.hotelId, res.reservationId);
                 let checkIn = reservationObj[res.hotelId].reservations[0]; 
-                console.log(checkIn);
                 if (checkIn.email) {
                     let values = await makeEmailValues(MAILTYPES.START, checkIn, hotelDetails);
-                    return renderAndSendEmail(MAILTYPES.START, values);
+                    return await renderAndSendEmail(MAILTYPES.START, values);
                 }
             });
         }
+        console.log("End process: newReservationsProcess ....");
     } catch (e) {
         console.log(e);
         throw e;

@@ -1,12 +1,8 @@
-const Models = require('../Models/index.js');
 const Errors = require('../Models/errors.js');
-const PmsApi = require('../Models/PmsModuleApi.js');
 const CheckInApp = require('../Models/checkInApp.js');
-const Enzo = require('../Models/enzoBooking.js');
-const { HotelPmsDB } = require('../Models/database.js');
-const helpers = require('../Helpers/helpers.js')
+const helpers = require('../Helpers/helpers.js');
 const jwt = require('jsonwebtoken') ;
-const { resetBookingStatus, makeCheckInAppResponseBody } = require('../Utilities/utilities.js');
+const { makeCheckInAppResponseBody } = require('../Utilities/utilities.js');
 const { winstonLogger } = require('../Logger/loggers.js');
 const { secretKey } = require('../Crypto/crypto.js');
 
@@ -19,23 +15,24 @@ const getBookingFromToken = async (req, res) => {
         if (!token) throw new Errors.EnzoError('no token');
         //get data and verify the token
         //TODO make a token verification function security check : algo, sign, iss ...
-        const verified = jwt.verify(token, secretKey); 
-        const { uuid, hotel_id, reservation_id, email } = verified;
-        const bookingData = await helpers.getReservations(hotel_id, reservation_id); // pmsData.getReservationData();        
-        if (!bookingData)  throw new Errors.NotFound() ;        
-        const enzoBooking = new Enzo.EnzoCheckInRequest(bookingData[hotel_id]['reservations'][0]);
-        console.log(enzoBooking)
+        const decoded = jwt.decode(token, secretKey); 
+        const { uuid, hotel_id, reservation_id, email } = decoded;
+        const bookingData = await helpers.getReservations(hotel_id, reservation_id); 
+        if (!bookingData || !bookingData[hotel_id].reservations.length) throw new Errors.NotFound() ;        
+        const enzoBooking = bookingData[hotel_id]['reservations'][0] ; // new Enzo.EnzoCheckInRequest(bookingData[hotel_id]['reservations'][0]);
+        
+        //token was signed using the reservation state in order to make it only 1 time use 
+        const verified = jwt.verify(token, secretKey + enzoBooking.state); 
+        if (!verified) throw new Errors.EnzoError('invalid token');
         const checkInAppBooking = CheckInApp.Checkin.fromEnzoCheckIn(enzoBooking);
+              //TODO add token in the response to allow the next request
         const response = makeCheckInAppResponseBody(hotel_id, checkInAppBooking);
-        //TO DO:  add the email tracking here or via middleware 
-        console.log(response)
         return res.status(200).send(response);
     } catch(e) {
         let error ;
         if (e instanceof jwt.TokenExpiredError) error = new Errors.ExpiredLink() ;
         else error = e ;
         winstonLogger.error(error) ;
-        console.log('message: ', error.message) ;
         return res.status(error.code || 401).send(error.message) ;
     }
 }
@@ -44,23 +41,20 @@ const getBookingFromToken = async (req, res) => {
 const postBooking = async (req, res) => {
     try {
         const payload = req?.body;
-        const { checkin, hotel_id } = payload;
+        const { token, checkin, hotel_id, pms_id } = payload;
         if (!checkin) throw new  Errors.EnzoError('no booking nor update');
-        const uuidKey = checkin.uuid ;
-        const reservation_id = checkin.reservationID ;
-        const result = await helpers.postReservations(hotel_id, reservation_id, checkin);
-        /*const pmsData = new PmsApi.PmsModuleApi(hotel_id, reservation_id);
-        const bookingData = await pmsData.updateReservationData(hotel_id, reservation_id, checkin);     
-        */
+
+        const checkinApp = new CheckInApp.Checkin(checkin);
+        const enzoCheckin = checkinApp.toEnzoCheckIn();
+
+        const reservation_id = enzoCheckin.reservationId ;
+        const result = await helpers.postReservations(hotel_id, reservation_id, enzoCheckin);
         const updtBookingData = await helpers.getReservations(hotel_id, reservation_id);
-        console.log('updtBookingData' , updtBookingData) //  pmsData.getReservationData(hotel_id, reservation_id, checkin);     
         if (!updtBookingData) throw new Errors.NotFound() ;
-        const enzoBooking = new Enzo.EnzoCheckInRequest(updtBookingData[hotel_id]['reservations'][0]);
-        console.log(enzoBooking)
+        const enzoBooking = updtBookingData[hotel_id]['reservations'][0];
         const checkInAppBooking = CheckInApp.Checkin.fromEnzoCheckIn(enzoBooking);
+        //TODO add token in the response to allow the next request
         const response = makeCheckInAppResponseBody(hotel_id, checkInAppBooking);
-        //TO DO:  add the email tracking here or via middleware 
-        console.log(response)
         return res.status(200).send(response);
     } catch(e) {
         console.log(e) ;
@@ -72,7 +66,7 @@ const postBooking = async (req, res) => {
 const resetBookings = async (req, res) => {
     try {
         let { email, uuid } = req?.query;
-        await resetBookingStatus(email||null, uuid||null) ;
+        await helpers.resetBookingStatus(email||null, uuid||null) ;
         return res.status(200).send();
     } catch(e) {
         console.log(e);

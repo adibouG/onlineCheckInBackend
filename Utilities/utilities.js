@@ -1,5 +1,3 @@
-const dynamoDB = require('../AWS/awsDynamoDb.js');
-const { marshall, unmarshall } = require("@aws-sdk/util-dynamodb");
 const { randomUUID } = require('crypto');
 const jwt = require('jsonwebtoken');
 const { secretKey } = require('../Crypto/crypto.js');
@@ -8,12 +6,11 @@ const Models = require('../Models/index.js');
 const Errors = require('../Models/errors.js');
 const SETTINGS = require('../settings.json') ;
 const { MAILTYPES } = require('../Emails/enzoMails.js') ;
-const RESERVATION = SETTINGS.DYNAMODB_TABLE.RESERVATION;
 const { CHECKIN_REQUEST_START_DAY_OFFSET, VALID_ENZO_STATUS, APP_BASE_URL } = SETTINGS ;
 
 const preCheckInIsValid = (booking, offset = CHECKIN_REQUEST_START_DAY_OFFSET) => {
     const startDate = new Date(booking.startDate);
-    return (startDate >= new Date().setHours(0, 0, 0, 0) && startDate <= addDay(new Date().setHours(23, 59, 59, 999), offset) && VALID_ENZO_STATUS.includes(booking.status.toUpperCase()));
+    return (startDate >= new Date().setHours(0, 0, 0, 0) && startDate <= addDay(new Date().setHours(23, 59, 59, 999), offset) && booking.state && VALID_ENZO_STATUS.includes(booking.state.toUpperCase()));
 }
 const isItTracked = (r, emailTracking) => {
     let isTracked = false;
@@ -23,7 +20,7 @@ const isItTracked = (r, emailTracking) => {
     }  
     return isTracked;
 };
-const newReservationFilter = (r, l) => preCheckInIsValid(r) && !isItTracked(r, l);
+const newReservationFilter = (r, l) => (preCheckInIsValid(r) && !isItTracked(r, l));
 
 
 const generateUUID = () => randomUUID();
@@ -38,19 +35,19 @@ const makeQrCode = async (booking) => {
 }
 
 //function to generate customized tokens 
-const makeStartPreCheckInEmailToken = (email, uuid, reservationID, hotelID) => {
+const makeStartPreCheckInEmailToken = (email, uuid, state, reservationID, hotelID) => {
     //TODO place the signature template in a specific module and set up a real secret with 32char/128bit entropy
     let sign = { 
         expiresIn: SETTINGS.TOKEN.VALIDITY,
         issuer: 'ENZOSYSTEMS ONLINE PRECHECKIN API',
         subject: 'precheckinapi/getBookingFromEmail',
-        audience: 'Enzosystems/online precheckin api'  
+        audience: 'Enzosystems/online precheckin api'       
     };
     let reservation_id = reservationID ;
     let hotel_id = hotelID ;
     let payload = { reservation_id, hotel_id, uuid, email } ;
     try {
-        let token = jwt.sign(payload, secretKey, sign) ;
+        let token = jwt.sign(payload, secretKey + state, sign) ;
         return token;
     } catch (e) {
         console.log(e);
@@ -64,9 +61,10 @@ const makeToken = (booking) => {
         //if a valid booking exist, generate the token for the 1rst email 
         let email = booking.email;
         let uuid = booking.uuid || generateUUID();
-        let reservationID = booking.id || booking.reservationId;
+        let reservationID = booking.reservationId;
         let hotelID = booking.hotelId;
-        let token =  makeStartPreCheckInEmailToken(email, uuid, reservationID, hotelID);
+        let state = booking.state;
+        let token =  makeStartPreCheckInEmailToken(email, uuid, state, reservationID, hotelID);
         return token;
     } catch(e) {
         let error = e;
@@ -75,50 +73,34 @@ const makeToken = (booking) => {
     }
 }
 
-const getBookingFromEmail = async (email) => {
-   
-    let bookings = [] ; 
-    let validEmail = email.length > 0 || false ;
-    try {
-        if (!email || !validEmail) throw new Models.EnzoError('no email or invalid email');
-        let results = await dynamoDB.findDynamoDBItems(RESERVATION, "email", email);
-        results.Items.forEach((item) => {
-            let b = unmarshall(item) ;
-            if (b["email"] == email || b["guest"]["email"] === email) bookings.push(b) ;
-        });
-        if (!bookings.length) throw new Models.NotFound('no reservation with this email') ; 
-        //try to find a valid reservation
-        let booking = findValidBooking(bookings);
-        return booking ;
-    } catch(e) {
-        console.log(e);
-        throw e;
-    } 
-}
 
-const findValidBooking = (bookings, status = null) => {
+
+const findValidBooking = (bookings) => {
     let booking ;
     console.log(bookings)
     if (!bookings.length) throw new Models.NotFound('no reservation with this email') ; 
     //try to find a valid reservation
     for (let b of bookings) {
-        if (isBookingValid(b) && !isPreCheckedBooking(b)) {
-            if (!status || status.toUpperCase() === 'PENDING') booking = b ;
+        if (preCheckInIsValid(b) &&  b.state.toUpperCase() === 'WAITINGFORGUEST'){ //isBookingValid(b) && !isPreCheckedBooking(b)) {
+            //if (!status || status.toUpperCase() === 'PENDING') 
+            booking = b ;
             break;
         }
     }       
     if (!booking) { // if none try to find a prechecked reservation
         for (let b of bookings) {
-            if (isBookingValid(b) && isPreCheckedBooking(b)) {
-                if (!status || status.toUpperCase() === 'PRECHEKED') booking = b ;
+            if (preCheckInIsValid(b) &&  b.state.toUpperCase() === 'PRECHECKEDIN'){//if (isBookingValid(b) && isPreCheckedBooking(b)) {
+                //if (!status || status.toUpperCase() === 'PRECHECKED')
+                booking = b ;
                 break;
             }
         }
     }
     if (!booking) { // if none try to find a checked reservation
         for (let b of bookings) {
-            if (!(isBookingValid(b) || isPreCheckedBooking(b))) {
-                if (!status || status.toUpperCase() === 'COMPLETE') booking = b ;
+            if (!preCheckInIsValid(b) && b.state.toUpperCase() === 'INHOUSE'){ //(!(isBookingValid(b) || isPreCheckedBooking(b))) {
+                //if (!status || status.toUpperCase() === 'COMPLETE') 
+                booking = b ;
                 break;
             }
         }
@@ -128,21 +110,14 @@ const findValidBooking = (bookings, status = null) => {
 }
 
 const setCheckBooking = (bookingUpdt) => {
-    let uuidKey = bookingUpdt.uuid;
-    bookingUpdt.reservation['status'] = 'PRECHECKED';
-    bookingUpdt.status = 'PRECHECKED' ;
+    bookingUpdt.state = 'PRECHECKEDIN' ;
     return bookingUpdt ;
 } 
 
-const isBookingValid = (book) => {
-    if (book.reservation) return !("arrivalDate" in book.reservation && book.reservation.arrivalDate) ;
-    else return !("arrivalDate" in book && book.arrivalDate) ;
-} 
+const isBookingValid = (book) =>  (!"arrivalDate" in book && book.arrivalDate && book.state.toUpperCase() !== 'INHOUSE') ;
 
-const isPreCheckedBooking = (book) => {
-    if (book.reservation) return ("status" in book.reservation && book.reservation.status.toUpperCase() === 'PRECHECKED') ;
-    else return ("status" in book && book.status === 'waitingForGuest') ;
-}
+const isPreCheckedBooking = (book) => ("state" in book && book.state.toUpperCase() === 'PRECHECKEDIN') ;
+
 const makeCheckInAppResponseBody = (hotel_id, booking) => {
     let prechecked = false ;
     let complete = false;
@@ -185,6 +160,8 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 const dateDiffInDays = (a, b) => {
     // Discard the time and time-zone information.
+    a = new Date(a);
+    b = new Date(b);
     const utc1 = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
     const utc2 = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
     return Math.floor((utc2 - utc1) / MS_PER_DAY);
@@ -199,20 +176,18 @@ const makeDate = () => {
 const getDay = (d , loc = false) => new Date(d).toLocaleDateString(loc, { weekday: 'long' });
 
 const resetBookingState = (book) => {
-    if (isPreCheckedBooking(book)) delete book.reservation.status ;
-    if (!isBookingValid(book)) delete book.reservation.arrivalDate ;
-    if (book.payment.paid) book.payment.paid = false;
-    if (book.privacyPolicy.accepted) book.privacyPolicy.accepted = false;
-    if (book.guest) {
-        if (book.guest.mobile) book.guest.mobile = null;
-        if (book.guest.postalCode) book.guest.postalCode = null;
-        if (book.guest.city) book.guest.city = null;
-        if (book.guest.address) book.guest.address = null;
-    }
+    if (isPreCheckedBooking(book)) book.state = 'waitingForGuest';
+    if (book.payment.paid) book.payment.paidAmount = 0;
+    if (book.hotelPolicies && book.hotelPolicies.privacyPolicy && book.hotelPolicies.privacyPolicy.accepted) book.hotelPolicies.privacyPolicy.accepted = false;
+    if (book.mobile) book.mobile = null;
+    if (book.postalCode) book.postalCode = null;
+    if (book.city) book.city = null;
+    if (book.country) book.country = null;
+    if (book.addressLine1) book.addressLine1 = null;
+    if (book.addressLine2) book.addressLine2 = null;
     return book ;
 };
 
-//the true argument will return  
 const makeCheckDates = (past = false) => {
     let len = (Math.floor(Math.random() * 10) + 1)   ;
     len = past ? -1 * len : len ;
@@ -226,45 +201,21 @@ const makeCheckDates = (past = false) => {
 
 const resetBookingDate = (book) => {
     let newDates ;
-    console.log(book)
-    if ("arrivalDate" in book.reservation) {
+    if ("arrivalDate" in book && book.arrivalDate) {
         newDates = makeCheckDates(true) ; 
-        book.reservation.arrivalDate = newDates.otherDate ;
-        book.reservation.startDate = newDates.otherDate ;
-        book.reservation.endDate = newDates.today ;
+        book.arrivalDate = newDates.otherDate ;
+        book.startDate = newDates.otherDate ;
+        book.endDate = newDates.today ;
+        book.state = 'inHouse';
     } else {
         newDates = makeCheckDates(false) ; 
-        book.reservation.startDate = newDates.today ;
-        book.reservation.endDate = newDates.otherDate ;
+        book.startDate = newDates.today ;
+        book.endDate = newDates.otherDate ;
+        book.state = 'waitingForGuest';
         book = resetBookingState(book);
     }
     return book ;
 };
-
-
- 
-const resetBookingStatus = async (email = null, uuid = null) => {
-    try {
-        if (email || uuid) {
-            let params = email ? { email: email } : { reservationID: uuid } ;
-            let booking = await dynamoDB.getDynamoDBItem(RESERVATION, params);
-            let newBook = resetBookingDate(booking);
-            await dynamoDB.putDynamoDBItem(RESERVATION, { reservationID: booking.uuid, email: booking.guest.email, ...newBook });
-        } else {
-            let bookings = await dynamoDB.findDynamoDBItems(RESERVATION);
-            //reset the dates
-            for (let check of bookings.Items) {
-                console.log(unmarshall(check));
-                let newBook = resetBookingDate(unmarshall(check)) ;
-                await dynamoDB.putDynamoDBItem(RESERVATION, { reservationID: newBook.uuid, ...newBook });
-            }
-        }
-        return 1;
-    } catch(e) {
-        console.log(e);
-        throw e;
-    }
-}
 
 const makeFormatedDate = (d = null, l = null) =>   {
     let date = d ? new Date(d) : new Date() ;
@@ -285,7 +236,7 @@ const makeEmailValues = async (type, booking, hotelValues) => {
         if (type === MAILTYPES.START) {
             let checkDates =  d1 + " - " + d2 ;
             // generate the token for the 1rst email 
-            let token =  makeToken(booking); // makeStartPreCheckInEmailToken(email, uuid, reservationID, hotelID);
+            let token = makeToken(booking); 
             //TO DO: check/update the tracking to follow the new pattern and flow
             values = {
                 guestLinkName : guestName.replaceAll(' ', '.') ,
@@ -298,10 +249,6 @@ const makeEmailValues = async (type, booking, hotelValues) => {
             };
         } else if (type === MAILTYPES.QR) {
             let url = await makeQrCode(booking);
-            /*
-            booking = setCheckBooking(booking);
-            await dynamoDB.putDynamoDBItem(RESERVATION, { reservationID: uuidKey, ...bookingUpdt }) 
-           */
             const numNights = dateDiffInDays(d1, d2)
             const roomType =  booking.roomType;
             const numGuests = booking.guestCount;
@@ -329,9 +276,7 @@ const makeEmailValues = async (type, booking, hotelValues) => {
             hotelPhone: hotelValues.hotel_phone,
             hotelEmail: hotelValues.hotel_email 
         }
-
         return ({ ...values, ...hotel });
-
     } catch(e) {
         let error = e;
         console.log(error);
@@ -340,14 +285,11 @@ const makeEmailValues = async (type, booking, hotelValues) => {
 }
 
 
-
-
-
 module.exports = {
     resetBookingDate,
     makeCheckDates,
+    findValidBooking,
     resetBookingState,
-    resetBookingStatus,
     isBookingValid,
     isPreCheckedBooking,
     findValueInDataStore ,
@@ -361,7 +303,6 @@ module.exports = {
     generateUUID,
     setCheckBooking,
     makeQrCode,
-    getBookingFromEmail,
     makeCheckInAppResponseBody,
     makeStartPreCheckInEmailToken,
     makeToken,

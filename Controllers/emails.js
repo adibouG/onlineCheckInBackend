@@ -11,57 +11,51 @@ var intervalCheckID;
 // get a valid booking, generate token and trigger the 1rst start-pre-checkin email.
 const renderAndSendEmail = async (type, values, mailTrackingObj = null)  => {
     let template = type === MAILTYPES.START ? 'startCheckInMail' : 'qrCodeMail';
-    try {
-        mailTrackingObj = mailTrackingObj || new Models.EmailTracking({ reservationID: values.reservationId, hotelID:  values.hotelId, messageID: values.token, emailType: MAILTYPES.START });
-        return app.render(template, values, async (err, content) => {
-            if (err) throw err ;
-            try {
-                let manager = new db.HotelPmsDB();
-                if (values.email && values.email.toLowerCase() === 'adrien@enzosystems.com' ) {
-                    await sendEmailRequest(type, content, values.email, values.reservationId, values.guestName);
-                }
-                await manager.addEmailTrackingInfo(mailTrackingObj);
-                return 1;
-            } catch (e) {
-                console.log(e);
-                mailTrackingObj.sentDate = null ;
-                await dbManager.addEmailTrackingInfo(mailTrackingObj);
-                //start the checksrs
-                console.log('start the check email error ...')
-           
-                if (!intervalCheckID) startCheckMailErrors() ;
-                return 0 ;
+    mailTrackingObj = mailTrackingObj ? mailTrackingObj : new Models.EmailTracking({ 
+        reservationID: values.reservationId, 
+        hotelID: values.hotelId, 
+        messageID: `${values.hotelId}#${values.reservationId}`, 
+        emailType: MAILTYPES.START 
+    });
+    return app.render(template, values, async (err, content) => {
+        if (err) throw err ;
+        let manager = new db.HotelPmsDB();
+        try {
+            if (values.email && values.email.toLowerCase() === 'adrien@enzosystems.com' ) {
+                await sendEmailRequest(type, content, values.email, mailTrackingObj.messageID, values.guestName);
             }
-        });
-    } catch (e) {
-        console.log(e);
-        mailTrackingObj.sentDate = null ;
-        await dbManager.addEmailTrackingInfo(mailTrackingObj);
-        //start the checksrs
-        console.log('start the check email error ...')
-   
-        if (!intervalCheckID) startCheckMailErrors() ;
-        return 0 ;
-    }
+            if (mailTrackingObj.attempts > 1) await manager.updateEmailTrackingInfo(mailTrackingObj) ;
+            else await manager.addEmailTrackingInfo(mailTrackingObj);
+        } catch (e) {
+            mailTrackingObj.sentDate = null ;
+            await manager.addEmailTrackingInfo(mailTrackingObj);
+            //start the checksrs
+            console.log('start the check email error ...');
+            if (!intervalCheckID) return startCheckMailErrors() ;
+            throw e ;
+        }
+    });
 }
 
-
-
-
-//const { hotel_name, hotel_address, hotel_postcode, hotel_city, hotel_country,
-  //  hotel_phone, hotel_email } = hotelValues
-const  getEmailErrors = async () => {
+const getEmailErrors = async () => {
     console.log('check email error table for emails to resend...')
     try{
         let manager = new db.HotelPmsDB();
         let results = await manager.getEmailError();  
         if (!results.length) return stopCheckMailErrors();
         results.map(async (item) => {
-            let emailSentObject = new Models.EmailTracking({ reservationID: item.reservation, hotelID: item.hotel, emailType: item.email_type, sentDate: item.email_sent_date, sendingDate: item.email_sending_date, messageID: item.messageID, attempts: item.attempts }); ;
-            console.log(emailSentObject);
-            let result = await helpers.getReservations(emailSentObject.hotelID, emailSentObject.reservationID)
+            let emailSentObject = new Models.EmailTracking({ 
+                reservationID: item.reservation,
+                hotelID: item.hotel, 
+                emailType: item.email_type, 
+                sentDate: item.email_sent_date,
+                sendingDate: item.email_sending_date, 
+                messageID: item.message_id,
+                attempts: item.attempts 
+            }); 
+            let result = await helpers.getReservations(emailSentObject.hotelID, emailSentObject.reservationID);
             let hotel = await manager.getHotelDetails(emailSentObject.hotelID);
-            let values = makeEmailValues(emailSentObject.emailType, result[emailSentObject.hotelID].reservations[0] , hotel)
+            let values = await makeEmailValues(emailSentObject.emailType, result[emailSentObject.hotelID].reservations[0] , hotel)
             emailSentObject.attempts = ++emailSentObject.attempts ;
             await renderAndSendEmail(emailSentObject.emailType, values, emailSentObject);          
         });
@@ -76,12 +70,13 @@ const startGetMailError = () => setInterval(getEmailErrors, SETTINGS.EMAIL_RETRY
     
 const startCheckMailErrors = () => {
     intervalCheckID = startGetMailError() ;
-    console.log('check email error  Interval ID ', intervalCheckID)
-   
+    console.log('check email error  Interval ID ', intervalCheckID);
 }
 
 const stopCheckMailErrors = () => {
-    clearInterval(intervalCheckID);
+    if (intervalCheckID) clearInterval(intervalCheckID);
+    console.log('no error: clear email error Interval ID ', intervalCheckID);
+    intervalCheckID = null;
 }
 
 module.exports = {
