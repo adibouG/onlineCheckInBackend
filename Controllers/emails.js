@@ -6,35 +6,38 @@ const helpers = require('../Helpers/helpers.js');
 const { makeEmailValues } = require('../Utilities/utilities.js');
 const SETTINGS = require('../settings.json') ;
 
-
 var intervalCheckID;
 // get a valid booking, generate token and trigger the 1rst start-pre-checkin email.
-const renderAndSendEmail = async (type, values, mailTrackingObj = null)  => {
-    let template = type === MAILTYPES.START ? 'startCheckInMail' : 'qrCodeMail';
-    mailTrackingObj = mailTrackingObj ? mailTrackingObj : new Models.EmailTracking({ 
-        reservationID: values.reservationId, 
-        hotelID: values.hotelId, 
-        messageID: `${values.hotelId}#${values.reservationId}`, 
-        emailType: MAILTYPES.START 
-    });
-    return app.render(template, values, async (err, content) => {
-        if (err) throw err ;
-        let manager = new db.HotelPmsDB();
-        try {
-            if (values.email && values.email.toLowerCase() === 'adrien@enzosystems.com' ) {
-                await sendEmailRequest(type, content, values.email, mailTrackingObj.messageID, values.guestName);
+const renderAndSendEmail = async (type, values, mailTracking = null)  => {
+   // try {
+        console.log('renderAndSendEmail start ...' , type);
+        let template = type === MAILTYPES.START ? 'startCheckInMail' : 'qrCodeMail';
+        let mailTrackingObj = mailTracking || new Models.EmailTracking({ 
+            reservationID: values.reservationId, 
+            hotelID: values.hotelId, 
+            emailType: type 
+        });
+
+        return app.render(template, values, async (err, content) => {
+            let manager;
+            try {
+                manager = new db.HotelPmsDB();
+                if (err) throw err ;
+                if (values.email && values.email.toLowerCase().includes('adrien@enzosystems.com')) {
+                    await sendEmailRequest(type, content, values.email, mailTrackingObj.messageID, values.guestName);
+                }
+                if (mailTracking) await manager.updateEmailTrackingInfo(mailTrackingObj) ;
+                else await manager.addEmailTrackingInfo(mailTrackingObj);
+            } catch (e) {
+                mailTrackingObj.sentDate = null ;
+                if (mailTracking) await manager.updateEmailTrackingInfo(mailTrackingObj) ;
+                else await manager.addEmailTrackingInfo(mailTrackingObj);
+                //start the checksrs
+                console.log('renderAndSendEmail error ...', type);
+                if (!intervalCheckID) return startCheckMailErrors() ;
+                throw e ;
             }
-            if (mailTrackingObj.attempts > 1) await manager.updateEmailTrackingInfo(mailTrackingObj) ;
-            else await manager.addEmailTrackingInfo(mailTrackingObj);
-        } catch (e) {
-            mailTrackingObj.sentDate = null ;
-            await manager.addEmailTrackingInfo(mailTrackingObj);
-            //start the checksrs
-            console.log('start the check email error ...');
-            if (!intervalCheckID) return startCheckMailErrors() ;
-            throw e ;
-        }
-    });
+        });
 }
 
 const getEmailErrors = async () => {

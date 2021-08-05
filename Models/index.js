@@ -7,7 +7,7 @@ class EmailTracking {
         this.emailType = emailType ; 
         this.sendingDate = new Date(sendingDate).getTime() || Date.now() ;
         this.sentDate = new Date(sentDate).getTime() || Date.now() ;
-        this.messageID = messageID ;
+        this.messageID = messageID || new String(hotelID + '#' +  reservationID + "#" + emailType);   ;
         this.attempts = attempts ;
   }
 }

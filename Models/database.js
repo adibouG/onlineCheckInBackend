@@ -12,8 +12,8 @@ class HotelPmsDB {
         try {
             client = await pgPool.connect();
             //get hotel pms
-            if (hotel) query1 = 'SELECT a.*, b.name, b.url from hotel a JOIN pms b ON a.pms = b.id WHERE a.id = $1' ;
-            else query1 = 'SELECT a.*, b.name, b.url from hotel a JOIN pms b ON a.pms = b.id' ;
+            if (hotel) query1 = 'SELECT a.*, b.name, c.* from hotel a JOIN pms b ON a.pms = b.id JOIN hotel_pms_connection c ON a.id = c.hotel WHERE a.id = $1' ;
+            else query1 = 'SELECT a.*, b.name, c.* from hotel a JOIN pms b ON a.pms = b.id JOIN hotel_pms_connection c ON a.id = c.hotel' ;
             query1result = hotel ? await client.query(query1, [hotel]) : await client.query(query1) ;
             if (!query1result.rows.length) throw new Error('no result');
             if (JSON.stringify(query1result.rows) !== JSON.stringify(this.data)) this.data = query1result.rows ;

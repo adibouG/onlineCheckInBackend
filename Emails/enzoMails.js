@@ -58,19 +58,18 @@ const mailFormat =  (type, message, mail, messID, attach = null) => {
     }  
 }
 
-function sendEmailRequest(type, message, email, messID = null, attach = null) {   
-   let mail = mailFormat( type , message, email  , messID , attach);
-   return axios({ url: EMAIL_SERVICE_URL, method: 'POST', data: mail })
-    .then( res => {  
-             console.log('ok') ;
-             winstonLogger.info(`Email type ${type} was sent to ${email} for reservationID ${messID} with messageID ${messID}`);
-             return { data: res.data, messageID: messID };
-    }) 
-    .catch( err => {  
-             console.log('ko') ;
-             winstonLogger.error(`Email type ${type} was NOT sent to ${email} for reservationID ${messID} with messageID ${messID}`);
-             throw { error: err, messageID: messID };
-    }) 
+const sendEmailRequest = async (type, message, email, messID = null, attach = null) => {  
+    try{ 
+        let mail = mailFormat( type , message, email  , messID , attach);
+        let result = await axios({ url: EMAIL_SERVICE_URL, method: 'POST', data: mail })
+        console.log('ok') ;
+        winstonLogger.info(`Email type ${type} was sent to ${email} for reservationID ${messID} with messageID ${messID}`);
+        return { data: result.data, messageID: messID };
+    } catch (err) {  
+        console.log('ko') ;
+        winstonLogger.error(`Email type ${type} was NOT sent to ${email} for reservationID ${messID} with messageID ${messID}`);
+        throw { error: err, messageID: messID };
+    } 
 }
 
 module.exports = {

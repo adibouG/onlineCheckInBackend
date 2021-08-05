@@ -8,20 +8,23 @@ const Models = require('../Models/errors.js')
 const getReservations = async (hotelId = null, reservationId = null) => { 
     console.log("Start helper process: getReservations....");
     try{
-        let result = {};
+        let result = null;
         //Call the db to get the list of hotel clients and their pmsData
         const dbManager = new HotelPmsDB(hotelId);
         const hotelWithPmsAccessList = await dbManager.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
         const pmsApi = new PmsApi.PmsModuleApi(hotelId); //we use 1 generic manager (no hotelID) that will do request for each hotel 
         //get the reservations per hotel Ids
-        for (let i = 0; i < hotelWithPmsAccessList.length; ++i) {     
+        for (let i = 0; i < hotelWithPmsAccessList.length; ++i) {    
             let hotel = hotelWithPmsAccessList[i]; 
-            result[hotel.id] = await pmsApi.getReservationData({ reservationId: reservationId,  hotelId: hotel.id, pmsId: hotel.pms, pmsUrl: hotel.url, pmsLogin: hotel.login,  pmsPwd: hotel.pwd });
-            result[hotel.id].reservations.map((r, i) => {
+            console.log(hotel.id) 
+            if (!result) result = {};
+            if (!result[hotel.id]) result[hotel.id] = {};
+            result[hotel.id] = await pmsApi.getReservationData({ reservationId: reservationId,  hotelId: hotel.id, pmsId: hotel.pms, pmsUrl: hotel.pmsUrl, pmsLogin: hotel.pmsLogin,  pmsPwd: hotel.pmsPwd });
+            result[hotel.id].reservations.map((r, idx) => {
                 r.hotelId = hotel.id;
                 r.pmsId = hotel.id;
                 let e = new Enzo.EnzoStay(r);
-                result[hotel.id].reservations[i] = e;
+                result[hotel.id].reservations[idx] = e;
             });
         }
         return result;
@@ -61,9 +64,8 @@ const getBookingFromEmail = async (email) => {
     let validEmail = email.length > 0 || false;
     try {
         if (!email || !validEmail) throw new Models.EnzoError('no email or invalid email');
-        let results = await getReservations(hotelID) //dynamoDB.findDynamoDBItems(RESERVATION, "email", email);
-        results[hotelID].reservations.forEach((b) => {//results.Items.forEach((item) => {
-            // let b = unmarshall(item) ;
+        let results = await getReservations(hotelID);
+        results[hotelID].reservations.forEach((b) => {
             if (b["email"] === email) bookings.push(b) ;
         });
         if (!bookings.length) throw new Models.NotFound('no reservation with this email') ; 
@@ -93,7 +95,7 @@ const resetBookingStatus = async (email = null, reservationID = null) => {
             await track.deleteEmailTrackingInfo(newBook.reservationId, hotelID);
         } else {
             let bookings = await getReservations(hotelID);
-            console.log(bookings)
+            console.log('Reset : bookings => ', bookings)
             for (let check of bookings[hotelID].reservations) {
                 let newBook = resetBookingDate(check) ;
                 console.log('Reset ', check, newBook);

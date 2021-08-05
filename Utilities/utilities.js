@@ -2,6 +2,7 @@ const { randomUUID } = require('crypto');
 const jwt = require('jsonwebtoken');
 const { secretKey } = require('../Crypto/crypto.js');
 let QRCode = require('qrcode') ;
+const CheckInApp = require('../Models/CheckInApp.js');
 const Models = require('../Models/index.js');
 const Errors = require('../Models/errors.js');
 const SETTINGS = require('../settings.json') ;
@@ -55,7 +56,6 @@ const makeStartPreCheckInEmailToken = (email, uuid, state, reservationID, hotelI
     }
 }
 
-
 const makeToken = (booking) => {
     try{
         //if a valid booking exist, generate the token for the 1rst email 
@@ -72,8 +72,6 @@ const makeToken = (booking) => {
         throw error;
     }
 }
-
-
 
 const findValidBooking = (bookings) => {
     let booking ;
@@ -114,20 +112,20 @@ const setCheckBooking = (bookingUpdt) => {
     return bookingUpdt ;
 } 
 
-const isBookingValid = (book) =>  (!"arrivalDate" in book && book.arrivalDate && book.state.toUpperCase() !== 'INHOUSE') ;
+const isBookingValid = (book) =>  !book.arrivalDate && VALID_ENZO_STATUS.includes(book.state.toUpperCase()) ;
 
 const isPreCheckedBooking = (book) => ("state" in book && book.state.toUpperCase() === 'PRECHECKEDIN') ;
 
 const makeCheckInAppResponseBody = (hotel_id, booking) => {
     let prechecked = false ;
     let complete = false;
-    console.log(booking)
+    console.log('makeCheckInAppResponseBody ', booking)
     if (isPreCheckedBooking(booking)) prechecked = true ;
     if (!isBookingValid(booking)) complete = true ;
-    if (complete) response = { type: 'success', status: 'complete', stay: { arrivalDate: booking.reservation.arrivalDate }, hotel_id: hotel_id };
-    else if (prechecked) response = { type: 'success', status: 'prechecked', checkin : booking, hotel_id: hotel_id };
-    else response = { type: 'success', status: 'pending', checkin : booking, hotel_id: hotel_id };
-    
+    const checkin = CheckInApp.Checkin.fromEnzoCheckIn(booking);
+    if (complete) response = { type: 'failure', status: 'complete', stay: { arrivalDate: checkin.reservation.arrivalDate }, hotel_id: hotel_id };
+    else if (prechecked) response = { type: 'success', status: 'prechecked', checkin : checkin, hotel_id: hotel_id };
+    else response = { type: 'success', status: 'pending', checkin : checkin, hotel_id: hotel_id };
     return response;
 }
 
@@ -224,7 +222,7 @@ const makeFormatedDate = (d = null, l = null) =>   {
 
 const addDay = (date, d) => (new Date(new Date(date).getTime() + (d * MS_PER_DAY))) ;
 
-
+//return a value object containing the values needed to render the email templates  
 const makeEmailValues = async (type, booking, hotelValues) => {
     try {
         let values = {} ;
@@ -254,17 +252,16 @@ const makeEmailValues = async (type, booking, hotelValues) => {
             const numGuests = booking.guestCount;
             const checkInTime = hotelValues.hotel_checkin_time;
             values = {
-                checkInDate : d1 ,
-                base64qrCode : url ,
-                guestFullName : guestName ,
-                booking : booking.bookingRef || booking.reservationId, 
+                checkInDate: d1 ,
+                base64qrCode: url ,
+                guestFullName: guestName ,
+                booking: booking.bookingRef || booking.reservationId, 
                 checkInTime,
                 roomType,
                 numNights,
                 numGuests,
                 ...booking
             };
-            
         }
 
         let hotel = { 
