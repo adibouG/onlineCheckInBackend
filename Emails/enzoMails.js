@@ -13,17 +13,17 @@ const MAILTYPES = {
     QR : 'qrCode' ,
     START : 'startCheckIn' ,
  } ;
-const mailFormat =  (type, message, mail, messID, attach = null) => {
+const mailFormat = (type, message, mail, messID, attach = null) => {
     let TITLE = '';
     let MESSAGE = '';
     let FILE = '';
-    let ATTACHMENTS =  attach ? [{"content" : `${attach.toString()}`, "name": "image_attached.jpg"}] : null;
+    let ATTACHMENTS = attach ? [{"content" : `${attach.toString()}`, "name": "image_attached.jpg"}] : '';
     if (type === MAILTYPES.QR) {
         TITLE = 'Email confirmation with QR-code for online pre-check-in' ;
         MESSAGE = message ;
         messID = messID ;
         return ({
-            "attachments" : [ATTACHMENTS] ,
+            "attachments" : ATTACHMENTS ,
             "body": {
                 "html": `${MESSAGE}` ,
             },
@@ -36,14 +36,14 @@ const mailFormat =  (type, message, mail, messID, attach = null) => {
     } else if (type === MAILTYPES.START ) {
         TITLE = 'Email invitation for online pre-check-in' ;
         MESSAGE = message ;
-        try{
-            let content = fs.readFileSync('./Views/base64image.txt') ; // TODO replace with setting file path
-            ATTACHMENTS = [{"content" : `${content.toString()}`, "name": "image_attached.jpg"}];
+       /* try{
+           // let content = fs.readFileSync('./Views/base64image.txt') ; // TODO replace with setting file path
+           // ATTACHMENTS = [{"content" : `${attach.toString()}`, "name": "image_attached.jpg"}];
         } catch(err) {
             console.log(err) ;
             ATTACHMENTS = '' ;
         } finally {
-            return ({
+         */   return ({
                 "attachments": ATTACHMENTS ,
                 "body": {
                     "html": `${MESSAGE}` ,
@@ -54,21 +54,21 @@ const mailFormat =  (type, message, mail, messID, attach = null) => {
                 "to": [mail],
                 "cc": ['adrien@enzosystems.com']
             });
-        }
+        //}
     }  
 }
 
-const sendEmailRequest = async (type, message, email, messID = null, attach = null) => {  
+const sendEmailRequest = async (type, message, email, messID, attach = null) => {  
     try{ 
-        let mail = mailFormat( type , message, email  , messID , attach);
+        let mail = mailFormat(type, message, email, messID, attach);
         let result = await axios({ url: EMAIL_SERVICE_URL, method: 'POST', data: mail })
-        console.log('ok') ;
+        console.log('ok ', result) ;
         winstonLogger.info(`Email type ${type} was sent to ${email} for reservationID ${messID} with messageID ${messID}`);
-        return { data: result.data, messageID: messID };
+        return result;
     } catch (err) {  
-        console.log('ko') ;
+        console.log('ko ', err) ;
         winstonLogger.error(`Email type ${type} was NOT sent to ${email} for reservationID ${messID} with messageID ${messID}`);
-        throw { error: err, messageID: messID };
+        throw error;
     } 
 }
 

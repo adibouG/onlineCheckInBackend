@@ -21,8 +21,8 @@ const isItTracked = (r, emailTracking) => {
     }  
     return isTracked;
 };
-const newReservationFilter = (r, l) => (preCheckInIsValid(r) && !isItTracked(r, l));
 
+const newReservationFilter = (r, l) => (preCheckInIsValid(r) && !isItTracked(r, l));
 
 const generateUUID = () => randomUUID();
 
@@ -116,16 +116,17 @@ const isBookingValid = (book) =>  !book.arrivalDate && VALID_ENZO_STATUS.include
 
 const isPreCheckedBooking = (book) => ("state" in book && book.state.toUpperCase() === 'PRECHECKEDIN') ;
 
-const makeCheckInAppResponseBody = (hotel_id, booking) => {
+const makeCheckInAppResponseBody = (booking, hotelID, hotelAppSettings) => {
+    console.log(hotelAppSettings)
     let prechecked = false ;
     let complete = false;
     console.log('makeCheckInAppResponseBody ', booking)
     if (isPreCheckedBooking(booking)) prechecked = true ;
     if (!isBookingValid(booking)) complete = true ;
     const checkin = CheckInApp.Checkin.fromEnzoCheckIn(booking);
-    if (complete) response = { type: 'failure', status: 'complete', stay: { arrivalDate: checkin.reservation.arrivalDate }, hotel_id: hotel_id };
-    else if (prechecked) response = { type: 'success', status: 'prechecked', checkin : checkin, hotel_id: hotel_id };
-    else response = { type: 'success', status: 'pending', checkin : checkin, hotel_id: hotel_id };
+    if (complete) response = { type: 'failure', status: 'complete', stay: { arrivalDate: checkin.reservation.arrivalDate }, hotel_id: hotelID, hotelAppSettings };
+    else if (prechecked) response = { type: 'success', status: 'prechecked', checkin : checkin, hotel_id: hotelID, hotelAppSettings };
+    else response = { type: 'success', status: 'pending', checkin : checkin, hotel_id: hotelID, hotelAppSettings };
     return response;
 }
 

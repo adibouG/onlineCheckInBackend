@@ -1,15 +1,17 @@
+require('dotenv').config();
 const axios = require('axios');
 const { addDay } = require('../Utilities/utilities.js');
-const SETTINGS = require('../settings.json');
+const { CHECKIN_REQUEST_START_DAY_OFFSET } = require('../settings.json');
 
+const PMS_API_BASEURL = process.env.PMS_API_BASEURL; 
 //Reservation time filter
 // START -> reservations starting (= arriving) within the specified interval.
 // COLLIdING -> (default) reservations whose intervals collide with the specified interval.
-const TIMEFILTER = { COLLIdING: 'Colliding', START: 'Start' };
-//TODO: add imported settings
+const TIMEFILTER = { COLLIDING: 'Colliding', START: 'Start' };
+
 class PmsModuleApi {
     constructor(hotel = null, reservation = null, pms = null, url = null, login = null, pwd = null, start = null, end = null, pmsTimefilter = null) {
-        this.pmsModuleApiUrl = SETTINGS.PMS_API_BASEURL ? new URL(SETTINGS.PMS_API_BASEURL) : new URL(`http://localhost:3002/pmsmodule/api/reservation`);        
+        this.pmsModuleApiUrl =  new URL(PMS_API_BASEURL);        
         this.hotelId = hotel;
         this.reservationId = reservation;
         this.data = {};
@@ -34,8 +36,14 @@ class PmsModuleApi {
         pmsPwd = pmsPwd || this.pwd ;
         try {
             let params = new URLSearchParams();
-            if (!hotelId) throw new Error('missing hotelId');
-            if (!pmsId) throw new Error('missing pmsId');
+            let apiUrl = new URL(this.pmsModuleApiUrl);
+            // if (!hotelId) throw new Error('missing hotelId');
+            // if (!pmsId) throw new Error('missing pmsId');
+            console.log('apiUrl.pathname ', apiUrl.pathname) ;
+            apiUrl.pathname += `pms/${pmsId}/reservations` ;
+            console.log('pmsId ', pmsId) ;
+            console.log('apiUrl.pathname ', apiUrl.pathname) ;
+            
             if (reservationId) params.set('reservationId', reservationId); 
             else {
                 //if no reservationId is provided 
@@ -46,19 +54,19 @@ class PmsModuleApi {
                     endDate =  new Date(endDate || this.endDate)
                 } else {
                     startDate = new Date() ;
-                    endDate = addDay(startDate, SETTINGS.CHECKIN_REQUEST_START_DAY_OFFSET);
+                    endDate = addDay(startDate, CHECKIN_REQUEST_START_DAY_OFFSET);
                 }
                 params.set('startDate', startDate.toISOString());
                 params.set('endDate', endDate.toISOString());
                 if (filter) params.set('timeFilter', filter);
             }
             params.set('hotelId', hotelId);
-            params.set('pmsId', pmsId);
             if (pmsUrl) params.set('pmsUrl', pmsUrl);
             if (pmsLogin) params.set('pmsLogin', pmsLogin); 
             if (pmsPwd) params.set('pmsPwd', pmsPwd);
-            this.pmsModuleApiUrl.search = params;
-            const request = await axios.get(this.pmsModuleApiUrl.toString());
+            apiUrl.search = params;
+            console.log(apiUrl.toString());
+            const request = await axios.get(apiUrl.toString());
             if (parseInt(request.data.hotelId) === parseInt(hotelId)) this.data[hotelId] = request.data;
             return request.data ;
         } catch(e) {
@@ -75,10 +83,17 @@ class PmsModuleApi {
         pmsId = pmsId || this.pmsId ;
         pmsLogin = pmsLogin || this.login ;
         pmsPwd = pmsPwd || this.pwd ;
+
         let payload = { hotelId, reservationId, pmsId, pmsUrl, pmsLogin, pmsPwd, data };
         try{
-            console.log(this.pmsModuleApiUrl.toString());
-            let requestResult =  await axios.post(this.pmsModuleApiUrl.toString(), payload); 
+            let apiUrl = new URL(this.pmsModuleApiUrl);
+            // if (!hotelId) throw new Error('missing hotelId');
+            // if (!pmsId) throw new Error('missing pmsId');
+            console.log('apiUrl.pathname ', apiUrl.pathname) ;
+            apiUrl.pathname += `pms/${pmsId}/reservations` ;
+        
+            console.log(apiUrl.toString());
+            let requestResult =  await axios.put(apiUrl.toString(), payload); 
             return requestResult ;
         } catch(e) {
             console.error(e);

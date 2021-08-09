@@ -1,8 +1,7 @@
 require('dotenv').config();
 const Models = require('../Models/index.js');
 const CheckInApp = require('../Models/CheckInApp.js');
-const { HotelPmsDB } = require('../Models/database.js');
-const { getReservations, postReservations, resetBookingStatus, getBookingFromEmail } = require('../Helpers/helpers.js');
+const { getEmailTracking, getHotelDetails, getReservations, postReservations, resetBookingStatus, getBookingFromEmail } = require('../Helpers/helpers.js');
 const { MAILTYPES } = require('../Emails/enzoMails.js');
 const { renderAndSendEmail } = require('./emails.js')
 const { makeEmailValues, makeQrCode, isPreCheckedBooking, setCheckBooking } = require('../Utilities/utilities.js');
@@ -26,13 +25,11 @@ const getEmail = async (req, res, next) => {
 }
 
 const sendEmail = async (type, booking) => {
-
     try {
-        const dbManager = new HotelPmsDB();
-        const hotelDetails = await dbManager.getHotelDetails(booking.hotelId);
+        const hotelDetails = await getHotelDetails(booking.hotelId);
         const values = await makeEmailValues(type, booking, hotelDetails);
-        return renderAndSendEmail(type, values);
-
+        const emailTrack = await getEmailTracking(booking.hotelId, booking.reservationId, type);
+        return await renderAndSendEmail(type, values, emailTrack);
     }catch (err) {
         console.log(err);
         throw err;
@@ -41,8 +38,9 @@ const sendEmail = async (type, booking) => {
    
 const renderAndSendQrCode = async (req, res, next)  => {
     try{
-        let booking = req.body; 
-        if (!booking)  throw new Models.NotFound() ;   
+        const { token, checkin, hotel_id, step } = req.body;
+        let booking = checkin;
+        if (!booking) throw new Models.NotFound() ;   
         booking =  new CheckInApp.Checkin(booking);
         booking = booking.toEnzoCheckIn();
         if (isPreCheckedBooking(booking)) {
@@ -58,7 +56,7 @@ const renderAndSendQrCode = async (req, res, next)  => {
         return res.status(200).send(url);   
     } catch (e) {
         console.log(e);
-        return res.status(500).end();
+        return res.status(500).send(e);
     }
 }
         

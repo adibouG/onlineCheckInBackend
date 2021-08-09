@@ -5,11 +5,13 @@ const fs = require('fs');
 const cors = require('cors');
 const { morgan, winstonLogger } = require('./Logger/loggers.js');
 app.use(morgan(process.env.NODE_ENV)) ;
+
 const myStream = {
   write: (text) => {
     winstonLogger.info(text)
   }
 }
+
 app.use(morgan('combined', { stream: myStream }));
 app.use(cors()) ;
 app.use((req, res, next) => { 

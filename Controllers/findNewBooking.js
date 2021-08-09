@@ -26,7 +26,6 @@ const newReservationFinder = async () => {
     }
 }
 
-
 //get the new reservations,
 const newReservationsProcess = async (newValidReservations) => {
     console.log("Start process: newReservationsProcess ....");
