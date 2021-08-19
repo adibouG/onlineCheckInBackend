@@ -4,9 +4,10 @@ const app = require('./app.js') ;
 const { newReservationFinder } = require('./Controllers/findNewBooking.js');
 const { getEmailErrors } = require('./Controllers/emails.js');
 const { RESERVATION_LOOKUP_INTERVAL_MINUTES } = require('./settings.json');
-//use the checkin API
+const { API_BASE_URL } = require('./settings.json');
 const api = require('./Routes/routes.js');
-app.use(api);
+//use the checkin API
+app.use(API_BASE_URL,  api);
 
 const port =  process.env.PORT || 3003 ;
 const host = process.env.HOST || '0.0.0.0' ;

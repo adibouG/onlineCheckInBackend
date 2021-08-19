@@ -22,6 +22,7 @@
     "EMAIL_RETRY_DELAY_MINUTES" : 2 ,
     "KEEP_TRACKING_DAYS" : 2 ,
     "CLEAN_TRACKING_INTERVAL_MINUTES" : 2 ,
-    "PMS_API_BASEURL": "http://localhost:3002/pmsmodule/api/"
+    "PMS_API_BASEURL": "http://localhost:3002/pmsmodule/api/",
+    "FINAL_STEP" : 5
 }
 

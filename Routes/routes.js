@@ -8,7 +8,7 @@ const hotelControllers = require('../Controllers/hotels.js') ;
 //Checkin APP endpoints 
 //TO DO : add security checks and middlewares
 
-//endpoint to retrieve the reservation data from the token send by email  (only for DEMO app)
+//endpoint to retrieve the reservation data from the token send by email and using the frontend app 
 api.get(`/reservation`, bookingControllers.getBookingFromToken);
 api.post(`/reservation`, bookingControllers.postBooking);
 
@@ -31,5 +31,8 @@ api.post(`/qrCode`, emailControllers.renderAndSendQrCode);
 
 //Admin part : UI
 api.get('/admin', adminControllers.displayDashboard);
+
+//AWS ALB healthCheck
+api.get('/healthCheck', (req, res) => res.status(200).send('OK'));
 
 module.exports = api ;

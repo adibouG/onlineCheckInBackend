@@ -1,5 +1,4 @@
 
-
 const displayDashboard = (req, res) => {
 
     let html = `
@@ -13,7 +12,7 @@ const displayDashboard = (req, res) => {
                             <span>Hotel: </span>
                         </div>
                         <div>
-                            <form>
+                            <form id='form'>
                                 <label>hotel name :
                                     <input type="text" name="hotel" />
                                 </label>
@@ -69,8 +68,6 @@ const displayDashboard = (req, res) => {
 
 } 
 
-
 module.exports = { 
     displayDashboard
-};
-
+}

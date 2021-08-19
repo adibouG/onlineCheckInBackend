@@ -1,4 +1,5 @@
 const { randomUUID } = require('crypto');
+const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const { secretKey } = require('../Crypto/crypto.js');
 let QRCode = require('qrcode') ;
@@ -28,34 +29,72 @@ const generateUUID = () => randomUUID();
 
 const makeQrCode = async (booking) => {
     let code = {
-        bookingId:booking.uuid, 
+        bookingId:booking.reservationId, 
+        pmsId:booking.pmsId, 
+        hotelId:booking.hotelId, 
         firstName:booking.firstName , 
         lastName:booking.lastName 
     };
     return await QRCode.toDataURL(JSON.stringify(code));
 }
 
+
+const secureTokenSign = { 
+    expiresIn: SETTINGS.TOKEN.VALIDITY,
+    issuer: 'ENZOSYSTEMS ONLINE PRECHECKIN API',
+    subject: 'precheckinapi/reservation',
+    audience: 'Enzosystems/online precheckin api'
+};
+const makeSecureRequestToken = (reservationID, hotelID, steps) => {
+    let reservation_id = reservationID;
+    let hotel_id = hotelID;
+    let token_id = generateUUID();
+    let payload = { token_id, reservation_id, hotel_id, steps };
+    try {
+        let token = jwt.sign(payload, secretKey + reservationID, secureTokenSign) ;
+        return token;
+    } catch (e) {
+        console.log(e);
+        return null;
+    }
+}
+
+const verifySecureToken = (token, enzoBooking) => {
+    try {
+        jwt.verify(token, secretKey + enzoBooking.reservationId, secureTokenSign);
+    } catch (e) {
+        throw e;
+    } 
+}
+
+const startTokenSign = { 
+    expiresIn: SETTINGS.TOKEN.VALIDITY,
+    issuer: 'ENZOSYSTEMS ONLINE PRECHECKIN API',
+    subject: 'precheckinapi/getBookingFromEmail',
+    audience: 'Enzosystems/online precheckin api'       
+};
 //function to generate customized tokens 
 const makeStartPreCheckInEmailToken = (email, uuid, state, reservationID, hotelID) => {
     //TODO place the signature template in a specific module and set up a real secret with 32char/128bit entropy
-    let sign = { 
-        expiresIn: SETTINGS.TOKEN.VALIDITY,
-        issuer: 'ENZOSYSTEMS ONLINE PRECHECKIN API',
-        subject: 'precheckinapi/getBookingFromEmail',
-        audience: 'Enzosystems/online precheckin api'       
-    };
     let reservation_id = reservationID ;
     let hotel_id = hotelID ;
-    let payload = { reservation_id, hotel_id, uuid, email } ;
+    let steps = [-2, -1, 0, 1];
+    let payload = { reservation_id, hotel_id, uuid, email, steps } ;
     try {
-        let token = jwt.sign(payload, secretKey + state, sign) ;
+        let token = jwt.sign(payload, secretKey + state, startTokenSign) ;
         return token;
     } catch (e) {
         console.log(e);
         throw e;
     }
 }
-
+const verifyToken = (token, booking ) => {
+    try {
+        jwt.verify(token, secretKey + booking.state, startTokenSign);
+    } catch (e) {
+        throw e;
+    } 
+}
 const makeToken = (booking) => {
     try{
         //if a valid booking exist, generate the token for the 1rst email 
@@ -73,22 +112,21 @@ const makeToken = (booking) => {
     }
 }
 
+
 const findValidBooking = (bookings) => {
     let booking ;
     console.log(bookings)
     if (!bookings.length) throw new Models.NotFound('no reservation with this email') ; 
     //try to find a valid reservation
     for (let b of bookings) {
-        if (preCheckInIsValid(b) &&  b.state.toUpperCase() === 'WAITINGFORGUEST'){ //isBookingValid(b) && !isPreCheckedBooking(b)) {
-            //if (!status || status.toUpperCase() === 'PENDING') 
+        if (preCheckInIsValid(b) &&  b.state.toUpperCase() === 'WAITINGFORGUEST'){ 
             booking = b ;
             break;
         }
     }       
     if (!booking) { // if none try to find a prechecked reservation
         for (let b of bookings) {
-            if (preCheckInIsValid(b) &&  b.state.toUpperCase() === 'PRECHECKEDIN'){//if (isBookingValid(b) && isPreCheckedBooking(b)) {
-                //if (!status || status.toUpperCase() === 'PRECHECKED')
+            if (preCheckInIsValid(b) &&  b.state.toUpperCase() === 'PRECHECKEDIN'){
                 booking = b ;
                 break;
             }
@@ -96,8 +134,7 @@ const findValidBooking = (bookings) => {
     }
     if (!booking) { // if none try to find a checked reservation
         for (let b of bookings) {
-            if (!preCheckInIsValid(b) && b.state.toUpperCase() === 'INHOUSE'){ //(!(isBookingValid(b) || isPreCheckedBooking(b))) {
-                //if (!status || status.toUpperCase() === 'COMPLETE') 
+            if (!preCheckInIsValid(b) && b.state.toUpperCase() === 'INHOUSE'){ 
                 booking = b ;
                 break;
             }
@@ -116,17 +153,18 @@ const isBookingValid = (book) =>  !book.arrivalDate && VALID_ENZO_STATUS.include
 
 const isPreCheckedBooking = (book) => ("state" in book && book.state.toUpperCase() === 'PRECHECKEDIN') ;
 
-const makeCheckInAppResponseBody = (booking, hotelID, hotelAppSettings) => {
-    console.log(hotelAppSettings)
+//make a specific checkin app Response Body, handle the conversion to check in app format, verify the status and build response accordingly
+//take a EnzoStay as booking, the hotelId, and the hotel app Settings object ... 
+const makeCheckInAppResponseBody = (booking, hotelID, hotelAppSettings = null, request_token = null) => {
     let prechecked = false ;
     let complete = false;
     console.log('makeCheckInAppResponseBody ', booking)
     if (isPreCheckedBooking(booking)) prechecked = true ;
     if (!isBookingValid(booking)) complete = true ;
     const checkin = CheckInApp.Checkin.fromEnzoCheckIn(booking);
-    if (complete) response = { type: 'failure', status: 'complete', stay: { arrivalDate: checkin.reservation.arrivalDate }, hotel_id: hotelID, hotelAppSettings };
-    else if (prechecked) response = { type: 'success', status: 'prechecked', checkin : checkin, hotel_id: hotelID, hotelAppSettings };
-    else response = { type: 'success', status: 'pending', checkin : checkin, hotel_id: hotelID, hotelAppSettings };
+    if (complete) response = { request_token, type: 'failure', status: 'complete', stay: { arrivalDate: checkin.reservation.arrivalDate }, hotel_id: hotelID, hotelAppSettings };
+    else if (prechecked) response = { request_token, type: 'success', status: 'prechecked', checkin : checkin, hotel_id: hotelID, hotelAppSettings };
+    else response = { request_token, type: 'success', status: 'pending', checkin : checkin, hotel_id: hotelID, hotelAppSettings };
     return response;
 }
 
@@ -159,12 +197,11 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 const dateDiffInDays = (a, b) => {
     // Discard the time and time-zone information.
-    a = new Date(a);
-    b = new Date(b);
-    const utc1 = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
-    const utc2 = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
-    return Math.floor((utc2 - utc1) / MS_PER_DAY);
-  }
+    let d1 = new Date(a);
+    let d2 = new Date(b);
+    if (d1 >= d2) { return Math.floor(((d1 - d2) / MS_PER_DAY)) }
+    if (d1 < d2) { return Math.floor(((d2 - d1) / MS_PER_DAY)) }
+}
 
 const makeDate = () => {
     let date1 = new Date(((new Date().getTime()) + (MS_PER_DAY))).toLocaleDateString();
@@ -236,19 +273,21 @@ const makeEmailValues = async (type, booking, hotelValues) => {
             let checkDates =  d1 + " - " + d2 ;
             // generate the token for the 1rst email 
             let token = makeToken(booking); 
-            //TO DO: check/update the tracking to follow the new pattern and flow
+            let hotelName = hotelValues.hotel ;
+            let base64image = fs.existsSync(`./Views/${hotelName.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelName.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
             values = {
                 guestLinkName : guestName.replaceAll(' ', '.') ,
                 guestFullName : guestName ,
                 booking : booking.bookingRef || booking.reservationId, 
                 checkDates,
                 token,
+                base64image,
                 app_link_baseUrl: APP_BASE_URL,
                 ...booking
             };
         } else if (type === MAILTYPES.QR) {
             let url = await makeQrCode(booking);
-            const numNights = dateDiffInDays(d1, d2)
+            const numNights = dateDiffInDays(booking.startDate, booking.endDate);
             const roomType =  booking.roomType;
             const numGuests = booking.guestCount;
             const checkInTime = hotelValues.hotel_checkin_time;
@@ -265,7 +304,7 @@ const makeEmailValues = async (type, booking, hotelValues) => {
             };
         }
 
-        let hotel = { 
+        let hotelDetails = { 
             hotelName: hotelValues.hotel_name,
             hotelAddress: hotelValues.hotel_address,
             hotelPostcode: hotelValues.hotel_postcode,
@@ -274,7 +313,7 @@ const makeEmailValues = async (type, booking, hotelValues) => {
             hotelPhone: hotelValues.hotel_phone,
             hotelEmail: hotelValues.hotel_email 
         }
-        return ({ ...values, ...hotel });
+        return ({ ...values, ...hotelDetails, reservationId: booking.reservationId, hotelId: booking.hotelId });
     } catch(e) {
         let error = e;
         console.log(error);
@@ -303,6 +342,9 @@ module.exports = {
     makeQrCode,
     makeCheckInAppResponseBody,
     makeStartPreCheckInEmailToken,
+    verifyToken,
+    verifySecureToken,
+    makeSecureRequestToken,
     makeToken,
     makeEmailValues,
     newReservationFilter

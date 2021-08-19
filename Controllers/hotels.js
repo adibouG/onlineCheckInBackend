@@ -23,7 +23,7 @@ const addHotel = async (req, res, next) => {
         const newHotelValues = req.body ;
         const newHotel = new Models.Hotel(newHotelValues);
         const dbManager = new db.HotelPmsDB();
-        const newHotelPmsId = newHotel.pmsSettings && newHotel.pmsSettings.pmsId ? Hotel.pmsSettings.pmsId : null; 
+        const newHotelPmsId = newHotel.pmsSettings && newHotel.pmsSettings.pmsId ? newHotel.pmsSettings.pmsId : null; 
         if (!newHotelPmsId) throw new Error('Missing pms id');
         let newID = await dbManager.addHotel(newHotel);
         return res.status(200).send({ hotel_id: newID });
@@ -38,17 +38,16 @@ const updateHotel = async (req, res, next) => {
     try{
         const hotelId = req.params.hotelId ;
         const newHotelValues = req.body ;
-        newHotelValues.hotelID = hotelId ;
-        const newHotel = new Models.Hotel(newHotelValues);
-        const newHotelPmsValues = newHotel.pmsSettings;
-        const newHotelDetails = newHotel.hotelDetails;
-        const hotelPmsId = newHotelPmsValues.pmsId ? newHotelPmsValues.pmsId : null; 
-
+        newHotelValues.hotelId = hotelId ;
+        const hotel = new Models.Hotel(newHotelValues);
+        const hotelpms = hotel.pmsSettings;
+        const hoteldetails = hotel.hotelDetails;
+        const hotelPmsId = hotelpms.pmsId ? hotelpms.pmsId : null; 
         const dbManager = new db.HotelPmsDB();
         if (!hotelPmsId) throw new Error('Missing pms id');
-        await dbManager.updateHotel(hotelId, newHotel);
-        await dbManager.updateHotelDetails(hotelId, newHotelDetails);
-        await dbManager.updateHotelPmsSettings(hotelId, newHotelPmsValues);
+        await dbManager.updateHotel(hotelId, hotel);
+        await dbManager.updateHotelDetails(hotelId, hoteldetails);
+        await dbManager.updateHotelPmsSettings(hotelId, hotelpms);
         return res.status(200).send('OK');
     } catch(e) {
         let error = e;
@@ -60,8 +59,8 @@ const updateHotel = async (req, res, next) => {
 const deleteHotel = async (req, res, next) => {
     try{
         const hotelId = req.params.hotelId ;
-        const dbManager = new db.HotelPmsDB();
         if (!hotelId) throw new Error('Missing hotel id');
+        const dbManager = new db.HotelPmsDB();
         await dbManager.deleteHotel(hotelId);
         return res.status(200).send('OK');
     } catch(e) {
@@ -73,13 +72,11 @@ const deleteHotel = async (req, res, next) => {
      
 
 const getBookings = async (req, res, next) => {
-//TODO replace the email trigger by the loop search process
     try{
         let hotelID = req.params ? req.params.hotelId : null ;
-        let reservationID = req.query ? req.params.hotelId : null ;
-        const dbManager = new db.HotelPmsDB();
-        let hotels = await dbManager.getFullHotelDataSet(hotelID);
-        return res.status(200).send(hotels);
+        let reservationID = req.query ? req.query.reservationId : null ;
+        let hotelReservations = await helpers.getReservations(hotelID, reservationID);
+        return res.status(200).send(hotelReservations);
     } catch(e) {
         let error = e;
         console.log(error);
@@ -88,18 +85,18 @@ const getBookings = async (req, res, next) => {
 }
 
 const updateBooking = async (req, res, next) => {
-    //TODO replace the email trigger by the loop search process
-        try{
-            let hotelID = req.params ? req.params.hotelId : null ;
-            const dbManager = new db.HotelPmsDB();
-            let hotels = await dbManager.getFullHotelDataSet(hotelID);
-            return res.status(200).send(hotels);
-        } catch(e) {
-            let error = e;
-            console.log(error);
-            return res.status(400).send(error) ;
-        }
+    try{
+        let hotelID = req.params ? req.params.hotelId : null ;
+        let payload = req.body ? req.body : null ;
+        let { reservationId } = payload ;
+        await helpers.postReservations(hotelID, reservationId, payload);
+        return res.status(200).send("OK");
+    } catch(e) {
+        let error = e;
+        console.log(error);
+        return res.status(400).send(error) ;
     }
+}
 
 module.exports = {
     getHotels,

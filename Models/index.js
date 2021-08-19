@@ -1,29 +1,30 @@
 
 class HotelDetails {
-    constructor({ addressId = null, address = null, 
-        postalCode = null, displayedName=null, city = null, country=null,
-        checkInTime = null,
+    constructor({ hotelId = null, addressId = null, address = null, 
+        postCode = null, displayedName=null, city = null, country=null,
+        checkinTime = null, phone = null, email = null, web = null,
         logo = null } = {}) {
+        this.hotelId  = hotelId  ;
         this.addressId  = addressId  ;
         this.displayedName = displayedName ; 
         this.address = address ;
-        this.postalCode = postalCode; 
+        this.postCode = postCode; 
         this.city = city;
         this.country = country;
         this.phone = phone;
         this.email = email;
         this.web = web;
-        this.checkInTime = checkInTime;
+        this.checkinTime = checkinTime;
         this.logo = logo ;
     }
 }
 
 class HotelPmsSettings { 
-    constructor({ hotelID = null, pmsID = null,
+    constructor({ hotelId = null, pmsId = null,
         pmsUrl = null , pmsName = null, 
         pmsLogin = null, pmsPwd = null, pmsAdditionalSettings = {} } = {}) {
-        this.hotelID = hotelID ; 
-        this.pmsID =  pmsID ; 
+        this.hotelId = hotelId ; 
+        this.pmsId =  pmsId; 
         this.pmsUrl = pmsUrl; 
         this.pmsName = pmsName;
         this.pmsLogin = pmsLogin ;
@@ -35,25 +36,25 @@ class HotelPmsSettings {
 
 
 class HotelAppSettings { 
-    constructor({ hotelID = null, 
-        appSettings = {} , appScreen = null, logo , styles = {} } = {} ) {
-            this.hotelID = hotelID ; 
-        this.appSettings =  appSettings ; 
-        this.appScreen = appScreen; 
-        this.logo = logo;
-        this.styles = styles ;
+    constructor({ hotelId = null, screens = {}, style = {} } = {} ) {
+        this.hotelId = hotelId ; 
+        this.screens = screens; 
+        this.style = style ;
     }
 }
 
 class Hotel { 
-    constructor({ hotelID = null, name, displayedName = null,
-        hotelDetails = {}, pmsSettings, appSettings } = {}) {
-        this.hotelID = hotelID ; 
+    constructor({ hotelId = null, name,
+        hotelDetails = {}, pmsSettings = {}, applicationSettings = {}} = {}) {
+        this.hotelId = hotelId ; 
         this.name =  name ; 
         if (!hotelDetails.displayedName) hotelDetails.displayedName = name;
-        this.hotelDetails = new HotelDetails(address);
+        if (!hotelDetails.hotelId) hotelDetails.hotelId = hotelId;
+        if (!pmsSettings.hotelId) pmsSettings.hotelId = hotelId;
+        if (!applicationSettings.hotelId) applicationSettings.hotelId = hotelId;
+        this.hotelDetails = new HotelDetails(hotelDetails);
         this.pmsSettings = new HotelPmsSettings(pmsSettings) ;
-        this.appSettings = appSettings ;
+        this.applicationSettings = new HotelAppSettings(applicationSettings) ;
     
   }
 }

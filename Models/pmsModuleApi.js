@@ -88,10 +88,9 @@ class PmsModuleApi {
         try{
             let apiUrl = new URL(this.pmsModuleApiUrl);
             // if (!hotelId) throw new Error('missing hotelId');
-            // if (!pmsId) throw new Error('missing pmsId');
+            if (!pmsId) throw new Error('missing pmsId');
             console.log('apiUrl.pathname ', apiUrl.pathname) ;
             apiUrl.pathname += `pms/${pmsId}/reservations` ;
-        
             console.log(apiUrl.toString());
             let requestResult =  await axios.put(apiUrl.toString(), payload); 
             return requestResult ;

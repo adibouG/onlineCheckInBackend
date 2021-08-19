@@ -21,13 +21,11 @@ const getReservations = async (hotelId = null, reservationId = null) => {
             if (!result[hotel.hotel_id]) result[hotel.hotel_id] = {};
             result[hotel.hotel_id] = await pmsApi.getReservationData({ 
                 reservationId: reservationId,
-                hotelId: hotel.hotel_id,
                 pmsId: hotel.pms_id,
                 pmsUrl: hotel.pms_url, 
                 pmsLogin: hotel.pms_login,
                 pmsPwd: hotel.pms_pwd 
             });
-
             result[hotel.hotel_id].reservations.map((r, idx) => {
                 r.hotelId = hotel.hotel_id;
                 r.pmsId = hotel.hotel_id;
@@ -45,16 +43,14 @@ const getReservations = async (hotelId = null, reservationId = null) => {
 
 const postReservations = async (hotelId, reservationId, data) => { 
     console.log("Start helper process: postReservations....");
-    try{
-        let result = {};
-        //Call the db to get the pmsData
+    try{        //Call the db to get the pmsData
         const dbManager = new HotelPmsDB(hotelId);
         const hotelWithPmsAccessList = await dbManager.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
         const pmsApi = new PmsApi.PmsModuleApi(hotelId); //we use 1 generic manager (no hotelID) that will do request for each hotel 
         //get the reservations per hotel Ids
         for (let i = 0; i < hotelWithPmsAccessList.length; ++i) {     
             let hotel = hotelWithPmsAccessList[i]; 
-            result = await pmsApi.updateReservationData({ 
+            await pmsApi.updateReservationData({ 
                 data,
                 reservationId: reservationId,  
                 hotelId: hotel.hotel_id, 
@@ -64,7 +60,7 @@ const postReservations = async (hotelId, reservationId, data) => {
                 pmsPwd: hotel.pms_pwd
             });
         }
-        return result;
+        return 1;
     } catch(e) {
         console.error(e);
         throw e;
@@ -100,7 +96,8 @@ const resetBookingStatus = async (email = null, reservationID = null) => {
             if (reservationID) {
                 let bookings = await getReservations(hotelID, reservationID);
                 newBook = resetBookingDate(bookings[hotelID].reservations[0]);   
-            } else {
+            } 
+            if (email){
                 let booking = await getBookingFromEmail(email);
                 newBook = resetBookingDate(booking);
             }
@@ -154,25 +151,25 @@ const getHotelSettings = async (hotelId = null) => {
 const getEmailTracking = async (hotelId = null, reservationId = null, type = null) => { 
     console.log("Start helper process: get Email Tracking....");
     try{
-        let result = null;
         //Call the db to get the email tracking
         const dbManager = new HotelPmsDB(hotelId);
         const mailTracking = await dbManager.getEmailTrackingInfo(hotelId, reservationId, type); //retrieve all the hotels with their pms info
-        return mailTracking.length ? mailTracking : null;
+        let data = mailTracking.length ? mailTracking : null;
+        return data;
     } catch (e) {
         console.log(e);
         throw e;
     } 
 }
 
-const addOrUpdateEmailTracking = async (hotelId = null, reservationId = null) => { 
-    console.log("Start helper process: getReservations....");
+const addOrUpdateEmailTracking = async (emailTracking) => { 
+    console.log("Start helper process: addOrUpdateEmailTracking....");
     try{
-        let result = null;
         //Call the db to get the email tracking
-        const dbManager = new HotelPmsDB(hotelId);
-        const hotelAppSettings = await dbManager.getEmailTrackingInfo(hotelId); //retrieve all the hotels with their pms info
-        return hotelAppSettings;
+        const dbManager = new HotelPmsDB(emailTracking.hotelID);
+        const emailInfo = await dbManager.getEmailInfo(emailTracking.messageID);
+        if (emailInfo.length) await dbManager.updateEmailTrackingInfo(emailTracking);
+        else await dbManager.addEmailTrackingInfo(emailTracking);
     } catch (e) {
         console.log(e);
         throw e;
@@ -181,12 +178,11 @@ const addOrUpdateEmailTracking = async (hotelId = null, reservationId = null) =>
 
 
 const deleteEmailTracking = async (hotelId = null, reservationId = null) => { 
-    console.log("Start helper process: getReservations....");
+    console.log("Start helper process: deleteEmailTracking....");
     try{
         //Call the db to get the email tracking
         const dbManager = new HotelPmsDB(hotelId);
-        const hotelAppSettings = await dbManager.getEmailTrackingInfo(hotelId); //retrieve all the hotels with their pms info
-        return hotelAppSettings;
+        await dbManager.deleteEmailTrackingInfo(hotelId, reservationId); //retrieve all the hotels with their pms info
     } catch (e) {
         console.log(e);
         throw e;
@@ -201,5 +197,7 @@ module.exports = {
     getBookingFromEmail,
     getHotelSettings,
     getHotelDetails,
-    getEmailTracking
+    getEmailTracking,
+    addOrUpdateEmailTracking,
+    deleteEmailTracking
 }

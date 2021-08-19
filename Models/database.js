@@ -29,7 +29,7 @@ class HotelPmsDB {
             console.log(e);
             throw e;
         } finally {
-            client.release();
+            if (client) client.release();
         }
     }
 
@@ -39,7 +39,7 @@ class HotelPmsDB {
         try {
             client = await pgPool.connect();
             //get hotel details
-            query1 = 'SELECT a.* from hotel_details a JOIN hotel b ON a.hotel_id = b.hotel_id WHERE b.hotel_id = $1'  ;
+            query1 = 'SELECT a.*, b.hotel_name as hotel from hotel_details a JOIN hotel b ON a.hotel_id = b.hotel_id WHERE b.hotel_id = $1'  ;
             query1result = await client.query(query1, [hotelID]) ;
             return query1result.rows[0];
         }catch(e) {
@@ -70,18 +70,18 @@ class HotelPmsDB {
     async getFullHotelDataSet(hotelID = null){
         try {     
             const results = [];  
-            const hotelPms = await getHotelPmsInfo(hotelID);
-            hotelPms.forEach(async (hotelRow, rowIdx) => {
-                let hotelID = hotelRow.id;
-                const settings = await getHotelAppSettings(hotelID);  
-                const details = await getHotelDetails(hotelID);
+            const hotelPms = await this.getHotelPmsInfo(hotelID);
+            for (let i = 0; i < hotelPms.length; i++) {
+                let hotelID = hotelPms[i].hotel_id;
+                const settings = await this.getHotelAppSettings(hotelID);  
+                const details = await this.getHotelDetails(hotelID);
                 results.push({ 
                     hotel_id: hotelID,
-                    hotel_pms: hotelRow, 
+                    hotel_pms: hotelPms[i], 
                     hotel_application_settings: settings,
                     hotel_details: details
                 });
-            }); 
+            } 
             return results;
         } catch (e) {
             console.log(e);
@@ -104,16 +104,16 @@ class HotelPmsDB {
             let query3 = `INSERT INTO hotel_pms_connection(
                     hotel_id, pms_id, pms_login, pms_url, pms_pwd)
                     VALUES ($1, $2, $3, $4, $5)`;
-            const query1result = await client.query(query1, [newHotel.name, newHotel.pmsSettings.pmsID]) ;
-            let newHotelId = query1result.rows[0].id; 
+            const query1result = await client.query(query1, [newHotel.name, newHotel.pmsSettings.pmsId]) ;
+            let newHotelId = query1result.rows[0].hotel_id; 
             await client.query(query2, [newHotelId,
                 newHotel.hotelDetails.displayedName, newHotel.hotelDetails.address,
-                newHotel.hotelDetails.postcode, newHotel.hotelDetails.city,
+                newHotel.hotelDetails.postCode, newHotel.hotelDetails.city,
                 newHotel.hotelDetails.country, newHotel.hotelDetails.phone, 
                 newHotel.hotelDetails.email, newHotel.hotelDetails.logo,
-                newHotel.hotelDetails.checkInTime]) ;
+                newHotel.hotelDetails.checkinTime]) ;
             await client.query(query3, [newHotelId,
-                newHotel.pmsSettings.pmsID, newHotel.pmsSettings.pmsLogin,
+                newHotel.pmsSettings.pmsId, newHotel.pmsSettings.pmsLogin,
                 newHotel.pmsSettings.pmsUrl, newHotel.pmsSettings.pmsPwd]) ;
             await client.query('COMMIT');
             return newHotelId; 
@@ -130,15 +130,14 @@ class HotelPmsDB {
         let client;
         try {
             client = await pgPool.connect();
-            let query1 = `UPDATE hotel_details SET hotel_name=$10,
-             hotel_address=$2, hotel_postcode=$3, hotel_city=$4, hotel_country=$5,
-             hotel_phone=$6, hotel_email=$7, hotel_logo=$8, hotel_checkin_time=$9 
-             WHERE hotel_id=$1)`;
+            let query1 = `UPDATE hotel_details SET hotel_name=$10, hotel_address=$2, hotel_postcode=$3,
+             hotel_city=$4, hotel_country=$5, hotel_phone=$6, hotel_email=$7, hotel_logo=$8, hotel_checkin_time=$9 
+             WHERE hotel_id=$1`;
             await client.query(query1, [hotelID,
-                hotelDetails.address, hotelDetails.postcode, 
+                hotelDetails.address, hotelDetails.postCode, 
                 hotelDetails.city, hotelDetails.country,
                 hotelDetails.phone, hotelDetails.email, 
-                hotelDetails.logo, hotelDetails.checkInTime,
+                hotelDetails.logo, hotelDetails.checkinTime,
                 hotelDetails.displayedName]) ;
         } catch(e) {
             console.log(e);
@@ -154,7 +153,7 @@ class HotelPmsDB {
             client = await pgPool.connect();
             //insert hotel details
             let query1 = 'UPDATE hotel SET hotel_name=$1, pms_id=$2 WHERE hotel_id=$3' ;
-            await client.query(query1, [newHotel.name, newHotel.pmsSettings.pmsID, hotelID]) ;
+            await client.query(query1, [newHotel.name, newHotel.pmsSettings.pmsId, hotelID]) ;
         } catch(e) {
             console.log(e);
             throw e;
@@ -172,7 +171,7 @@ class HotelPmsDB {
             let query = `UPDATE hotel_pms_connection SET
                 pms_id=$1, pms_login=$2, pms_url=$3, pms_pwd=$4
                 WHERE hotel_id=$5`;
-            await client.query(query, [newPmsSettings.pmsID, newPmsSettings.pmsLogin,
+            await client.query(query, [newPmsSettings.pmsId, newPmsSettings.pmsLogin,
                 newPmsSettings.pmsUrl, newPmsSettings.pmsPwd, hotelID]) ;
         } catch(e) {
             console.log(e);
@@ -205,15 +204,15 @@ class HotelPmsDB {
         }
     }
     //get the email tracking info (name address etc ...)
-    async getEmailTrackingInfo(hotelId = null, reservationId = null){
+    async getEmailTrackingInfo(hotelId = null, reservationId = null, type = null){
         let client, query1, query1result;
         try {
             client = await pgPool.connect();
             if (hotelId && reservationId && type) {
-                query1 = 'SELECT * from email_reservation_tracking WHERE reservation = $1 AND hotel = $2 AND email_type = $3' ;
-                query1result = await client.query(query1, [hotelId, reservationId, type]);
+                query1 = 'SELECT * from email_tracking WHERE reservation = $1 AND hotel = $2 AND email_type = $3' ;
+                query1result = await client.query(query1, [reservationId, hotelId, type]);
             } else {
-                query1 = 'SELECT * from email_reservation_tracking' ;
+                query1 = 'SELECT * from email_tracking' ;
                 query1result = await client.query(query1);
             }
             return query1result.rows;
@@ -225,17 +224,31 @@ class HotelPmsDB {
         }
     }
 
-    async addEmailTrackingInfo(emailTracking){
+    async getEmailInfo(messageID){
         let client, query1, query1result;
         try {
-            if (!emailTracking.hotelID || !emailTracking.reservationID) throw new Error('no ids');
-            emailTracking.sentDate = emailTracking.sentDate ? emailTracking.sentDate / 1000 : null ;
-            emailTracking.sendingDate = emailTracking.sendingDate ? emailTracking.sendingDate / 1000 : null ;
             client = await pgPool.connect();
-            query1 = 'INSERT INTO email_reservation_tracking(message_id, reservation, hotel, email_type, email_sent_date, email_sending_date, attempts) VALUES ($1, $2, $3, $4, to_timestamp($5), to_timestamp($6), $7);' ;
-            query1result = await client.query(query1, [emailTracking.messageID, emailTracking.reservationID, emailTracking.hotelID, emailTracking.emailType, emailTracking.sentDate, emailTracking.sendingDate, emailTracking.attempts]);
-           
+            query1 = 'SELECT * from email_tracking WHERE message_id = $1' ;
+            query1result = await client.query(query1, [messageID]);
             return query1result.rows;
+        }catch(e) {
+            console.log(e);
+            throw e;
+        } finally {
+            client.release();
+        }
+    }
+
+
+    async addEmailTrackingInfo(emailTracking){
+        let client, query1;
+        try {
+            if (!emailTracking.hotelID || !emailTracking.reservationID) throw new Error('no ids');
+            emailTracking.sentDate = emailTracking.sentDate /1000 || null ;
+            emailTracking.sendingDate = emailTracking.sendingDate /1000 || null ;
+            client = await pgPool.connect();
+            query1 = 'INSERT INTO email_tracking(message_id, reservation, hotel, email_type, sent_date, sending_date, attempts) VALUES ($1, $2, $3, $4, to_timestamp($5), to_timestamp($6), $7);' ;
+            await client.query(query1, [emailTracking.messageID, emailTracking.reservationID, emailTracking.hotelID, emailTracking.emailType, emailTracking.sentDate, emailTracking.sendingDate, emailTracking.attempts]);
         }catch(e) {
             console.log(e);
             throw e;
@@ -245,36 +258,33 @@ class HotelPmsDB {
     }
 
     async updateEmailTrackingInfo(emailTracking){
-        let client, query1, query1result;
+        let client, query1;
         try {
             if (!emailTracking.hotelID || !emailTracking.reservationID) throw new Error('no ids');
+            emailTracking.sentDate = emailTracking.sentDate /1000 || null ;
             client = await pgPool.connect();
-            query1 = 'UPDATE email_reservation_tracking SET email_sent_date = to_timestamp($2), attempts = $3 WHERE message_id = $1;' ;
-            query1result = await client.query(query1, [emailTracking.messageID, emailTracking.sentDate, emailTracking.attempts]);
-          
-            return query1result.rows;
+            query1 = 'UPDATE email_tracking SET sent_date = to_timestamp($1), attempts = $2 WHERE message_id =$3 ;' ;
+            await client.query(query1, [emailTracking.sentDate, emailTracking.attempts, emailTracking.messageID]);
         }catch(e) {
             console.log(e);
-            throw e;
+            throw e;   
         } finally {
-            client.release();
+            if (client) client.release();
         }
     }
 
     async deleteEmailTrackingInfo(reservationID, hotelID){
-        let client, query1, query1result;
+        let client, query1;
         try {
             if (!hotelID || !reservationID) throw new Error('no ids');
             client = await pgPool.connect();
-            query1 = 'DELETE FROM email_reservation_tracking WHERE reservation = $1 AND hotel = $2';
-            query1result = await client.query(query1, [reservationID, hotelID]);
-            
-            return query1result.rows;
+            query1 = 'DELETE FROM email_tracking WHERE reservation = $1 AND hotel = $2';
+            await client.query(query1, [reservationID, hotelID]);
         }catch(e) {
             console.log(e);
             throw e;
         } finally {
-            client.release();
+            if (client) client.release();
         }
     }
 
@@ -282,18 +292,16 @@ class HotelPmsDB {
         let client, query1, query1result;
         try {
             client = await pgPool.connect();
-            query1 = 'SELECT * from email_reservation_tracking WHERE email_sent_date is NULL' ;
+            query1 = 'SELECT * from email_tracking WHERE sent_date is NULL' ;
             query1result = await client.query(query1);
-           
             return query1result.rows;
         }catch(e) {
             console.log(e);
             throw e;
         } finally {
-            client.release();
+            if (client) client.release();
         }
     }
-
 } 
 
 module.exports = {

@@ -91,6 +91,7 @@ class Checkin {
             reservation,
             payment,
             privacyPolicy: enzoBook.hotelPolicies['privacyPolicy']
+       
         };
         const checkInRequest = new Checkin(check);
         return checkInRequest;
