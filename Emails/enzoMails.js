@@ -12,57 +12,56 @@ const MAILTYPES = {
     QR : 'qrCode' ,
     START : 'startCheckIn' ,
  } ;
-const mailFormat = (type, message, mail, messID, attach = null) => {
+
+const TITLES = {
+    QR : 'Email confirmation with QR-code for online pre-check-in' ,
+    START : 'Email invitation for online pre-check-in' ,
+};
+const mailFormat = (type, message, mail, messageId, attach = null) => {
     let TITLE = '';
     let MESSAGE = '';
     let FILE = '';
     console.log(attach.toString())
     let ATTACHMENTS = attach ? [{"content" : `${attach.toString()}`, "name": "image_attached.jpg"}] : '';
     if (type === MAILTYPES.QR) {
-        TITLE = 'Email confirmation with QR-code for online pre-check-in' ;
+        TITLE = TITLES.QR;
         MESSAGE = message ;
-        messID = messID ;
-        return ({
-            "attachments" : ATTACHMENTS ,
-            "body": {
-                "html": `${MESSAGE}` ,
-            },
+        return {
+            "attachments": ATTACHMENTS ,
+            "body": {"html": `${MESSAGE}`},
             "from": "no-reply@enzosystems.com",
-            "messageId": `${messID}`,
+            "messageId": `${messageId}`,
             "subject": `${TITLE}`,
             "to": [mail],
             "cc": ['adrien@enzosystems.com']
-        }) ;
+        } ;
     } else if (type === MAILTYPES.START ) {
-        TITLE = 'Email invitation for online pre-check-in' ;
-        MESSAGE = message ;
-        return ({
-                "attachments": ATTACHMENTS ,
-                "body": {
-                    "html": `${MESSAGE}` ,
-                },
-                "from": "no-reply@enzosystems.com",
-                "messageId": `${messID}`,
-                "subject": `${TITLE}`,
-                "to": [mail],
-                "cc": ['adrien@enzosystems.com']
-            });
-        //}
+        TITLE = TITLES.START;
+        MESSAGE = message;
+        return {
+            "attachments": ATTACHMENTS ,
+            "body": {"html": `${MESSAGE}`},
+            "from": "no-reply@enzosystems.com",
+            "messageId": `${messageId}`,
+            "subject": `${TITLE}`,
+            "to": [mail],
+            "cc": ['adrien@enzosystems.com']
+        }
     }  
 }
 
-const sendEmailRequest = async (type, message, email, messID, attach = null) => {  
-    let resId;
+const sendEmailRequest = async (type, message, email, messageId, attach = null) => {  
+    let reservationId;
     try{ 
-        resId = messID.length && messID.includes('#') ? messID.split('#')[1] : null ;
-        let mail = mailFormat(type, message, email, messID, attach);
-        let result = await axios({ url: EMAIL_SERVICE_URL, method: 'POST', data: mail });
+        reservationId = messageId.length && messageId.includes('#') ? messageId.split('#')[1] : null ;
+        let formattedMail = mailFormat(type, message, email, messageId, attach);
+        let result = await axios({ url: EMAIL_SERVICE_URL, method: 'POST', data: formattedMail });
         console.log('ok ', result) ;
-        winstonLogger.info(`Email type ${type} was sent to ${email} for reservationID ${resId} with messageID ${messID}`);
+        winstonLogger.info(`Email type ${type} was sent to ${email} for reservationID ${reservationId} with messageID ${messageId}`);
         return result;
     } catch (err) {  
         console.log('ko ', err) ;
-        winstonLogger.error(`Email type ${type} was NOT sent to ${email} for reservationID ${resId} with messageID ${messID}`);
+        winstonLogger.error(`Email type ${type} was NOT sent to ${email} for reservationID ${reservationId} with messageID ${messageId}`);
         winstonLogger.error(`Email Error `, err);
         throw err;
     } 

@@ -1,39 +1,67 @@
-const { HotelPmsDB } = require('../Models/database.js');
-const Enzo = require('../Models/enzoBooking.js');
-const PmsApi = require('../Models/pmsModuleApi.js');
+const { Database } = require('../Models/Database.js');
+const Enzo = require('../Models/Enzo.js');
+const { PmsModuleApi } = require('../Models/pmsModuleApi.js');
 const { findValidBooking, resetBookingDate } = require('../Utilities/utilities.js')
-const Models = require('../Models/errors.js')
+const Models = require('../Models/errors.js');
+const { request } = require('../app.js');
 
 //get new reservation, return an array of enzoCheckIn, run at specified interval 
 const getReservations = async (hotelId = null, reservationId = null) => { 
-    console.log("Start helper process: getReservations....");
+    console.log(`Start helper process: get hotel ${hotelId} Reservations....` , reservationId);
     try{
-        let result = null;
+        let pmsData;
+        const results = [];
+        const requests = [];
         //Call the db to get the list of hotel clients and their pmsData
-        const dbManager = new HotelPmsDB(hotelId);
-        const hotelWithPmsAccessList = await dbManager.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
-        const pmsApi = new PmsApi.PmsModuleApi(hotelId); //we use 1 generic manager (no hotelID) that will do request for each hotel 
-        //get the reservations per hotel Ids
-        for (let i = 0; i < hotelWithPmsAccessList.length; ++i) {    
-            let hotel = hotelWithPmsAccessList[i]; 
-            console.log(hotel.hotel_id) 
-            if (!result) result = {};
-            if (!result[hotel.hotel_id]) result[hotel.hotel_id] = {};
-            result[hotel.hotel_id] = await pmsApi.getReservationData({ 
+        const db = new Database(hotelId);
+        const hotelPms = await db.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
+        const pmsApi = new PmsModuleApi(hotelId); //we use 1 generic manager (no hotelID) that will do request for each hotel 
+        
+        //get the reservations per hotel 
+
+        if (hotelId) {
+            const requestResult = await pmsApi.getReservationData({ 
                 reservationId: reservationId,
-                pmsId: hotel.pms_id,
-                pmsUrl: hotel.pms_url, 
-                pmsLogin: hotel.pms_login,
-                pmsPwd: hotel.pms_pwd 
+                pmsId: hotelPms.pms_id,
+                pmsUrl: hotelPms.pms_url,
+                pmsUser: hotelPms.pms_user, 
+                pmsPwd: hotelPms.pms_pwd 
             });
-            result[hotel.hotel_id].reservations.map((r, idx) => {
-                r.hotelId = hotel.hotel_id;
-                r.pmsId = hotel.hotel_id;
-                let e = new Enzo.EnzoStay(r);
-                result[hotel.hotel_id].reservations[idx] = e;
-            });
+        
+            if (reservationId) {
+                const er = new Enzo.EnzoReservation(requestResult); 
+                //const stay = new Enzo.EnzoStay({ reservation: er });
+                results.push(er);
+            } else {
+                requestResult.map((r) => {
+                    const er = new Enzo.EnzoReservation(r);
+                    //const stay = new Enzo.EnzoStay({ reservation: er }) ;
+                    results.push(er);
+                });
+            }
+        } else {
+
+            for (let h of hotelPms) {    
+           
+                console.log('hotel id : ', h.hotel_id);
+                const requestResult = await pmsApi.getReservationData({ 
+                    reservationId: reservationId,
+                    pmsId: h.pms_id, 
+                    pmsUrl: h.pms_url, 
+                    pmsUser: h.pms_user, 
+                    pmsPwd: h.pms_pwd 
+                });
+               
+                //we receive an array of enzoReservations data
+                requestResult.map((r) => {
+                    const er = new Enzo.EnzoReservation(r);
+                    //const stay = new Enzo.EnzoStay({ reservation: er }) ;
+                    er.hotelId = h.hotel_id;
+                    results.push(er);
+                });
+            }
         }
-        return result;
+        return results;
     } catch(e) {
         console.error(e);
         throw e;
@@ -44,7 +72,7 @@ const getReservations = async (hotelId = null, reservationId = null) => {
 const postReservations = async (hotelId, reservationId, data) => { 
     console.log("Start helper process: postReservations....");
     try{        //Call the db to get the pmsData
-        const dbManager = new HotelPmsDB(hotelId);
+        const dbManager = new Database(hotelId);
         const hotelWithPmsAccessList = await dbManager.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
         const pmsApi = new PmsApi.PmsModuleApi(hotelId); //we use 1 generic manager (no hotelID) that will do request for each hotel 
         //get the reservations per hotel Ids
@@ -53,7 +81,6 @@ const postReservations = async (hotelId, reservationId, data) => {
             await pmsApi.updateReservationData({ 
                 data,
                 reservationId: reservationId,  
-                hotelId: hotel.hotel_id, 
                 pmsId: hotel.pms_id,
                 pmsUrl: hotel.pms_url,
                 pmsLogin: hotel.pms_login,  
@@ -89,7 +116,7 @@ const getBookingFromEmail = async (email) => {
 
 const resetBookingStatus = async (email = null, reservationID = null) => {
     try {
-        let track = new HotelPmsDB(); 
+        let track = new Database(); 
         let hotelID = 1; 
         if (reservationID || email) {
             let newBook;
@@ -124,7 +151,7 @@ const getHotelDetails = async (hotelId = null) => {
     console.log("Start helper process: get hotel Details....");
     try{
         //Call the db to get the list of hotel clients and their pmsData
-        const dbManager = new HotelPmsDB();
+        const dbManager = new Database();
         const hotelDetails = await dbManager.getHotelDetails(hotelId);
         return hotelDetails;
     } catch (e) {
@@ -139,7 +166,7 @@ const getHotelSettings = async (hotelId = null) => {
     console.log("Start helper process: get hotel settings....", hotelId);
     try{
         //Call the db to get the list of hotel clients and their pmsData
-        const dbManager = new HotelPmsDB(hotelId);
+        const dbManager = new Database(hotelId);
         const hotelAppSettings = await dbManager.getHotelAppSettings(hotelId); //retrieve all the hotels with their pms info
         return hotelAppSettings;
     } catch (e) {
@@ -152,7 +179,7 @@ const getEmailTracking = async (hotelId = null, reservationId = null, type = nul
     console.log("Start helper process: get Email Tracking....");
     try{
         //Call the db to get the email tracking
-        const dbManager = new HotelPmsDB(hotelId);
+        const dbManager = new Database(hotelId);
         const mailTracking = await dbManager.getEmailTrackingInfo(hotelId, reservationId, type); //retrieve all the hotels with their pms info
         let data = mailTracking.length ? mailTracking : null;
         return data;
@@ -166,7 +193,7 @@ const addOrUpdateEmailTracking = async (emailTracking) => {
     console.log("Start helper process: addOrUpdateEmailTracking....");
     try{
         //Call the db to get the email tracking
-        const dbManager = new HotelPmsDB(emailTracking.hotelID);
+        const dbManager = new Database(emailTracking.hotelID);
         const emailInfo = await dbManager.getEmailInfo(emailTracking.messageID);
         if (emailInfo.length) await dbManager.updateEmailTrackingInfo(emailTracking);
         else await dbManager.addEmailTrackingInfo(emailTracking);
@@ -181,8 +208,57 @@ const deleteEmailTracking = async (hotelId = null, reservationId = null) => {
     console.log("Start helper process: deleteEmailTracking....");
     try{
         //Call the db to get the email tracking
-        const dbManager = new HotelPmsDB(hotelId);
+        const dbManager = new Database(hotelId);
         await dbManager.deleteEmailTrackingInfo(hotelId, reservationId); //retrieve all the hotels with their pms info
+    } catch (e) {
+        console.log(e);
+        throw e;
+    } 
+}
+
+
+
+
+const getHotelStays = async (hotelId, startDate, endDate) => { 
+    console.log("Start helper process: get hotel Stays....");
+    try{
+        //Call the db to get the list of hotel clients and their pmsData
+        const db = new Database(hotelId);
+        const hotelPmsAccess = await db.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
+        const pmsApi = new PmsApi.PmsModuleApi(hotelId); //we use 1 generic manager (no hotelID) that will do request for each hotel 
+        //get the hotel data from the pmsAPI
+        const pmsHotelData = await pmsApi.getHotelData({ 
+                    pmsId:  hotelPmsAccess.pms_id,
+                    pmsUrl:  hotelPmsAccess.pms_url, 
+                    pmsUser:  hotelPmsAccess.pms_user,
+                    pmsPwd:  hotelPmsAccess.pms_pwd,
+                    startDate, 
+                    endDate  
+                });
+
+        const hotelDetails = await db.getHotelDetails(hotelId);
+        const hotelSettings = await db.getHotelAppSettings(hotelId);
+     
+        const hotel = new Enzo.EnzoHotel({ 
+            hotelId: hotelId, 
+            name: hotelWithPmsAccessList.hotel_name, 
+            phone: hotelDetails.phone,
+            email: hotelDetails.email, 
+            website: hotelDetails.website,
+            address: hotelDetails.address, 
+            logo: hotelDetails.logo, 
+            images: [ hotelDetails.image ], 
+            checkInTime: hotelDetails.checkInTime, 
+            checkOutTime: hotelDetails.checkOutTime 
+        });
+        if (hotelSettings) console.log(hotelSettings)
+        //{}.policies && hotelSettings.policies.content){
+            
+            
+        const hotelStay = new Enzo.EnzoHotelStay({ hotel });
+
+        
+        return hotelStay;
     } catch (e) {
         console.log(e);
         throw e;
@@ -199,5 +275,7 @@ module.exports = {
     getHotelDetails,
     getEmailTracking,
     addOrUpdateEmailTracking,
-    deleteEmailTracking
+    deleteEmailTracking,
+    getHotelStays 
+
 }

@@ -1,5 +1,6 @@
 const Errors = require('../Models/errors.js');
-const CheckInApp = require('../Models/checkInApp.js');
+const CheckInDemo = require('../Models/CheckInDemo.js');
+const CheckInApp = require('../Models/checkinApp.js');
 const helpers = require('../Helpers/helpers.js');
 const jwt = require('jsonwebtoken') ;
 const axios = require('axios') ;

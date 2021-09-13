@@ -1,5 +1,5 @@
 {
-    "API_BASE_URL" : "/checkIn/api",
+    "API_BASE_URL" : "/checkin/api",
     "DATA_STORAGE" : {
      "PATH" :  "./Data/dummyDB.js"
     }, 

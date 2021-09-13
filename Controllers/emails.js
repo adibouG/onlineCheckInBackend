@@ -1,7 +1,7 @@
 const app = require('../app.js');
 const Models = require('../Models/index.js');
 const { MAILTYPES, sendEmailRequest } = require('../Emails/enzoMails.js');
-const db = require('../Models/database.js');
+const { Database } = require('../Models/database.js');
 const helpers = require('../Helpers/helpers.js');
 const { makeEmailValues } = require('../Utilities/utilities.js');
 const SETTINGS = require('../settings.json') ;
@@ -20,24 +20,24 @@ const renderAndSendEmail = async (type, values, mailTracking = null) => {
     let template = type === MAILTYPES.START ? START_PRECHECK_INVITE : QRCODE_PRECHECK_COMPLETED; 
     try {
         //set the mailTracking object from the passed argument or create a new one for new email
-        let mailTrackingObj = (mailTracking instanceof Models.EmailTracking ) ? mailTracking : new Models.EmailTracking({ 
-            reservationID: values.reservationId, 
-            hotelID: values.hotelId, 
+        const mailTrackingObj = (mailTracking instanceof Models.EmailTracking ) ? mailTracking : new Models.EmailTracking({ 
+            reservationId: values.reservationId, 
+            hotelId: values.hotelId, 
             emailType: type
         });
         //add +1 to sending attempts
         ++mailTrackingObj.attempts;
         //call the express rendering engine for htm files define in app.js
         return app.render(template, values, async (err, content) => {
-            let manager = new db.HotelPmsDB();
-            let mailTrack = mailTrackingObj; 
+            let manager = new Database();
+            const mailTrack = mailTrackingObj; 
             try {
                 if (err) throw err ;
                 //set the email attachment file for the image/qrCode from the base64 string or from the image file
                 //TO DO: import the image from the hotel settings 
-                let attach = type === MAILTYPES.QR ? values.base64qrCode : values.base64image ;
+                const attach = type === MAILTYPES.QR ? values.base64qrCode : values.base64image ;
                 if (values.email && values.email.toLowerCase().includes('adrien@enzosystems.com'))
-                    await sendEmailRequest(type, content, values.email, mailTrackingObj.messageID, attach);
+                    await sendEmailRequest(type, content, values.email, mailTrackingObj.messageId, attach);
             } catch (e) {
                 mailTrack.sentDate = null ;
                 console.log('renderAndSendEmail error ...', e);
@@ -46,10 +46,15 @@ const renderAndSendEmail = async (type, values, mailTracking = null) => {
                // throw e ; //TODO : Test => not sure we need to re-throw the error as it's handled and the response headers should be already sent 
             } finally {
                 //if no db manager anymore, we get a new one. 
-                console.log('renderAndSendEmail finally ...update emailTrack', mailTrack);
-                if (!manager) manager = new db.HotelPmsDB(); 
-                if (mailTrack.attempts > 1) await manager.updateEmailTrackingInfo(mailTrack) ;
-                else await manager.addEmailTrackingInfo(mailTrack);
+                console.log('renderAndSendEmail finally ... ');
+                if (!manager) manager = new Database(); 
+                if (mailTrack.attempts > 1) {
+                    console.log('renderAndSendEmail finally ...update emailTrack', mailTrack);
+                    await manager.updateEmailTrackingInfo(mailTrack) ;
+                } else {
+                    console.log('renderAndSendEmail finally ...add emailTrack', mailTrack);
+                    await manager.addEmailTrackingInfo(mailTrack);
+                }
             }
         });
     } catch (e) {
@@ -62,7 +67,7 @@ const renderAndSendEmail = async (type, values, mailTracking = null) => {
 const getEmailErrors = async () => {
     console.log('check email error table for emails to resend...');
     try{
-        let manager = new db.HotelPmsDB();
+        let manager = new Database();
         //get the email errors from the email tracking table
         let results = await manager.getEmailError();  
         //if no result we can unset the intervalID and stop the lookup 

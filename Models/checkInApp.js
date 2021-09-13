@@ -1,10 +1,12 @@
-const Enzo = require('./enzoBooking.js');
+const Enzo = require('./Enzo.js');
+const CheckInDemo = require('./CheckInDemo.js');
+
 class Guest {
     constructor({ email = null, firstName = null, lastName = null, fullName = null, address = null,
          postalCode = null, city = null, country = null, mobile = null }){
         this.firstName = firstName;
         this.lastName = lastName;
-        this.fullName = fullName;
+        this.fullName = fullName || firstName + ' ' + lastName; 
         this.address = address ;
         this.postalCode = postalCode; 
         this.city = city;
@@ -15,7 +17,7 @@ class Guest {
 }
 
 class Payment {
-    constructor({ amount = null, currency = "€", paid = null, method = null, bank = null, transaction = null }) {
+    constructor({ amount = 0, currency = "€", paid = false, method = null, bank = null, transaction = null }) {
         this.amount = amount ;
         this.currency = currency; 
         this.paid = paid;
