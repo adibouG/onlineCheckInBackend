@@ -1,79 +1,73 @@
 require('dotenv').config();
-const SETTINGS = require('../settings.json') ;
 const axios = require('axios');
-const Logger = require('../Logger/loggers.js');
-
-
-
-const {START_CHECK_IN , GET_QRCODE} = SETTINGS.API_ENDPOINT ;
+const { winstonLogger } = require('../Logger/loggers.js');
 const EMAIL_SERVICE_URL = process.env.EMAIL_SERVICE;
-const LINK_URL = process.env.LINK_URL;
 
-const attachmentFormat = {
-                        
+const attachmentFormat = {              
     "content":  "" ,
     "name": ""
-
 };
 
 const MAILTYPES = {
-
     QR : 'qrCode' ,
     START : 'startCheckIn' ,
-
  } ;
 
-const mailFormat = (  type ,   mail , token , user = null  ) => {
-
-let TITLE = '';
-let MESSAGE = '' ;
-
-
-if (type === 'qrCode' && user ) {
-    
-    TITLE = 'CheckIn successful : QR code for checkin and key pickup at the kiosk' ;
-    MESSAGE = `<p>QRCODE</p>` ;
-  
- }   
- 
-else if (type === 'startCheckIn' ) {
-    TITLE = 'Your can start checkin' ;
-    MESSAGE = `<p>Click the link below to  start checkin</p> <p><a href="${LINK_URL}${START_CHECK_IN}?token=${token}">Start my check-in</a></p>` ;
-  
- }   
-
-
-
-
-return ({
-    "attachments": [],
-    "body": {
-        "html":`<h2>${TITLE}</h2> ${MESSAGE}` ,
-    },
-    "from": "no-reply@enzosystems.com",
-    "messageId": `{${token}}`,
-    "subject": `Check IN`,
-    "to": [mail],
-     "cc": ['adrien@enzosystems.com']
-})
-
+const TITLES = {
+    QR : 'Email confirmation with QR-code for online pre-check-in' ,
+    START : 'Email invitation for online pre-check-in' ,
+};
+const mailFormat = (type, message, mail, messageId, attach = null) => {
+    let TITLE = '';
+    let MESSAGE = '';
+    let FILE = '';
+    console.log(attach.toString())
+    let ATTACHMENTS = attach ? [{"content" : `${attach.toString()}`, "name": "image_attached.jpg"}] : '';
+    if (type === MAILTYPES.QR) {
+        TITLE = TITLES.QR;
+        MESSAGE = message ;
+        return {
+            "attachments": ATTACHMENTS ,
+            "body": {"html": `${MESSAGE}`},
+            "from": "no-reply@enzosystems.com",
+            "messageId": `${messageId}`,
+            "subject": `${TITLE}`,
+            "to": [mail],
+            "cc": ['adrien@enzosystems.com']
+        } ;
+    } else if (type === MAILTYPES.START ) {
+        TITLE = TITLES.START;
+        MESSAGE = message;
+        return {
+            "attachments": ATTACHMENTS ,
+            "body": {"html": `${MESSAGE}`},
+            "from": "no-reply@enzosystems.com",
+            "messageId": `${messageId}`,
+            "subject": `${TITLE}`,
+            "to": [mail],
+            "cc": ['adrien@enzosystems.com']
+        }
+    }  
 }
 
-
-function sendEmailRequest( type ,   email , token , user = null ) {   
-  
-  
-    let mail = mailFormat( type ,   email , token , user) ;
-   
-     return axios({ url : EMAIL_SERVICE_URL , method : 'POST' , data : mail })
-       .then(res => {  return res ;} ) 
-       .catch(res => {  return res ;} ) 
-  }
-
-
+const sendEmailRequest = async (type, message, email, messageId, attach = null) => {  
+    let reservationId;
+    try{ 
+        reservationId = messageId.length && messageId.includes('#') ? messageId.split('#')[1] : null ;
+        let formattedMail = mailFormat(type, message, email, messageId, attach);
+        let result = await axios({ url: EMAIL_SERVICE_URL, method: 'POST', data: formattedMail });
+        console.log('ok ', result) ;
+        winstonLogger.info(`Email type ${type} was sent to ${email} for reservationID ${reservationId} with messageID ${messageId}`);
+        return result;
+    } catch (err) {  
+        console.log('ko ', err) ;
+        winstonLogger.error(`Email type ${type} was NOT sent to ${email} for reservationID ${reservationId} with messageID ${messageId}`);
+        winstonLogger.error(`Email Error `, err);
+        throw err;
+    } 
+}
 
 module.exports = {
-    
     MAILTYPES,
     sendEmailRequest
 }

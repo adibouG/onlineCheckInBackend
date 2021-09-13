@@ -1,147 +1,100 @@
-const { randomUUID } = require('crypto');
 
-
-
-class Guest {
-
-    constructor({ email = null , fullName = null , address = null, postalCode = null , city = null , mobile = null }){
-        this.fullName = fullName;
+class HotelDetails {
+    constructor({ hotelId = null, addressId = null, address = null, 
+        postCode = null, displayedName = null, city = null, country=null,
+        checkinTime = null, phone = null, email = null, web = null,
+        logo = null } = {}) {
+        this.hotelId  = hotelId  ;
+        this.addressId  = addressId  ;
+        this.displayedName = displayedName ; 
         this.address = address ;
-        this.postalCode = postalCode; 
+        this.postCode = postCode; 
         this.city = city;
+        this.country = country;
+        this.phone = phone;
         this.email = email;
-        this.mobile = mobile;
+        this.web = web;
+        this.checkinTime = checkinTime;
+        this.logo = logo ;
     }
+}
 
+class HotelPmsSettings { 
+    constructor({ hotelId = null, pmsId = null,
+        pmsUrl = null , pmsName = null, 
+        pmsUser = null, pmsPwd = null, pmsAdditionalSettings = {} } = {}) {
+        this.hotelId = hotelId ; 
+        this.pmsId =  pmsId; 
+        this.pmsUrl = pmsUrl; 
+        this.pmsName = pmsName;
+        this.pmsUser = pmsUser ;
+        this.pmsPwd = pmsPwd ;
+        this.pmsAdditionalSettings = pmsAdditionalSettings;
+  }
+}
+
+class HotelStylesSettings { 
+    constructor({ hotelId = null, fontFamily = null, backgroundImage = null,  cssFileUrl = null } = {} ) {
+        this.hotelId = hotelId; 
+        this.fontFamily = fontFamily; 
+        this.backgroundImage = backgroundImage ;
+        this.cssFileUrl = cssFileUrl ;
+    }
 }
 
 
-class Checkin {
-
-    constructor({ uuid = null , guest = null , reservation = null, privacyPolicy = null , payment = null }){
-        this.uuid = uuid || randomUUID();
-        this.guest = guest ;
-        this.privacyPolicy = privacyPolicy; 
-        this.payment = payment;
-        this.reservation = reservation;
+class HotelScreenSettings { 
+    constructor({ hotelId = null, screenId = null, description = null, screenFields = {} } = {} ) {
+        this.hotelId = hotelId; 
+        this.screenId = screenId; 
+        this.description = description ;
+        this.screenFields = screenFields ; 
     }
-
-} 
-
-
-class Payment {
-  
-    constructor({ amount = null , currency = "€",  paid = null }) {
-        this.amount = amount ;
-        this.currency = currency; 
-        this.paid = paid;
-    }
-
-} 
-
-
-class Reservation {
-
-    constructor({ startDate = null , endDate= null ,  guestCount = null  ,  options = null ,  roomType = null}) {
-        this.startDate = startDate  ;
-        this.endDate = endDate; 
-        this.guestCount = guestCount;
-        this.roomType = roomType; 
-        this.options = options;
-    }
-
 }
 
-
-const makeFormatedDate = (d = null , l = null) =>   {
-
-
-    let date = d ? new Date(d) : new Date() ;
-
-
-
-    return date.toISOString();
-
+class HotelAppSettings { 
+    constructor({ hotelId = null, screens = {}, style = {} } = {} ) {
+        this.hotelId = hotelId; 
+        this.screens = screens; 
+        this.style = style ;
+    }
 }
 
-const addDay = (date , d) =>  new Date(date.getTime() + d ) ;
+class Hotel { 
+    constructor({ hotelId = null, name = null, pmsId = null }) {
+        this.hotelId = hotelId ; 
+        this.pmsId = pmsId ; 
+        this.name = name ; 
+  }
+}
 
-    
-
-const SUCCESS_STATUS =  [ 'pending' , 'complete' ] 
-
+class EmailTracking { 
+    constructor({ reservationId, hotelId, emailType, sentDate = null, sendingDate = null, messageId = null, attempts = 0 } = {}) {
+        this.hotelId =  hotelId ; 
+        this.reservationId =  reservationId ; 
+        this.emailType = emailType ; 
+        this.sendingDate = new Date(sendingDate).getTime() || Date.now() ;
+        this.sentDate = new Date(sentDate).getTime() || Date.now() ;
+        this.messageId = messageId || (hotelId + '#' +  reservationId + "#" + emailType);
+        this.attempts = attempts ;
+  }
+}
+const SUCCESS_STATUS =  [ 'pending' , 'complete' ] ;
 class SuccessBody {
-
-    constructor( status , {}  ) {
-
-
-        this.type =  'success' ;
-        this.status =  status ;
+    constructor(status, {}) {
+        this.type = 'success' ;
+        this.status = status ;
         this.response = {} ;
-
-    }
-
-  /*  getResponse() {
-
-        return  (status === 'complete' ? { 
-            status : this.status ,
-            stay : this.response.stay
-    } : 
-    {
-        status : this.status ,
-        stay : this.response.
-    } ) */
-}
-
-
-class EnzoError extends Error {
-
-    constructor(type,  message , code , error ) {
-        super(error) ;
-        this.message = message ;
-        this.code = code ;
-        this.error = error ;
-        this.type = type ;
-    }
-}
-
-class Failure extends EnzoError {
-
-    constructor(message , code , error) {
-        super(message , code , error) ;
-        this.type = 'failure' ;
-    }
-}
-
-
-class NotFound extends Failure {
-
-    constructor(message , code , error) {
-        super(message , code ) ;
-        this.error = `notFound` ;
-    }
-}
-
-class ExpiredLink extends EnzoError {
-
-    constructor(error) {
-        super(message , code , error) ;
-        this.error = `expiredLink` ;
     }
 }
 
 module.exports = {
-
-    Guest ,
-    Checkin ,
-    Payment ,
-    Reservation ,
-    makeFormatedDate,
-    addDay ,
     SuccessBody ,
-    EnzoError,
-    Failure,
-    NotFound,
-    ExpiredLink
-
+    EmailTracking,
+    Hotel,
+    HotelAppSettings,
+    HotelScreenSettings,
+    HotelDetails,
+    HotelPmsSettings,
+    HotelStylesSettings
 }
