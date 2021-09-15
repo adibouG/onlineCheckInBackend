@@ -8,7 +8,7 @@ const connectionSetting = {
   password : process.env.DB_PASS ,
   database : process.env.DB_NAME ,
   port : process.env.DB_PORT ,
-  max : 4 ,// Max number of connections
+  max : 10 ,// Max number of connections
   ssl  : false ,
 };
 const pgPool = new Pool(connectionSetting);

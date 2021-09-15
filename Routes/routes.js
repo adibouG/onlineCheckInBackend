@@ -55,7 +55,6 @@ api.delete(`/hotels/:hotelId`, hotel.deleteHotelFullData) ;
 api.put(`/hotels/:hotelId`, hotel.updateHotel) ;
 api.get(`/hotels/:hotelId`, hotel.getHotels) ;
 api.get(`/hotels`, hotel.getHotels) ;
-
 api.post(`/hotels`, hotel.addHotel) ;
 api.get(`/hotels`, hotel.getHotels) ;
 

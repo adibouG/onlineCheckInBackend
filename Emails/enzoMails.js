@@ -33,7 +33,7 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
             "messageId": `${messageId}`,
             "subject": `${TITLE}`,
             "to": [mail],
-            "cc": ['adrien@enzosystems.com']
+            "cc": ['ad.gonzalezoliva@gmail.com']
         } ;
     } else if (type === MAILTYPES.START ) {
         TITLE = TITLES.START;
@@ -45,7 +45,7 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
             "messageId": `${messageId}`,
             "subject": `${TITLE}`,
             "to": [mail],
-            "cc": ['adrien@enzosystems.com']
+            "cc": ['ad.gonzalezoliva@gmail.com']
         }
     }  
 }

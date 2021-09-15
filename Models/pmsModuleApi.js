@@ -12,7 +12,7 @@ const TIMEFILTER = { COLLIDING: 'Colliding', START: 'Start' };
 class PmsModuleApi {
     constructor(hotel = null, reservation = null, pms = null, url = null,
         user = null, pwd = null, start = null, end = null, pmsTimefilter = null) {
-        this.pmsModuleBaseApiUrl =  new URL(PMS_API_BASEURL);        
+        this.pmsModuleBaseApiUrl = new URL(PMS_API_BASEURL);        
         this.hotelId = hotel;
         this.reservationId = reservation;
         this.pmsId = pms;
@@ -41,6 +41,7 @@ class PmsModuleApi {
             const params = new URLSearchParams();
             const apiUrl = new URL(this.pmsModuleBaseApiUrl);
             apiUrl.pathname += `pms/${pmsId}/reservations` ;
+            if (!pmsId) throw new Error('missing pmsId');
             if (reservationId) apiUrl.pathname += `/${reservationId}`; 
             else {
                 //if no reservationId is provided 
@@ -62,7 +63,6 @@ class PmsModuleApi {
             if (pmsPwd) params.set('pmsPwd', pmsPwd);
             apiUrl.search = params;
             const request = await axios.get(apiUrl.toString(), { validateStatus: (s) => (s < 500) });
-            console.log(request.data)
             return request.data;
         } catch(e) {
             console.error(e);
@@ -77,16 +77,18 @@ class PmsModuleApi {
         reservationId = reservationId || this.reservationId ;
         pmsUrl = pmsUrl || this.pmsUrl ;
         pmsId = pmsId || this.pmsId ;
-        pmsUser = pmsUser || this.login ;
-        pmsPwd = pmsPwd || this.pwd ;
+        pmsUser = pmsUser || this.pmsUser ;
+        pmsPwd = pmsPwd || this.pmsPwd ;
 
-        let payload = { hotelId, reservationId, pmsId, pmsUrl, pmsUser, pmsPwd, data };
+        const payload = { pmsUrl, pmsUser, pmsPwd, data };
         try{
-            const apiUrl = new URL(this.pmsModuleApiUrl);
+            console.log(this.pmsModuleBaseApiUrl);
+            const apiUrl = new URL(this.pmsModuleBaseApiUrl);
             if (!pmsId) throw new Error('missing pmsId');
             apiUrl.pathname += `pms/${pmsId}/reservations` ;
-            const requestResult =  await axios.put(apiUrl.toString(), payload); 
-            return requestResult.data ;
+            if (reservationId) apiUrl.pathname += `/${reservationId}`; 
+            await axios.put(apiUrl.toString(), payload); 
+            return 1 ;
         } catch(e) {
             console.error(e);
             throw e;
@@ -94,16 +96,17 @@ class PmsModuleApi {
     }
 
 
+    //return an hotelStay object
     async getHotelData({ pmsId = null, startDate = null, endDate = null, pmsUrl = null, pmsUser = null, pmsPwd = null }) 
     {
         pmsUrl = pmsUrl || this.pmsUrl ;
         pmsId = pmsId || this.pmsId ;
-        pmsUser = pmsUser || this.login ;
-        pmsPwd = pmsPwd || this.pwd ;
+        pmsUser = pmsUser || this.pmsUser ;
+        pmsPwd = pmsPwd || this.pmsPwd;
 
         try{  
             const params = new URLSearchParams();
-            const apiUrl = new URL(this.pmsModuleApiUrl);
+            const apiUrl = new URL(this.pmsModuleBaseApiUrl);
             if (!pmsId) throw new Error('missing pmsId');
             apiUrl.pathname += `pms/${pmsId}/hotel` ;
             const isDates = (startDate && endDate) || (this.startDate && this.endDate) ;

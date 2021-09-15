@@ -3,7 +3,7 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const { secretKey } = require('../Crypto/crypto.js');
 let QRCode = require('qrcode') ;
-const CheckInApp = require('../Models/CheckInDemo.js');
+
 const Models = require('../Models/index.js');
 const Enzo = require('../Models/Enzo.js');
 const Errors = require('../Models/errors.js');
@@ -15,8 +15,9 @@ const preCheckInIsValid = (booking, offset = CHECKIN_REQUEST_START_DAY_OFFSET) =
     const startDate = booking.expectedArrival ? new Date(booking.expectedArrival) : null;
     return (startDate && startDate >= new Date().setHours(0, 0, 0, 0) && startDate <= addDay(new Date().setHours(23, 59, 59, 999), offset) && booking.status && VALID_ENZO_STATUS.includes(booking.status.toUpperCase()));
 }
-const isItTracked = (reservation, emailTrackingList, hotelId) => {
+const isItTracked = (reservation, hotelId, emailTrackingList) => {
     let isTracked = false;
+    if (!emailTrackingList) return false;
     for (let track of emailTrackingList) {
         const trckObj = new Models.EmailTracking({ 
             reservationId: track.reservation_id,
@@ -35,9 +36,9 @@ const isItTracked = (reservation, emailTrackingList, hotelId) => {
     return isTracked;
 };
 
-const newReservationFilter = (r, l, h) => (preCheckInIsValid(r) && !isItTracked(r, l, h));
+const newReservationFilter = (reservationId, hotelId, emailTrackList = null) => (preCheckInIsValid(reservationId) && !isItTracked(reservationId, hotelId, emailTrackList));
 
-const generateUUID = () => randomUUID();
+//const generateUUID = () => randomUUID();
 
 const makeQrCode = async (hotelId, booking) => {
     let code = {
@@ -58,7 +59,7 @@ const secureTokenSign = {
 };
 const makeSecureRequestToken = (reservationId, hotelId, steps, token = null) => {
 
-    let tokenId = generateUUID();
+    let tokenId = randomUUID();
     let payload = { tokenId, reservationId, hotelId, steps };
     try {
         let token = jwt.sign(payload, secretKey + reservationId, secureTokenSign) ;
@@ -71,7 +72,7 @@ const makeSecureRequestToken = (reservationId, hotelId, steps, token = null) => 
 
 const verifySecureToken = (token, enzoBooking) => {
     try {
-        jwt.verify(token, secretKey + enzoBooking.pmsId, secureTokenSign);
+        return jwt.verify(token, secretKey + enzoBooking.pmsId, secureTokenSign);
     } catch (e) {
         throw e;
     } 
@@ -84,19 +85,8 @@ const startTokenSign = {
     audience: 'Enzosystems/online precheckin api'       
 };
 //function to generate customized tokens 
-const makeStartPreCheckInEmailToken = (email, uuid, status, reservationId, hotelId) => {
-    //TODO place the signature template in a specific module and set up a real secret with 32char/128bit entropy
-    // let steps = [-2, -1, 0, 1];
-    // let payload = { reservationId, hotelId, uuid, steps } ;
-    // try {
-    //     let token = jwt.sign(payload, secretKey + status, startTokenSign) ;
-    //     return token;
-    // } catch (e) {
-    //     console.log(e);
-    //     throw e;
-    // }
-}
-const verifyToken = (token, booking ) => {
+
+const verifyToken = (token, booking) => {
     try {
         jwt.verify(token, secretKey + booking.status, startTokenSign);
     } catch (e) {
@@ -109,7 +99,7 @@ const makeToken = (uuid, reservationId, status, hotelId) => {
         //TODO place the signature template in a specific module and set up a real secret with 32char/128bit entropy
         let steps = [-2, -1, 0, 1];
         let payload = { reservationId, hotelId, uuid, steps } ;
-        let token = jwt.sign(payload, secretKey + status, startTokenSign) ;
+        let token = jwt.sign(payload, secretKey + reservationId + status, startTokenSign) ;
         return token;
     } catch(e) {
         let error = e;
@@ -122,7 +112,7 @@ const makeToken = (uuid, reservationId, status, hotelId) => {
 const findValidBooking = (bookings) => {
     let booking ;
     console.log(bookings)
-    if (!bookings.length) throw new Models.NotFound('no reservation with this email') ; 
+    if (!bookings.length) return  ; 
     //try to find a valid reservation
     for (let b of bookings) {
         if (preCheckInIsValid(b) && b.status.toUpperCase() === 'WAITINGFORGUEST'){ 
@@ -161,16 +151,16 @@ const isPreCheckedBooking = (book) => ("status" in book && book.status.toUpperCa
 
 //make a specific checkin app Response Body, handle the conversion to check in app format, verify the status and build response accordingly
 //take a EnzoStay as booking, the hotelId, and the hotel app Settings object ... 
-const makeCheckInAppResponseBody = (booking, hotelId, hotelAppSettings = null, requestToken = null) => {
+const makeCheckInAppResponseBody = (booking, requestToken = null) => {
     let prechecked = false ;
     let complete = false;
     console.log('makeCheckInAppResponseBody ', booking)
     if (isPreCheckedBooking(booking)) prechecked = true ;
     if (!isBookingValid(booking)) complete = true ;
-    const checkin = CheckInApp.Checkin.fromEnzoCheckIn(booking);
-    if (complete) response = { request, type: 'failure', status: 'complete', stay: { arrivalDate: checkin.reservation.finalArrival }, hotel_id: hotelID, hotelAppSettings };
-    else if (prechecked) response = { request, type: 'success', status: 'prechecked', checkin, hotelId, hotelAppSettings };
-    else response = { request, type: 'success', status: 'pending', checkin, hotelId, hotelAppSettings };
+    //const checkin = CheckInApp.Checkin.fromEnzoCheckIn(booking);
+    if (complete) response = { type: 'failure', status: 'complete', stay: { arrivalDate: booking.finalArrival }};
+    else if (prechecked) response = { request: requestToken, type: 'success', status: 'prechecked', checkin: booking };
+    else response = { request: requestToken, type: 'success', status: 'pending', checkin: booking };
     return response;
 }
 
@@ -292,22 +282,30 @@ const makeCheckDates = (past = false) => {
     }) ;
 }
 
-const resetBookingDate = (book) => {
+const resetBookingDate = (reservation) => {
     let newDates ;
-    if ("finalArrival" in book && book.finalArrival) {
-        newDates = makeCheckDates(true) ; 
-        book.finalArrival = newDates.otherDate ;
-        book.expectedArrival = newDates.otherDate ;
-        book.expectedDeparture = newDates.today ;
-        book.status = 'inHouse';
-    } else {
-        newDates = makeCheckDates(false) ; 
-        book.expectedArrival = newDates.today ;
-        book.expectedDeparture = newDates.otherDate ;
-        book.status = 'waitingForGuest';
-        book = resetBookingState(book);
+    let bookings = reservation.roomStays;
+    let updated = [] ;
+    if (!bookings.length) return;
+    for (let book of bookings) {
+        if ("finalArrival" in book && book.finalArrival) {
+            newDates = makeCheckDates(true) ; 
+            book.finalArrival = newDates.otherDate ;
+            book.expectedArrival = newDates.otherDate ;
+            book.expectedDeparture = newDates.today ;
+            book.status = 'inHouse';
+        } else {
+            newDates = makeCheckDates(false) ; 
+            book.expectedArrival = newDates.today ;
+            book.expectedDeparture = newDates.otherDate ;
+            book.status = 'waitingForGuest';
+            book = resetBookingState(book);
+        }
+        updated.push(book);
     }
-    return book ;
+    reservation.roomStays = updated; 
+    reservation.booker = resetGuest(reservation.booker); 
+    return reservation ;
 };
 
 const resetReservation = (reservation) => {
@@ -327,6 +325,7 @@ const addDay = (date, d) => (new Date(new Date(date).getTime() + (d * MS_PER_DAY
 const makeEmailValues = async (type, reservation, hotelValues) => {
     try {
         let values = {} ;
+        let email = reservation.roomStays[0].guests.length  && reservation.roomStays[0].guests[0].email ? reservation.roomStays[0].guests[0].email : reservation.booker.email;
         //let booking = { ...reservation.roomStays[0], ...reservation.booker } ;
         let firstName = reservation.roomStays[0].guests.length && reservation.roomStays[0].guests[0].firstName ? reservation.roomStays[0].guests[0].firstName : reservation.booker.firstName;
         let lastName = reservation.roomStays[0].guests.length && reservation.roomStays[0].guests[0].lastName ? reservation.roomStays[0].guests[0].lastName : reservation.booker.lastName;
@@ -339,7 +338,7 @@ const makeEmailValues = async (type, reservation, hotelValues) => {
             let checkDates =  d1 + " - " + d2 ;
             // generate the token for the 1rst email 
             let token = makeToken(reservation.roomStays[0].pmsId, reservation.roomStays[0].pmsId, reservation.roomStays[0].status, hotelValues.hotelId); 
-            let base64image = fs.existsSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelName.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
+            let base64image = fs.existsSync(`./Views/${hotelValues.hotel.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelValues.hotel.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
             values = {
                 guestLinkName : guestName.replaceAll(' ', '.') ,
                 checkDates,
@@ -371,7 +370,7 @@ const makeEmailValues = async (type, reservation, hotelValues) => {
             hotelPhone: hotelValues.phone,
             hotelEmail: hotelValues.email
         }
-        return ({ ...values, booking, guestFullName, ...hotelDetails, reservationId: reservation.roomStays[0].pmsId, hotelId: hotelValues.hotelId });
+        return ({ ...values, booking, email, guestFullName, ...hotelDetails, reservationId: reservation.roomStays[0].pmsId, hotelId: hotelValues.hotelId });
     } catch(e) {
         let error = e;
         console.log(error);
@@ -397,11 +396,9 @@ module.exports = {
     addDay,
     makeDate,
     getDay,
-    generateUUID,
     setCheckBooking,
     makeQrCode,
     makeCheckInAppResponseBody,
-    makeStartPreCheckInEmailToken,
     verifyToken,
     verifySecureToken,
     makeSecureRequestToken,

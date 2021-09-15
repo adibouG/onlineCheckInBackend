@@ -7,7 +7,7 @@ const { RESERVATION_LOOKUP_INTERVAL_MINUTES } = require('./settings.json');
 const { API_BASE_URL } = require('./settings.json');
 const api = require('./Routes/routes.js');
 //use the checkin API
-app.use(API_BASE_URL,  api);
+app.use(API_BASE_URL, api);
 
 const port =  process.env.PORT || 3003 ;
 const host = process.env.HOST || '0.0.0.0' ;
@@ -18,10 +18,11 @@ function handle(signal) {
     winstonLogger.info(`*^!@4!!!!! => Received event: ${signal}`)
     process.exit();
 }
+/*
 process.on('exit', handle) ;
 process.on('beforeExit', handle);
 process.on('uncaughtException', handle);
-// process.on('SIGTERM', handle);
+*/// process.on('SIGTERM', handle);
 // process.on('SIGINT', handle);
 // process.on('SIGPIPE', handle);
 // process.on('SIGHUP', handle);
