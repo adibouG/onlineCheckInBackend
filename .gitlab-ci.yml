@@ -27,8 +27,6 @@ docker-build:
 
 aws_deploy_job:
     stage: deploy
-    only:
-      - develop
 
     before_script:
       - mkdir -p ~/.ssh
