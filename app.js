@@ -46,6 +46,7 @@ app.engine('htm', (filePath, options, callback) => {
             .replaceAll('#checkInTime#', options.checkInTime)
             .replaceAll('#token#', options.token)
             .replaceAll('#hotelId#', options.hotelId)
+            .replaceAll('#base64Image#', options.base64Image)
             .replaceAll('#base64qrCode#', options.base64qrCode)
             .replaceAll('#guestFullName#', options.guestFullName)
             .replaceAll('#guestLinkName#', options.guestLinkName)

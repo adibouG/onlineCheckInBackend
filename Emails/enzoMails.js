@@ -21,7 +21,7 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
     let TITLE = '';
     let MESSAGE = '';
     let FILE = '';
-    console.log(attach.toString())
+    
     let ATTACHMENTS = attach ? [{"content" : `${attach.toString()}`, "name": "image_attached.jpg"}] : '';
     if (type === MAILTYPES.QR) {
         TITLE = TITLES.QR;
@@ -33,7 +33,7 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
             "messageId": `${messageId}`,
             "subject": `${TITLE}`,
             "to": [mail],
-            "cc": ['ad.gonzalezoliva@gmail.com']
+            "cc": ['ad.gonzalezoliva@gmail.com', 'adrien@enzosystems.com']
         } ;
     } else if (type === MAILTYPES.START ) {
         TITLE = TITLES.START;
@@ -45,7 +45,7 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
             "messageId": `${messageId}`,
             "subject": `${TITLE}`,
             "to": [mail],
-            "cc": ['ad.gonzalezoliva@gmail.com']
+            "cc": ['ad.gonzalezoliva@gmail.com', 'adrien@enzosystems.com']
         }
     }  
 }

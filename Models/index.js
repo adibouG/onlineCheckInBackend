@@ -34,19 +34,20 @@ class HotelPmsSettings {
 }
 
 class HotelStylesSettings { 
-    constructor({ hotelId = null, fontFamily = null, backgroundImage = null,  cssFileUrl = null } = {} ) {
-        this.hotelId = hotelId; 
+    constructor({ fontFamily = null, backgroundImage = null,  cssFileUrl = null, logo = null } = {} ) { 
+        
         this.fontFamily = fontFamily; 
         this.backgroundImage = backgroundImage ;
+        this.logo = logo
         this.cssFileUrl = cssFileUrl ;
     }
 }
 
 
 class HotelScreenSettings { 
-    constructor({ hotelId = null, screenId = null, description = null, screenFields = {} } = {} ) {
-        this.hotelId = hotelId; 
-        this.screenId = screenId; 
+    constructor({  screenId = null, description = null, screenFields = {} } = {} ) {
+   
+        this.screenId = screenId;  
         this.description = description ;
         this.screenFields = screenFields ; 
     }

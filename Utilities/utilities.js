@@ -3,7 +3,6 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const { secretKey } = require('../Crypto/crypto.js');
 let QRCode = require('qrcode') ;
-
 const Models = require('../Models/index.js');
 const Enzo = require('../Models/Enzo.js');
 const Errors = require('../Models/errors.js');
@@ -38,7 +37,6 @@ const isItTracked = (reservation, hotelId, emailTrackingList) => {
 
 const newReservationFilter = (reservationId, hotelId, emailTrackList = null) => (preCheckInIsValid(reservationId) && !isItTracked(reservationId, hotelId, emailTrackList));
 
-//const generateUUID = () => randomUUID();
 
 const makeQrCode = async (hotelId, booking) => {
     let code = {
@@ -88,7 +86,7 @@ const startTokenSign = {
 
 const verifyToken = (token, booking) => {
     try {
-        jwt.verify(token, secretKey + booking.status, startTokenSign);
+        jwt.verify(token, secretKey + booking.pmsId + booking.status, startTokenSign);
     } catch (e) {
         throw e;
     } 
@@ -100,7 +98,8 @@ const makeToken = (uuid, reservationId, status, hotelId) => {
         let steps = [-2, -1, 0, 1];
         let payload = { reservationId, hotelId, uuid, steps } ;
         let token = jwt.sign(payload, secretKey + reservationId + status, startTokenSign) ;
-        return token;
+        let b64token = Buffer.from(token, 'utf8').toString('base64') ;
+        return b64token;
     } catch(e) {
         let error = e;
         console.log(error);
@@ -145,23 +144,17 @@ const setCheckBooking = (bookingUpdt) => {
     return bookingUpdt ;
 } 
 
-const isBookingValid = (book) =>  !book.expectedArrival && VALID_ENZO_STATUS.includes(book.status.toUpperCase()) ;
+const isBookingValid = (book) =>  !book.finalArrival && VALID_ENZO_STATUS.includes(book.status.toUpperCase()) ;
 
 const isPreCheckedBooking = (book) => ("status" in book && book.status.toUpperCase() === 'PRECHECKEDIN') ;
 
 //make a specific checkin app Response Body, handle the conversion to check in app format, verify the status and build response accordingly
 //take a EnzoStay as booking, the hotelId, and the hotel app Settings object ... 
-const makeCheckInAppResponseBody = (booking, requestToken = null) => {
-    let prechecked = false ;
-    let complete = false;
-    console.log('makeCheckInAppResponseBody ', booking)
-    if (isPreCheckedBooking(booking)) prechecked = true ;
-    if (!isBookingValid(booking)) complete = true ;
-    //const checkin = CheckInApp.Checkin.fromEnzoCheckIn(booking);
-    if (complete) response = { type: 'failure', status: 'complete', stay: { arrivalDate: booking.finalArrival }};
-    else if (prechecked) response = { request: requestToken, type: 'success', status: 'prechecked', checkin: booking };
-    else response = { request: requestToken, type: 'success', status: 'pending', checkin: booking };
-    return response;
+const makeCheckInAppResponseBody = ( res, stay, hotelStay, requestToken = null) => {
+      
+    res.cookie( 'token', requestToken, { maxAge: 3000, httpOnly: true });
+    res.locals = { stay, hotelStay };
+    return res;
 }
 
 const findValueInDataStore = ({ value, key, store }) => {
@@ -338,12 +331,12 @@ const makeEmailValues = async (type, reservation, hotelValues) => {
             let checkDates =  d1 + " - " + d2 ;
             // generate the token for the 1rst email 
             let token = makeToken(reservation.roomStays[0].pmsId, reservation.roomStays[0].pmsId, reservation.roomStays[0].status, hotelValues.hotelId); 
-            let base64image = fs.existsSync(`./Views/${hotelValues.hotel.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelValues.hotel.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
+            let base64Image = fs.existsSync(`./Views/${hotelValues.hotel.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelValues.hotel.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
             values = {
                 guestLinkName : guestName.replaceAll(' ', '.') ,
                 checkDates,
                 token,
-                base64image,
+                base64Image,
                 app_link_baseUrl: APP_BASE_URL,
             };
         } else if (type === MAILTYPES.QR) {

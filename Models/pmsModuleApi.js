@@ -40,7 +40,7 @@ class PmsModuleApi {
         try {
             const params = new URLSearchParams();
             const apiUrl = new URL(this.pmsModuleBaseApiUrl);
-            apiUrl.pathname += `pms/${pmsId}/reservations` ;
+            apiUrl.pathname += `/pms/${pmsId}/reservations` ;
             if (!pmsId) throw new Error('missing pmsId');
             if (reservationId) apiUrl.pathname += `/${reservationId}`; 
             else {
@@ -85,7 +85,7 @@ class PmsModuleApi {
             console.log(this.pmsModuleBaseApiUrl);
             const apiUrl = new URL(this.pmsModuleBaseApiUrl);
             if (!pmsId) throw new Error('missing pmsId');
-            apiUrl.pathname += `pms/${pmsId}/reservations` ;
+            apiUrl.pathname += `/pms/${pmsId}/reservations` ;
             if (reservationId) apiUrl.pathname += `/${reservationId}`; 
             await axios.put(apiUrl.toString(), payload); 
             return 1 ;
@@ -94,9 +94,6 @@ class PmsModuleApi {
             throw e;
         }
     }
-
-
-    //return an hotelStay object
     async getHotelData({ pmsId = null, startDate = null, endDate = null, pmsUrl = null, pmsUser = null, pmsPwd = null }) 
     {
         pmsUrl = pmsUrl || this.pmsUrl ;
@@ -108,7 +105,80 @@ class PmsModuleApi {
             const params = new URLSearchParams();
             const apiUrl = new URL(this.pmsModuleBaseApiUrl);
             if (!pmsId) throw new Error('missing pmsId');
-            apiUrl.pathname += `pms/${pmsId}/hotel` ;
+            apiUrl.pathname += `/pms/${pmsId}/hotel` ;
+            const isDates = (startDate && endDate) || (this.startDate && this.endDate) ;
+            if (isDates) {
+                startDate = new Date(startDate || this.startDate); 
+                endDate = new Date(endDate || this.endDate);
+            } else {
+                startDate = new Date() ;
+                endDate = addDay(startDate, CHECKIN_REQUEST_START_DAY_OFFSET);
+            }
+            params.set('startDate', startDate.toISOString());
+            params.set('endDate', endDate.toISOString());
+        
+            if (pmsUrl) params.set('pmsUrl', pmsUrl);
+            if (pmsUser) params.set('pmsUser', pmsUser); 
+            if (pmsPwd) params.set('pmsPwd', pmsPwd);
+
+            const requestResult =  await axios.get(apiUrl.toString(), { validateStatus: (s) => (s < 500) }); 
+            return requestResult.data ;
+        } catch(e) {
+            console.error(e);
+            throw e;
+        }
+    }
+
+
+    //return an hotelStay object
+    async getHotelOffers({ pmsId = null, startDate = null, endDate = null, pmsUrl = null, pmsUser = null, pmsPwd = null }) 
+    {
+        pmsUrl = pmsUrl || this.pmsUrl ;
+        pmsId = pmsId || this.pmsId ;
+        pmsUser = pmsUser || this.pmsUser ;
+        pmsPwd = pmsPwd || this.pmsPwd;
+
+        try{  
+            const params = new URLSearchParams();
+            const apiUrl = new URL(this.pmsModuleBaseApiUrl);
+            if (!pmsId) throw new Error('missing pmsId');
+            apiUrl.pathname += `/pms/${pmsId}/hotelstayoffers` ;
+            const isDates = (startDate && endDate) || (this.startDate && this.endDate) ;
+            if (isDates) {
+                startDate = new Date(startDate || this.startDate); 
+                endDate = new Date(endDate || this.endDate);
+            } else {
+                startDate = new Date() ;
+                endDate = addDay(startDate, CHECKIN_REQUEST_START_DAY_OFFSET);
+            }
+            params.set('startDate', startDate.toISOString());
+            params.set('endDate', endDate.toISOString());
+        
+            if (pmsUrl) params.set('pmsUrl', pmsUrl);
+            if (pmsUser) params.set('pmsUser', pmsUser); 
+            if (pmsPwd) params.set('pmsPwd', pmsPwd);
+
+            const requestResult =  await axios.get(apiUrl.toString(), { validateStatus: (s) => (s < 500) }); 
+            return requestResult.data ;
+        } catch(e) {
+            console.error(e);
+            throw e;
+        }
+    }
+
+
+    async getHotelOfferAvailabilities({ pmsId = null, startDate = null, endDate = null, pmsUrl = null, pmsUser = null, pmsPwd = null }) 
+    {
+        pmsUrl = pmsUrl || this.pmsUrl ;
+        pmsId = pmsId || this.pmsId ;
+        pmsUser = pmsUser || this.pmsUser ;
+        pmsPwd = pmsPwd || this.pmsPwd;
+
+        try{  
+            const params = new URLSearchParams();
+            const apiUrl = new URL(this.pmsModuleBaseApiUrl);
+            if (!pmsId) throw new Error('missing pmsId');
+            apiUrl.pathname += `/pms/${pmsId}/hotel/hotelavailabilities` ;
             const isDates = (startDate && endDate) || (this.startDate && this.endDate) ;
             if (isDates) {
                 startDate = new Date(startDate || this.startDate); 

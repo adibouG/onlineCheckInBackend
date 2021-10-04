@@ -37,7 +37,7 @@ process.on('uncaughtException', handle);
 getEmailErrors();
 //start the reservation lookup interval
 //set the lookup process interval no need to save it as this is the app purpose to run it
-console.log('start setInterval :' + ((RESERVATION_LOOKUP_INTERVAL_MINUTES * 20 * 1000)/60));
+console.log('start setInterval :' + ((RESERVATION_LOOKUP_INTERVAL_MINUTES * 60 * 1000)));
 setInterval(newReservationFinder, RESERVATION_LOOKUP_INTERVAL_MINUTES * 20 * 1000);
 //trigger the reservation lookup function at start , 
 newReservationFinder();

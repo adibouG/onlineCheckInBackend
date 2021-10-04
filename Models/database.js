@@ -31,7 +31,7 @@ class Database {
             } 
             client.release();
             return data;
-        }catch(e) {
+        } catch(e) {
             console.log(e);
             throw e;
         } 
@@ -70,7 +70,7 @@ class Database {
                 queryResult = await client.query(query) ;
             }
             client.release();
-            return query1result.rows; 
+            return queryResult.rows; 
         }catch(e) {
             console.log(e);
             throw e;
@@ -331,7 +331,7 @@ class Database {
             try {
                 const client = await pgPool.connect();
                 //get hotel details
-                const query1 = 'SELECT * FROM hotel_application_settings WHERE hotel_id = $1'  ;
+                const query1 = 'SELECT hotel_styles FROM hotel_application_settings WHERE hotel_id = $1'  ;
                 const query1result = await client.query(query1, [hotelId]) ;
                 client.release();
                 return query1result.rows[0].hotel_styles;
@@ -562,6 +562,50 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             throw e;
         } 
     }
+/*
+
+    async getPaymentSession(){
+        let client, query1, query1result;
+        try {
+            client = await pgPool.connect();
+            query1 = 'SELECT * from payment_session' ;
+            query1result = await client.query(query1);
+            client.release();
+            return query1result.rows;
+        }catch(e) {
+            console.log(e);
+            throw e;
+        } 
+    }
+
+    async updatePaymentSession(data){
+        let client, query1, query1result;
+        try {
+            client = await pgPool.connect();
+            query1 = 'INSERT INTO payment_session VALUES ($1,$2,$3,$4,$5)' ;
+            query1result = await client.query(query1, [data.transactionId, data.hotelId, data.reservationId, data.startedAt, ]);
+            client.release();
+            return query1result.rows;
+        }catch(e) {
+            console.log(e);
+            throw e;
+        } 
+    }
+
+    async updatePaymentSession(){
+        let client, query1, query1result;
+        try {
+            client = await pgPool.connect();
+            query1 = 'UPDATE payment_session SET ' ;
+            query1result = await client.query(query1);
+            client.release();
+            return query1result.rows;
+        }catch(e) {
+            console.log(e);
+            throw e;
+        } 
+    }
+*/
 } 
 
 module.exports = {

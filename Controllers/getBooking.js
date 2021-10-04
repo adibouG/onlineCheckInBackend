@@ -12,7 +12,9 @@ const getBookingFromToken = async (req, res) => {
     let hotelAppSettings = null;
     try {
         //get the token
-        const { token } = req?.query;
+        const { authorization } = req?.headers ;
+        const b64token = authorization ? authorization.split(' ')[1] : req?.query.token;
+        const token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
         winstonLogger.info('received token :' + token);
         if (!token) throw new Errors.EnzoError('no token');
         //get data and verify the token
@@ -21,18 +23,16 @@ const getBookingFromToken = async (req, res) => {
         const { uuid, hotelId, reservationId, email, steps } = decoded;
         booking = await helpers.getReservations(hotelId, reservationId);
         const roomStay = booking[0].roomStays[0];
-        hotelAppSettings = await helpers.getHotelSettings(hotelId);
-        const hotelStayData = await helpers.getHotelStays(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
         if (!booking.length) throw new Errors.NotFound() ;        
         //token was signed using the reservation state in order to make it only 1 time use 
+      //  verifyToken(token, roomStay); 
         
-        verifyToken(token, roomStay); 
-        //let allowedScreens = hotelAppSettings.screens ? hotelAppSettings.screens : null;
+        const hotelStay = {} ;// await helpers.getHotelStays(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
+        const stay = new Enzo.EnzoStay({ reservation: booking[0] });
         //get HotelPolicies screens values into the  booking
-        const response = makeCheckInAppResponseBody(roomStay, token);
-        
-        //const stay = new Enzo.EnzoStay() 
-        
+       // res = makeCheckInAppResponseBody(res, roomStay, hotelStay, token); 
+        res.cookie( 'token', token, { maxAge: 3000, httpOnly: true });
+        const response = { stay, hotelStay };
         return res.status(200).send(response);
     } catch(e) {
         let error ;
@@ -51,24 +51,63 @@ const getBookingFromToken = async (req, res) => {
 //Update booking route controller (received from the checkinApp for now) 
 const postBooking = async (req, res) => {
     try {
-         const { data, token, step } = req?.body;
-        if (!data) throw new Errors.EnzoError('no booking nor update');
+        const { authorization } = req?.headers;
+        const b64token = authorization ? authorization.split(' ')[1] : req?.query.token;
+        const token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
+        winstonLogger.info('received token :' + token);
         if (!token) throw new Errors.EnzoError('no token');
-        
-        const stay = new Enzo.EnzoRoomStay(data);
-        const decoded = verifySecureToken(token, stay.reservation.roomStays[0]); 
+        //get data and verify the token
+        //TODO make a token verification function security check : algo, sign, iss ...
+        const decoded = jwt.decode(token); 
         const { uuid, hotelId, reservationId, email, steps } = decoded;
-        if (step == FINAL_STEP) enzoCheckin = setCheckBooking(enzoCheckin);
+        const data = req?.body;
+        if (!data) throw new Errors.EnzoError('no booking nor update');
+        const stay = new Enzo.EnzoRoomStay(data);
+     //   verifyToken(token, roomStay)
         await helpers.postReservations(hotelId, reservationId, stay);
+        if (step == FINAL_STEP) enzoCheckin = setCheckBooking(enzoCheckin);
+       /*
         const updtBookingData = await helpers.getReservations(hotelId, reservationId);
         if (!updtBookingData) throw new Errors.NotFound() ;
         const response = makeCheckInAppResponseBody(updtBookingData[0].roomStays[0], hotelId);
-        return res.status(200).send(response);
+       */
+        return res.status(200).send("OK");
     } catch(e) {
         console.log(e) ;
         return res.status(400).send(e) ;
     }
 }
+
+
+
+const getBookings = async (req, res, next) => {
+    try{
+        const { hotelId, reservationId } = req?.params ;
+
+        const hotelReservations = await helpers.getReservations(hotelId, reservationId);
+        if (!hotelReservations.length) return res.status(404).send(hotelReservations) ;
+        else if (reservationId) return res.status(200).send(hotelReservations[0]);
+        else return res.status(200).send(hotelReservations);
+    } catch(e) {
+        let error = e;
+        console.log(error);
+        return res.status(400).send(error) ;
+    }
+}
+
+const updateBooking = async (req, res, next) => {
+    try{
+        const { hotelId, reservationId } = req?.params ;
+        const data = req.body ? req.body : null ;
+        await helpers.postReservations(hotelId, reservationId, data);
+        return res.status(200).send("OK");
+    } catch(e) {
+        let error = e;
+        console.log(error);
+        return res.status(400).send(error) ;
+    }
+}
+
 
 //Reset booking route controller (received from the checkinApp for now) 
 const resetBookings = async (req, res) => {
@@ -82,8 +121,11 @@ const resetBookings = async (req, res) => {
     }
 }
 
+
 module.exports = {
     getBookingFromToken ,
     postBooking ,
-    resetBookings  
+    resetBookings  ,
+    updateBooking,
+    getBookings
 }

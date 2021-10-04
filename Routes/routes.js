@@ -4,12 +4,16 @@ const admin = require('../Controllers/admin.js') ;
 const email = require('../Controllers/getEmail.js') ;
 const hotel = require('../Controllers/hotels.js') ;
 const pms = require('../Controllers/pms.js') ;
+const payment = require('../Controllers/payments.js') ;
 
 
 //Checkin APP endpoints 
 //TO DO : add security checks and middlewares
 
 //endpoint to retrieve the reservation data from the token send by email and using the frontend app 
+api.post(`/checkin/getPaymentLink`, payment.getPaymentLinkFromToken);
+api.get(`/checkin/getPaymentResult`, payment.getPaymentResultById);
+
 api.post(`/checkin`, booking.postBooking);
 api.get(`/checkin`, booking.getBookingFromToken);
 
@@ -17,10 +21,15 @@ api.get(`/checkin`, booking.getBookingFromToken);
 api.get(`/pms/:pmsId`, pms.getPms);
 api.get(`/pms`, pms.getPms);
 
+//endpoint to trigger a payment request 
+api.get(`/hotels/:hotelId/reservations/:reservationId/paymentResult`, payment.getPaymentResult);
+api.get(`/hotels/:hotelId/reservations/:reservationId/payment`, payment.getPaymentLink);
+api.post(`/hotels/:hotelId/reservations/:reservationId/payment`, payment.postPaymentResult);
+
 //endpoint to save/update reservation data  
-api.put(`/hotels/:hotelId/reservations/:reservationId`, hotel.updateBooking) ;
-api.get(`/hotels/:hotelId/reservations/:reservationId`, hotel.getBookings) ;
-api.get(`/hotels/:hotelId/reservations`, hotel.getBookings) ;
+api.put(`/hotels/:hotelId/reservations/:reservationId`, booking.updateBooking) ;
+api.get(`/hotels/:hotelId/reservations/:reservationId`, booking.getBookings) ;
+api.get(`/hotels/:hotelId/reservations`, booking.getBookings) ;
 
 api.put(`/hotels/:hotelId/pms`, hotel.updateHotelPms) ;
 api.post(`/hotels/:hotelId/pms`, hotel.addHotelPms) ;
@@ -47,6 +56,9 @@ api.get(`/hotels/:hotelId/stays`, hotel.getHotelStays) ;
 
 //endpoint to trigger a QRCode email request 
 api.post(`/hotels/:hotelId/qrCode`, email.renderAndSendQrCode);
+//endpoint to trigger a payment request 
+api.get(`/hotels/:hotelId/payment`, email.renderAndSendQrCode);
+api.post(`/hotels/:hotelId/payment`, email.renderAndSendQrCode);
 
 
 api.get(`/hotels/count`, hotel.getHotelsCount) ;
@@ -65,6 +77,6 @@ api.get(`/reset`, booking.resetBookings);
 api.get('/admin', admin.displayDashboard);
 
 //AWS ALB healthCheck
-api.get('/healthCheck', (req, res) => res.status(200).send('OK'));
+api.get('/healthcheck', (req, res) => res.status(200).send('OK'));
 
 module.exports = api ;

@@ -83,11 +83,11 @@ const deleteHotel = async (req, res, next) => {
 
 const getBookings = async (req, res, next) => {
     try{
-        const hotelId = req.params ? req.params.hotelId : null ;
-        const reservationId = req.params ? req.params.reservationId : null ;
+        const { hotelId, reservationId } = req?.params ;
+
         const hotelReservations = await helpers.getReservations(hotelId, reservationId);
         if (!hotelReservations.length) return res.status(404).send(hotelReservations) ;
-        else if (reservationID) return res.status(200).send(hotelReservations[0]);
+        else if (reservationId) return res.status(200).send(hotelReservations[0]);
         else return res.status(200).send(hotelReservations);
     } catch(e) {
         let error = e;
@@ -98,8 +98,8 @@ const getBookings = async (req, res, next) => {
 
 const updateBooking = async (req, res, next) => {
     try{
-        const hotelId = req.params ? req.params.hotelId : null ;
-        const reservationId = req.params ? req.params.reservationId : null ;
+        const { hotelId, reservationId } = req?.params ;
+
         const data = req.body ? req.body : null ;
         await helpers.postReservations(hotelId, reservationId, data);
         return res.status(200).send("OK");
@@ -302,10 +302,10 @@ const deleteHotelScreenSetting = async (req, res, next) => {
 const getHotelStylesSetting = async (req, res, next) => {
     try{
         const { hotelId } = req?.params ;
-        const newHotelStyle = new Models.HotelStyleSettings(styleSettings);
         const dbManager = new Database();
-        const styles =await dbManager.getHotelStyleSettings(hotelId, newHotelStyle);
-        return res.status(200).send(styles);
+        const styles = await dbManager.getHotelStyleSettings(hotelId);
+        const hotelStyle = new Models.HotelStylesSettings({ logo: styles.logo, fontFamily: styles['font-family'], backgroundImage: styles['background-image'], cssFileUrl: styles['css']  });
+        return res.status(200).send(hotelStyle);
     } catch(e) {
         let error = e;
         console.log(error);
@@ -458,6 +458,7 @@ const deleteHotelFullData = async (req, res, next) => {
 const getHotelStays = async (req, res) => {
     try{
         const { hotelId } = req?.params;
+        const { startDate, endDate } = req?.query;
         const hotelStays = await helpers.getHotelStays(hotelId, startDate, endDate);
         return res.status(200).send(hotelStays);
     } catch(e) {

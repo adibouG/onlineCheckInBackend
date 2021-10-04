@@ -1,7 +1,7 @@
 const { Database } = require('../Models/database.js');
-const helpers = require('../Helpers/helpers.js')
-const Enzo = require('../Models/Enzo.js')
-const { renderAndSendEmail } = require('./emails.js')
+const helpers = require('../Helpers/helpers.js');
+const Enzo = require('../Models/Enzo.js');
+const { renderAndSendEmail } = require('./emails.js');
 const { makeEmailValues, newReservationFilter } = require('../Utilities/utilities.js');
 const { MAILTYPES } = require('../Emails/enzoMails.js');
 const { winstonLogger } = require('../Logger/loggers.js');
@@ -11,7 +11,7 @@ const newReservationFinder = async () => {
     console.log("Start process: newReservationFinder ....");
     try {
         const db = new Database();
-        const results = await helpers.getReservations(null, null, db); 
+        const results = await helpers.getReservations( null, null, db); 
         //Call the db to get the list of hotel clients and their pmsData
         const emailTrackingList = await helpers.getEmailTracking(null, null, null, db);
         //const emailTrackingList = await db.getEmailTrackingInfo();  
@@ -41,7 +41,6 @@ const newReservationsProcess = async (newValidStays, db = null) => {
         const hotels = {};
         for (const er of newValidStays) {
             //get the hotelId to retrieve the hotel details and store it for use with each reservation in this hotel
-            
             if (!hotels[er.hotelId]) {
                 const hd = await db.getHotelDetails(er.hotelId);
                 hotels[er.hotelId] = new Enzo.EnzoHotel({ 
@@ -60,10 +59,9 @@ const newReservationsProcess = async (newValidStays, db = null) => {
                     checkInTime: hd.hotel_checkin_time 
                 });
             }
-
-            //get the full details and send an email for each roomstay of the reservation for  
+            //get the full  details and send an email for each roomstay of the reservation for  
             //for (let rs of er.roomStays) {
-            const stayData = await helpers.getReservations(er.hotelId, er.roomStays[0].pmsId, db );
+            const stayData = await helpers.getReservations(er.hotelId, er.roomStays[0].pmsId, db);
             if (stayData.length && stayData[0].roomStays.length) {
                     //as we provide a roomStayId as reservationId and hotelId we have only one result a
                 let email; 
