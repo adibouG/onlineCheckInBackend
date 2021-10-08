@@ -108,6 +108,34 @@ const updateBooking = async (req, res, next) => {
     }
 }
 
+const getPayments = async (req, res, next) => {
+    try{
+        const { hotelId, reservationId } = req?.params ;
+        //TO DO:
+        const hotelReservations = await helpers.getReservations(hotelId, reservationId);
+        if (!hotelReservations.length) return res.status(404).send(hotelReservations) ;
+        else if (reservationId) return res.status(200).send(hotelReservations[0]);
+        else return res.status(200).send(hotelReservations);
+    } catch(e) {
+        let error = e;
+        console.log(error);
+        return res.status(400).send(error) ;
+    }
+}
+
+const addPayment = async (req, res, next) => {
+    try{
+        const { hotelId, reservationId } = req?.params ;
+        const data = req.body ? req.body : null ;
+        //TO DO
+        await helpers.postReservations(hotelId, reservationId, data);
+        return res.status(200).send("OK");
+    } catch(e) {
+        let error = e;
+        console.log(error);
+        return res.status(400).send(error) ;
+    }
+}
 
 //Reset booking route controller (received from the checkinApp for now) 
 const resetBookings = async (req, res) => {
@@ -127,5 +155,7 @@ module.exports = {
     postBooking ,
     resetBookings  ,
     updateBooking,
-    getBookings
+    getBookings,
+    getPayments,
+    addPayment
 }

@@ -16,10 +16,11 @@ var intervalCheckId = null;
 
 //Render and send the email from templates regarding the email type requested and using the values object to fill the placeholders
 //in the email error context, a mailtracking object can be provided with the previous email values that weren't sent due to errors  
-const renderAndSendEmail = async (type, values, mailTracking = null) => {
+const renderAndSendEmail = async (type, stayData, hotels, mailTracking = null) => {
     //get the template file name 
     let template = type === MAILTYPES.START ? START_PRECHECK_INVITE : QRCODE_PRECHECK_COMPLETED; 
     try {
+        const values = await makeEmailValues(MAILTYPES.START, stayData, hotels);
         //set the mailTracking object from the passed argument or create a new one for new email
         const mailTrackingObj = (mailTracking instanceof Models.EmailTracking ) ? mailTracking : new Models.EmailTracking({ 
             reservationId: values.reservationId, 
@@ -104,9 +105,9 @@ const getEmailErrors = async () => {
                     logo: hd.hotel_logo,
                     checkInTime: hd.hotel_checkin_time 
                 });
-                const values = await makeEmailValues(emailSentObject.emailType, result[0], enzoHotel);
+                //const values = await makeEmailValues(emailSentObject.emailType, result[0], enzoHotel);
                 //render and send the email 
-                await renderAndSendEmail(emailSentObject.emailType, values, emailSentObject);
+                await renderAndSendEmail(emailSentObject.emailType, result[0], enzoHotel, emailSentObject);
             } catch (e) {
                 throw e;
             } 

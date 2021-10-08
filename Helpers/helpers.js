@@ -1,4 +1,4 @@
-const { Database } = require('../Models/Database.js');
+const { Database } = require('../Models/database.js');
 const Enzo = require('../Models/Enzo.js');
 const { PmsModuleApi } = require('../Models/pmsModuleApi.js');
 const { findValidBooking, resetBookingDate } = require('../Utilities/utilities.js');

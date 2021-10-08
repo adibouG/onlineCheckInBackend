@@ -1,7 +1,8 @@
+require('dotenv').config();
 const crypto = require('crypto');
 const algorithm = 'aes-256-ctr';
 const iv = crypto.randomBytes(0); 
-const secret = "CheckInAppTokenSecretKey2021";
+const secret = process.env.SECRET || '';
 const secretKey = crypto.createHash("sha256").update(secret, "binary").digest("hex");
 
 const encrypt = (text) => {

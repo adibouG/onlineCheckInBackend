@@ -11,7 +11,7 @@ const newReservationFinder = async () => {
     console.log("Start process: newReservationFinder ....");
     try {
         const db = new Database();
-        const results = await helpers.getReservations( null, null, db); 
+        const results = await helpers.getReservations(null, null, db); 
         //Call the db to get the list of hotel clients and their pmsData
         const emailTrackingList = await helpers.getEmailTracking(null, null, null, db);
         //const emailTrackingList = await db.getEmailTrackingInfo();  
@@ -35,8 +35,8 @@ const newReservationFinder = async () => {
 const newReservationsProcess = async (newValidStays, db = null) => {
     console.log("Start process: newValidStays ....");
     let count = 0;
-    db = db || new Database();
     try {   
+        db = db || new Database();
         //we store the hotel data in an object to pavoid requesting the same data multiple time
         const hotels = {};
         for (const er of newValidStays) {
@@ -75,9 +75,13 @@ const newReservationsProcess = async (newValidStays, db = null) => {
                 if (email && !emailTracking.length) {
                     ++count;
                     console.log('sending email to '+  email + ' for reservation ' + stayData[0].roomStays[0].pmsId + ' from hotel ' + er.hotelId )
-                    const values = await makeEmailValues(MAILTYPES.START, stayData[0], hotels[er.hotelId]);
-                    await renderAndSendEmail(MAILTYPES.START, values);
+                    return await renderAndSendEmail(MAILTYPES.START, stayData[0], hotels[er.hotelId]);
+                } else if (email && emailTracking.length) {
+                    console.log('email to '+  email + ' for reservation ' + stayData[0].roomStays[0].pmsId + ' from hotel ' + er.hotelId + " was already sent")
+                } else if (!email) {
+                    console.log(' reservation ' + stayData[0].roomStays[0].pmsId + ' from hotel ' + er.hotelId + " has no provided email ")
                 }
+
             }
         }
         console.log("End process: newValidStays .... processed " + count + " new emails");

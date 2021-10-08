@@ -1,5 +1,5 @@
 require('dotenv').config();
-const PaymentLinkRequestBody = require('../Models/EnzoPayApi.js');
+const { PaymentLinkRequestBody, PaymentResult } = require('../Models/EnzoPayApi.js');
 const helpers = require('../Helpers/helpers.js');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
@@ -141,32 +141,6 @@ const postPaymentResult = (req, res) => {
 
 }
 
-class PaymentResult {
-    constructor({ 
-            transactionId = null,
-            merchantId = null,
-            status = null, 
-            amountPaid = null, 
-            currency = null, 
-            method = null, 
-            issuerId = null, 
-            providerId = null, 
-            cardNumber = null 
-    	} = {}) 
-    {
-        this.transactionId = transactionId;
-        this.merchantId = merchantId;
-        this.status = status;
-        this.amountPaid = amountPaid;
-        this.currency = currency;
-        this.method = method;
-        this.issuerId = issuerId;
-        this.providerId = providerId;
-        this.cardNumber = cardNumber;
-    }
-    //get status() { return this.status.toUpperCase(); }
-    
-}
 
 const getPaymentResult = async ({ transactionId, hotelId }, db = null ) => {
     try{

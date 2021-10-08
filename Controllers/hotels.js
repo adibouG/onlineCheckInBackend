@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Database } = require('../Models/Database.js');
+const { Database } = require('../Models/database.js');
 const Models = require('../Models/index.js');
 const helpers = require('../Helpers/helpers.js');
 

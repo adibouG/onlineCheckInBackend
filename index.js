@@ -3,8 +3,8 @@ const { winstonLogger } = require('./Logger/loggers.js');
 const app = require('./app.js') ;
 const { newReservationFinder } = require('./Controllers/findNewBooking.js');
 const { getEmailErrors } = require('./Controllers/emails.js');
-const { RESERVATION_LOOKUP_INTERVAL_MINUTES } = require('./settings.json');
-const { API_BASE_URL } = require('./settings.json');
+const SETTINGS = require('./settings.json');
+const { RESERVATION_LOOKUP_INTERVAL_MINUTES , API_BASE_URL} = SETTINGS;
 const api = require('./Routes/routes.js');
 //use the checkin API
 app.use(API_BASE_URL, api);
