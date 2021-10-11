@@ -69,19 +69,18 @@ const newReservationsProcess = async (newValidStays, db = null) => {
                 if (stayData[0].roomStays[0].guests.length && stayData[0].roomStays[0].guests[0].email) email = stayData[0].roomStays[0].guests[0].email ;
                 else email = stayData[0].booker.email;
                 //update and re-check if reservation is tracked 
-                console.log('processing '+  stayData[0].roomStays[0].pmsId + ' from hotel ' + er.hotelId )
+                console.log('processing ' + stayData[0].roomStays[0].pmsId + ' from hotel ' + er.hotelId )
                 const emailTracking = await db.getEmailTrackingInfo(er.hotelId, stayData[0].roomStays[0].pmsId, MAILTYPES.START);  
                 // if email is set we make the email values with the hotel and reservation and send it
                 if (email && !emailTracking.length) {
                     ++count;
                     console.log('sending email to '+  email + ' for reservation ' + stayData[0].roomStays[0].pmsId + ' from hotel ' + er.hotelId )
-                    return await renderAndSendEmail(MAILTYPES.START, stayData[0], hotels[er.hotelId]);
+                    await renderAndSendEmail(MAILTYPES.START, stayData[0], hotels[er.hotelId]);
                 } else if (email && emailTracking.length) {
                     console.log('email to '+  email + ' for reservation ' + stayData[0].roomStays[0].pmsId + ' from hotel ' + er.hotelId + " was already sent")
                 } else if (!email) {
                     console.log(' reservation ' + stayData[0].roomStays[0].pmsId + ' from hotel ' + er.hotelId + " has no provided email ")
                 }
-
             }
         }
         console.log("End process: newValidStays .... processed " + count + " new emails");

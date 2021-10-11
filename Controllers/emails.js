@@ -38,7 +38,7 @@ const renderAndSendEmail = async (type, stayData, hotels, mailTracking = null) =
                 //set the email attachment file for the image/qrCode from the base64 string or from the image file
                 //TO DO: import the image from the hotel settings 
                 const attach = type === MAILTYPES.QR ? values.base64qrCode : values.base64image ;
-                if (values.email && values.email.toLowerCase().includes('adrien')) await sendEmailRequest(type, content, values.email, mailTrackingObj.messageId, attach);
+                if (values.email && values.email.toLowerCase().includes('adrien')) return await sendEmailRequest(type, content, values.email, mailTrackingObj.messageId, attach);
             } catch (e) {
                 mailTrack.sentDate = null ;
                 console.log('renderAndSendEmail error ...', e);
@@ -50,10 +50,10 @@ const renderAndSendEmail = async (type, stayData, hotels, mailTracking = null) =
                 if (!manager) manager = new Database(); 
                 if (mailTrack.attempts > 1) {
                     console.log('renderAndSendEmail finally ...update emailTrack', mailTrack);
-                    await manager.updateEmailTrackingInfo(mailTrack) ;
+                    return await manager.updateEmailTrackingInfo(mailTrack) ;
                 } else {
                     console.log('renderAndSendEmail finally ...add emailTrack', mailTrack);
-                    await manager.addEmailTrackingInfo(mailTrack);
+                    return await manager.addEmailTrackingInfo(mailTrack);
                 }
             }
         });

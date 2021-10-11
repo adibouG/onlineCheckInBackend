@@ -53,15 +53,17 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
 const sendEmailRequest = async (type, message, email, messageId, attach = null) => {  
     let reservationId;
     try{ 
+        console.log('*** sendEmailRequest : .... ****' ) ;
+        winstonLogger.info(`Try sending email type ${type} to ${email} for reservationId ${reservationId} with messageId ${messageId}`);
         reservationId = messageId.length && messageId.includes('#') ? messageId.split('#')[1] : null ;
         let formattedMail = mailFormat(type, message, email, messageId, attach);
         let result = await axios({ url: EMAIL_SERVICE_URL, method: 'POST', data: formattedMail });
-        console.log('ok ', result) ;
-        winstonLogger.info(`Email type ${type} was sent to ${email} for reservationID ${reservationId} with messageID ${messageId}`);
-        return result;
+        console.log('ok ', result.data) ;
+        winstonLogger.info(`Email type ${type} was sent to ${email} for reservationId ${reservationId} with messageId ${messageId}`);
+        return result.data;
     } catch (err) {  
         console.log('ko ', err) ;
-        winstonLogger.error(`Email type ${type} was NOT sent to ${email} for reservationID ${reservationId} with messageID ${messageId}`);
+        winstonLogger.error(`Email type ${type} was NOT sent to ${email} for reservationId ${reservationId} with messageId ${messageId}`);
         winstonLogger.error(`Email Error `, err);
         throw err;
     } 
