@@ -105,8 +105,7 @@ const getEmailErrors = async () => {
                     logo: hd.hotel_logo,
                     checkInTime: hd.hotel_checkin_time 
                 });
-                //const values = await makeEmailValues(emailSentObject.emailType, result[0], enzoHotel);
-                //render and send the email 
+              //render and send the email 
                 await renderAndSendEmail(emailSentObject.emailType, result[0], enzoHotel, emailSentObject);
             } catch (e) {
                 throw e;

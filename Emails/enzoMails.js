@@ -22,32 +22,33 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
     let MESSAGE = '';
     let FILE = '';
     
-    let ATTACHMENTS = attach ? [{"content" : `${attach.toString()}`, "name": "image_attached.jpg"}] : '';
+    const ATTACHMENTS = attach ? [{"content" : `${attach.toString()}`, "name": "image_attached.jpg"}] : null ;
     if (type === MAILTYPES.QR) {
         TITLE = TITLES.QR;
-        MESSAGE = message ;
-        return {
-            "attachments": ATTACHMENTS ,
-            "body": {"html": `${MESSAGE}`},
-            "from": "no-reply@enzosystems.com",
-            "messageId": `${messageId}`,
-            "subject": `${TITLE}`,
-            "to": [mail],
-            "cc": ['ad.gonzalezoliva@gmail.com', 'adrien@enzosystems.com']
-        } ;
+        MESSAGE = message ; 
     } else if (type === MAILTYPES.START ) {
         TITLE = TITLES.START;
         MESSAGE = message;
-        return {
-            "attachments": ATTACHMENTS ,
+    }
+    return ATTACHMENTS ? 
+        ({
+            "attachments": ATTACHMENTS  ,
             "body": {"html": `${MESSAGE}`},
             "from": "no-reply@enzosystems.com",
             "messageId": `${messageId}`,
             "subject": `${TITLE}`,
             "to": [mail],
             "cc": ['ad.gonzalezoliva@gmail.com', 'adrien@enzosystems.com']
-        }
-    }  
+        }) :
+        ({
+            "body": {"html": `${MESSAGE}`},
+            "from": "no-reply@enzosystems.com",
+            "messageId": `${messageId}`,
+            "subject": `${TITLE}`,
+            "to": [mail],
+            "cc": ['ad.gonzalezoliva@gmail.com', 'adrien@enzosystems.com']
+        }); 
+    
 }
 
 const sendEmailRequest = async (type, message, email, messageId, attach = null) => {  

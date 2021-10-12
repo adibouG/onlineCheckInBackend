@@ -70,7 +70,6 @@ api.get(`/hotels`, hotel.getHotels) ;
 api.get(`/reset`, booking.resetBookings);
 //Admin part : UI
 api.get('/admin', admin.displayDashboard);
-
 //AWS ALB healthCheck
 api.get('/health', (req, res) => res.status(200).send('OK'));
 
