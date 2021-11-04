@@ -10,6 +10,10 @@ const getPms = async (req, res) =>  {
        if (pmsId) url.pathname += `/${pmsId}` ; 
        //TO DO add secure auth
        const response = await axios.get(url.toString());
+
+       for (let i in response.data) { }
+         
+
        return res.status(200).send(response.data);
     } catch(e) {
         return  res.status(500).send(e);

@@ -10,14 +10,14 @@ EXPOSE 3003
 ARG NODE_ENV=dev
 ENV NODE_ENV $NODE_ENV
 
-ENV HOST http://ec2-52-17-51-8.eu-west-1.compute.amazonaws.com
+ENV HOST https://dev.cloud.enzosystems.com:3003
 ENV EMAIL_ SERVICE https://dev.cloud.enzosystems.com:6000/messaging/email/sendmessage
-ENV LINK_URL http://ec2-52-17-51-8.eu-west-1.compute.amazonaws.com:3000
+ENV LINK_URL https://dev.cloud.enzosystems.com:3000/MyPreCheckin
 
 ENV SCHEME http
 
 
-WORKDIR /home/ec2-user/gitTest/checkin_backend_docker
+WORKDIR /home/ec2-user/gitTest/checkin_backenddocker
 COPY package.json .
 RUN npm install
 COPY . .

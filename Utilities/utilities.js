@@ -74,7 +74,7 @@ const verifySecureToken = (token, enzoBooking) => {
     } catch (e) {
         throw e;
     } 
-}
+};
 
 const startTokenSign = { 
     expiresIn: SETTINGS.TOKEN.VALIDITY,
@@ -90,7 +90,7 @@ const verifyToken = (token, booking) => {
     } catch (e) {
         throw e;
     } 
-}
+};
 const makeToken = (uuid, reservationId, status, hotelId) => {
     try{
         //if a valid booking exist, generate the token for the 1rst email 
@@ -105,7 +105,7 @@ const makeToken = (uuid, reservationId, status, hotelId) => {
         console.log(error);
         throw error;
     }
-}
+};
 
 
 const findValidBooking = (bookings) => {
@@ -137,12 +137,12 @@ const findValidBooking = (bookings) => {
     }
     if (!booking) throw new Errors.NotFound();
     return booking ;
-}
+};
 
 const setCheckBooking = (bookingUpdt) => {
     bookingUpdt.status = 'PRECHECKEDIN' ;
     return bookingUpdt ;
-} 
+} ;
 
 const isBookingValid = (book) =>  !book.finalArrival && VALID_ENZO_STATUS.includes(book.status.toUpperCase()) ;
 
@@ -155,7 +155,7 @@ const makeCheckInAppResponseBody = ( res, stay, hotelStay, requestToken = null) 
     res.cookie( 'token', requestToken, { maxAge: 3000, httpOnly: true });
     res.locals = { stay, hotelStay };
     return res;
-}
+};
 
 const findValueInDataStore = ({ value, key, store }) => {
     let objectToFind = [] ;
@@ -169,12 +169,12 @@ const findValueInDataStore = ({ value, key, store }) => {
         } 
     }
     return objectToFind ;
-}
+};
 
 const getInDataStore = (key, store) => {
     if (!(key in store)) return null ;
     return store[key] ;
-}
+};
 
 const setInDataStore = (key, upd, store) => {
     if (!getInDataStore(key, store)) return null ;

@@ -1,3 +1,4 @@
+const { AsyncResource, executionAsyncId } = require('async_hooks');
 const { pgClient, pgPool } = require('../DB/dbConfig.js');
 
 /**
@@ -5,9 +6,10 @@ const { pgClient, pgPool } = require('../DB/dbConfig.js');
  * it can be specialized object and method for an hotel, or generic for all hotels
  * it also provide the methods to manage the email tracking table  
  */ 
-class Database {
+class Database extends AsyncResource {
     
     constructor(hotelId = null) {
+        super('DbQuery');
         this.hotelId = hotelId;     //specialize the instance for a specific hotel
     }
 

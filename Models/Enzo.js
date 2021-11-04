@@ -1,6 +1,5 @@
 
 class EnzoLocale {
-
     static SUPPORTED_LOCALE = {
         DK: "da-DK",
         DE: "de-DE", 
@@ -10,26 +9,12 @@ class EnzoLocale {
         ES: "es-ES",
         FR: "fr-FR",
         IT: "it-IT",
-        NL: "nl-NL",
+        NL: "nl-NL" ,
         DEFAULT: "en-GB"
     };
-    static SUPPORTED_LOCALE_LIST = [
-        "da-DK",
-        "de-DE", 
-        "en-UK",
-        "en-GB",
-        "en-US",
-        "es-ES",
-        "fr-FR",
-        "it-IT",
-        "nl-NL"
-    ];
 
-
-    constructor(locale = null){
-        if (locale && locale.includes('-') && EnzoLocale.SUPPORTED_LOCALE_LIST.includes(locale)) this.locale = locale;
-        else if (locale && EnzoLocale.SUPPORTED_LOCALE[locale.toUpperCase()]) this.locale = locale;
-        else this.locale = EnzoLocale.SUPPORTED_LOCALE.DEFAULT;
+    constructor(locale = EnzoLocale.SUPPORTED_LOCALE.GB){
+        this.locale = locale;
     }
 }
 
@@ -47,11 +32,9 @@ class EnzoCurrency {
         USD: "USD",
         DEFAULT: "EUR"
     };
-    static SUPPORTED_CURRENCY_LIST = ["AUD", "CHF", "CNY", "DKK", "EUR", "GBP", "GEL", "MYR", "USD"];
 
-    constructor(currency = null){
-        if (currency && EnzoLocale.SUPPORTED_CURRENCY_LIST.includes(currency)) this.currency = currency;
-        else this.currency = EnzoCurrency.SUPPORTED_CURRENCY.DEFAULT;
+    constructor(currency = EnzoCurrency.SUPPORTED_CURRENCY.EUR){
+        this.currency = currency;
     }
 }
 
@@ -66,16 +49,27 @@ class Image {
         this.width = width ;
         this.height = height ;
     }
-
 }
+
+ class Text {
+    constructor(locale = EnzoLocale.SUPPORTED_LOCALE.DEFAULT, text) 
+     {
+         this[locale] = text;
+     }
+ }
+
 class LocalText {
-    constructor(value = null, locale = EnzoLocale.SUPPORTED_LOCALE.DEFAULT) 
-    {
-        this.locale = locale;
-        this.value = value ;
+    
+    constructor( ...v ) {
+
+        if (!v) return null;
+        else if ( typeof(v) === 'Object') { 
+            for (let i in V) { this[i] = v[i]; }
+        } else {
+            new Text(...v);
+        }
     }
 }
-
 class EnzoAddress {
     constructor({ addressLine1 = null, addressLine2 = null, country = null, postalCode = null, city = null } = {}) {
         this.addressLine1 = addressLine1  ;
@@ -86,19 +80,21 @@ class EnzoAddress {
     }
 }
 
+
+
 class EnzoHotel {
-    constructor({ hotelId = null, pmsId = null, 
+    constructor( { hotelId = null, pmsId = null, 
         chainName = null, name = null, hotel = null, email = null, 
         phone = null, website = null, address = null, 
         logo = null, images = [], 
         policies = null, gdprRules = null, 
-        guestRegistrationForm = null, checkOutTime = null, checkInTime = null } = {}) 
+        guestRegistrationForm = null, checkOutTime = null,
+         checkInTime = null  } = {}) 
     {
-        
             this.hotelId = hotelId  ;
             this.pmsId = pmsId  ;
             this.chainName = chainName ;
-            this.hotel = hotel; 
+            this.hotel = hotel ;
             this.name = name; 
             this.email = email;
             this.phone = phone;
@@ -106,41 +102,35 @@ class EnzoHotel {
             this.address = address ? new EnzoAddress(address) : null;
             this.logo = logo;
             this.images = images;
-            this.policies = policies;
-            this.gdprRules = gdprRules;
-            this.guestRegistrationForm = guestRegistrationForm;
+            this.policies = new LocalText(policies);
+            this.gdprRules = new LocalText(gdprRules) ;
+            this.guestRegistrationForm = new LocalText(guestRegistrationForm);
             this.checkInTime = checkInTime;
             this.checkOutTime = checkOutTime;
-        }
-    
+    }
 }
 
 class EnzoHotelStay {
 
-    constructor({ 
-        hotel = null, 
+    constructor({ hotel = null, 
         rooms = [], roomTypes = [], roomFeatures = [],
         ratePlans = [], optionGroups = [], options = [], 
         minibar = null } = {}) 
     {
-       /* if (hotelStay instanceof EnzoHotelStay) {
-            Object.assign({}, hotelStay) ;
-            //for (let i in hotelSay) { this[i] = hotelStay[i]; }
-        } else {*/
-            this.hotel = hotel ? new EnzoHotel(hotel) : null;
-            this.rooms = rooms.map(r => new EnzoRoom);
-            this.roomTypes = roomTypes.map(r => new EnzoRoom); 
-            this.roomFeatures = roomFeatures.map(r => new EnzoRoom);
-            this.ratePlans = ratePlans.map(r => new EnzoRoom);
-            this.optionGroups = optionGroups.map(r => new EnzoOptionGroup);
-            this.options = options.map(r => new EnzoOption);
-            this.minibar = minibar;
-        //}
+        this.hotel = hotel ? new EnzoHotel(hotel) : null;
+        this.rooms = rooms.map(r => new EnzoRoom(r));
+        this.roomTypes = roomTypes.map(r => new EnzoRoomType(r)); 
+        this.roomFeatures = roomFeatures.map(r => new EnzoRoomFeature(r));
+        this.ratePlans = ratePlans.map(r => new EnzoRatePlan(r));
+        this.optionGroups = optionGroups.map(r => new EnzoOptionGroup(r));
+        this.options = options.map(r => new EnzoOption(r));
+        this.minibar = new EnzoMinibar(minibar);
+
     }
 }
 
 class EnzoRoom {
-
+    
     static ROOM_STATUS_LIST = ["Clean", "CleanForInspection", "Dirty", "Occupied", "Maintenance"];
     static ROOM_STATUS = {
         CLEAN: "Clean",
@@ -149,24 +139,77 @@ class EnzoRoom {
         OCCUPIED: "Occupied",
         MAINTENANCE: "Maintenance"
     };
-    constructor({ pmsId = null, name = [],
+    constructor({ pmsId = null, name = {},
         roomTypeId = null, 
         status = EnzoRoom.ROOM_STATUS.DIRTY, images = [],
-        directions = [], view = [] }) 
+        directions = {}, view = {} }) 
     {
         this.pmsId = pmsId ;
-        this.name = name.map(n => new LocalText(n));
+        this.name = new LocalText(name);
         this.roomTypeId = roomTypeId; 
         this.status = status;
         this.images = images;
-        this.directions = directions.map(d => new LocalText(d))
-        this.view = view.map(v => new LocalText(v));
+        this.directions = new LocalText(directions);
+        this.view = new LocalText(view);
     }
 } 
 
 
+/*
+// roomType
+{
+    "$id": "https://enzosystems.com/schemas/hotel/roomtype",
+    
+    "type": "object",
+    "title": "Room type",
+    "required": ["pmsId", "name", "description", "minOccupancy", "maxOccupancy"],
+    "properties": {
+        "pmsId": {"type": "string", "maxLength": 64, "title": "PMS id"},
+        "name": {
+            "type": "array", "title": "Name",
+            "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 32}}}
+        },
+        "description": {
+            "type": "array", "title": "Description",
+            "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 128}}}
+        },
+        "descriptionLong": {
+            "type": "array", "title": "Description long",
+            "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 512}}}
+        },
+        "minOccupancy": {"type": "number", "title": "Min. occupancy", "multipleOf": 1, "minimum": 1, "maximum": 10},
+        "maxOccupancy": {"type": "number", "title": "Max. occupancy", "multipleOf": 1, "minimum": 1, "maximum": 50},
+        "beds": {
+            "type": "array", "title": "Beds",
+            "items": {"type": "object", "properties": {
+                "name": {
+                    "type": "array", "title": "Name",
+                    "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 32}}}
+                }, 
+                "numberOfBeds": {"type": "number", "title": "Number of beds", "multipleOf": 1, "minimum": 1}}}
+        },
+        "roomSize": {"type": "number", "title": "Square meters", "multipleOf": 1},
+        "roomFeatureIds": {
+            "type": "array", "title": "Room feature ids", 
+            "items": {"type": "string", "maxLength": 64, "title": "Room feature id"}
+        },	
+        "view": {
+            "type": "array", "title": "View",
+            "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 32}}}
+        },
+        "directions": {
+            "type": "array", "title": "Directions",
+            "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 128}}}
+        },
+        "images": {
+            "type": "array", "title": "Images", 
+            "items": {"$ref": "/schemas/hotel/image"}
+        }
+    }
+}
+*/
 class EnzoRoomType {
-    constructor({  pmsId = null, name = [],
+    constructor({ pmsId = null, name = null,
         maxOccupancy = 0, minOccupancy = 0, 
         bedType = null, images = null, 
         view = null, direction = null, 
@@ -175,20 +218,61 @@ class EnzoRoomType {
         roomFeatureIds = [] }) 
     {
         this.pmsId = pmsId ;
-        this.name = name.map(n => new LocalText(n)) ;
-        this.description = description.map(n => new LocalText(n));
-        this.descriptionLong = descriptionLong.map(n => new LocalText(n));
-        this.minOccupancy = minOccupancy; 
-        this.maxOccupancy = maxOccupancy;
+        this.name = new LocalText(name) ;
+        this.description = new LocalText(description);
+        this.descriptionLong = new LocalText(descriptionLong);
+        this.minOccupancy = minOccupancy || 1; 
+        this.maxOccupancy = maxOccupancy || 1;
         this.bedType = bedType;
-        this.images = images;
-        this.view = view;
+        this.images = images.map(i => new EnzoImage(i));
+        this.directions = new LocalText(directions);
+        this.view = new LocalText(view);
         this.roomFeatureIds = roomFeatureIds;
-        this.direction = direction;
         this.roomSize = roomSize;
     }
 } 
-
+/*
+// roomFeature
+{
+    "$id": "https://enzosystems.com/schemas/hotel/roomfeature",
+    
+    "type": "object",
+    "title": "Room feature",
+    "required": ["pmsId", "name"],
+    "properties": { 
+        "pmsId": {"type": "string", "maxLength": 64, "title": "PMS id"},
+        "name": {
+            "type": "array", "title": "Name",
+            "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 32}}}
+        },
+        "description": {
+            "type": "array", "title": "Description",
+            "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 128}}}
+        },
+        "images": {
+            "type": "array", "title": "Images", 
+            "items": {"$ref": "/schemas/hotel/image"}
+        }
+    }
+}
+*/
+class EnzoRoomFeature {
+    constructor({ pmsId = null, name = {}, images = null, description = {} }) 
+    {
+        this.pmsId = pmsId ;
+        this.name = new LocalText(name) ;
+        this.description = new LocalText(description);
+        this.descriptionLong = new LocalText(descriptionLong);
+        this.minOccupancy = minOccupancy || 1; 
+        this.maxOccupancy = maxOccupancy || 1;
+        this.bedType = bedType;
+        this.images = images.map(i => new EnzoImage(i));
+        this.directions = new LocalText(directions);
+        this.view = new LocalText(view);
+        this.roomFeatureIds = roomFeatureIds;
+        this.roomSize = roomSize;
+    }
+} 
 
 class EnzoGuest  {
     
@@ -218,6 +302,7 @@ class EnzoGuest  {
    static AGE_CATEGORIES = { INFANT: "Infant", CHILD: "Child", ADULT: "Adult" }; 
    static GENDER_CATEGORIES = { MALE: "Male", FEMALE: "Female", NEUTRAL: "Neutral" }; 
 }
+
 
 class EnzoGuestIdentification  {
     
@@ -249,17 +334,13 @@ class EnzoGuestIdentification  {
         }
 }
 
-class EnzoFolioItem {
-    static FOLIO_ITEM_TYPES = { 
-        CHARG: "Charge",
-        PAY: "Payment", 
-        TAX: "Tax" 
-    };
 
-    constructor({ pmsId = null, name = [], subtotal = 0, type = EnzoFolioItem.FOLIO_ITEM_TYPES.CHARG, unitPrice = 0, numberOfItems = 0,
+class EnzoFolioItem {
+    static FOLIO_ITEM_TYPES = { CHARG: "Charge", PAY: "Payment", TAX: "Tax" };
+    constructor({ pmsId = null, name = null, subtotal = 0, type =  EnzoFolioItem.FOLIO_ITEM_TYPES.CHARG, unitPrice = 0, numberOfItems = 0,
         dateTime = null, details = null } = {}) {
         this.pmsId = pmsId ;
-        this.name = name.map(n => new LocalText(n)) ;
+        this.name = new LocalText(name) ;
         this.unitPrice = unitPrice;
         this.numberOfItems = numberOfItems;
         this.subtotal = subtotal ;
@@ -268,8 +349,9 @@ class EnzoFolioItem {
         this.details = details;
     }
 }
+
 class EnzoFolioGroup {
-    constructor({ pmsId = null, name = [], subtotal = 0, folioItems = [] } = {}) 
+    constructor({ pmsId = null, name = null, subtotal = 0, folioItems = [] } = {}) 
         {
         this.pmsId = pmsId ;
         this.name = name ;
@@ -280,21 +362,20 @@ class EnzoFolioGroup {
 
 
 class EnzoFolioDateGroup {
-    constructor({ pmsId = null, name = [], subtotal = 0, folioGroups = [] } = {}) 
-        {
+    constructor({ pmsId = null, name = null, subtotal = 0, folioGroups = [] } = {}) {
         this.pmsId = pmsId ;
-        this.name = name ;
+        this.name = new LocalText(name) ;
         this.subtotal = subtotal ;
         this.folioGroups = folioGroups ;
-        }
     }
+}
 
 class EnzoFolio {
-    constructor({ pmsId = null, name = [], 
+    constructor({ pmsId = null, name = null, 
         totalCost = 0, taxIncluded = 0, alreadyPaid = 0, remainingToPay = 0,
         currency = EnzoCurrency.SUPPORTED_CURRENCY.DEFAULT, folioDateGroups = [] } = {}) {
         this.pmsId = pmsId ;
-        this.name = name ;
+        this.name = new LocalText(name) ;
         this.totalCost = totalCost ;
         this.taxIncluded = taxIncluded ;
         this.alreadyPaid = alreadyPaid;
@@ -304,6 +385,7 @@ class EnzoFolio {
     }
 }
  
+       
 class EnzoPayment {
     constructor({ pmsId = null, transaction = null, amount = 0, 
         dateTime = null, bank = null, paymentMethod = null, 
@@ -332,18 +414,16 @@ class EnzoOption {
     }
     
     constructor({ pmsId = null, optionGroupId = null, categoryId = null,
-        name = [], description = [], 
-        pricingMethod = EnzoOption.PRICING_METHOD.PERSTAY, image = [], 
-        currency = EnzoCurrency.SUPPORTED_CURRENCY.DEFAULT, price = 0,
+        name = null, description = null, pricingMethod = EnzoOption.PRICING_METHOD.PERSTAY, 
+        image = [], currency = EnzoCurrency.SUPPORTED_CURRENCY.DEFAULT, price = 0,
         timeStart = null, timeEnd = null, quantity = 0 } = {}) {
         this.pmsId = pmsId ;
         this.optionGroupId = optionGroupId ;
         this.categoryId = categoryId ;
-        this.name = name; 
+        this.name = new LocalText(name); 
         this.description = description;
         this.price = price;
         this.priceType = priceType;
-        this.images = image
         this.timeStart = timeStart;
         this.timeEnd = timeEnd;
         this.currency = currency;
@@ -352,6 +432,7 @@ class EnzoOption {
         this.image = image;
     }
 } 
+
 
 
 class EnzoOptionGroup {
@@ -381,61 +462,29 @@ class EnzoOptionGroup {
         this.maxOptionsToSelect = maxOptionsToSelect ;
         this.disabled = disabled;
     }
-
 }
- 
-// ratePlan
-/*
-{
-    "$id": "https://enzosystems.com/schemas/hotel/rateplan",
-   
-    "type": "object",
-    "title": "Rate plan",
-    "required": ["pmsId", "name", "options"],
-    "properties": {
-        "pmsId": {"type": "string", "maxLength": 64, "title": "PMS id"},
-        "name": {
-            "type": "array", "title": "Name",
-            "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 32}}}
-        },
-        "description": {
-            "type": "array", "title": "Description",
-            "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 128}}}
-        },
-        "optionIds": {
-            "type": "array", "title": "Option ids",
-            "items": {"type": "string", "maxLength": 64, "title": "Option id"}
-        },
-    }
-}
- */
-
- 
-// roomFeature
+// "wifi":
 /*{
-    "$id": "https://enzosystems.com/schemas/hotel/roomfeature",
-   
-    "type": "object",
-    "title": "Room feature",
-    "required": ["pmsId", "name"],
+    "id": "https://enzosystems.com/schemas/hotel/wifi",
+ 
+    "type": "object", "title": "Wifi",
+    "required": ["network", "password"],
     "properties": {
-        "pmsId": {"type": "string", "maxLength": 64, "title": "PMS id"},
-        "name": {
-            "type": "array", "title": "Name",
-            "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 32}}}
-        },
-        "description": {
-            "type": "array", "title": "Description",
-            "items": {"type": "object", "properties": {"locale": {"type": "string", "format": "locale", "maxLength": 5}, "value": {"type": "string", "maxLength": 128}}}
-        },
-        "images": {
-            "type": "array", "title": "Images",
-            "items": {"$ref": "/schemas/hotel/image"}
-        }
+        "network": {"type": "string", "title": "Network name"},
+        "password": {"type": "string", "title": "Password"}
     }
-}
- */
+}*/
 
+class EnzoWifi {
+    constructor({ pmsId = null, network = null,
+        password = null } = {}) 
+        {
+            this.pmsId = pmsId ;
+            this.network = network;
+            this.password= password;
+        }
+
+}
 class EnzoRoomStay  {
     constructor({ pmsId = null, bookingRef = null,
         expectedArrival = null, expectedDeparture = null, finalArrival = null, finalDeparture = null, 
@@ -444,8 +493,9 @@ class EnzoRoomStay  {
         primaryGuestIsMember = false, primaryGuestIsVIP = false,
         primaryGuestAcceptedHotelPolicies = false, primaryGuestAcceptedGdprRules = false,
         primaryGuestAllowsEmailMarketing = false,
-        status = null, payments = [], folios = [], guests = [], optionIds = [], 
-        wifi = null } = {}) 
+        status = null, payments = [], folios = [], guests = [], optionIds = [], addedOptions = [],
+        wifi = {}, availableRoomIds = null, availableRoomTypeIds = null,
+        availableOptionIds = null  } = {}) 
     {
         this.pmsId = pmsId ;
         this.bookingRef = bookingRef;
@@ -461,22 +511,28 @@ class EnzoRoomStay  {
         this.roomTypeId = roomTypeId; 
         this.ratePlanId = ratePlanId; 
         this.optionIds = optionIds;
+        this.addedOptions = addedOptions;
         this.primaryGuestIsMember = primaryGuestIsMember;
         this.primaryGuestIsVIP = primaryGuestIsVIP;
         this.primaryGuestAcceptedHotelPolicies = primaryGuestAcceptedHotelPolicies;
         this.primaryGuestAcceptedGdprRules = primaryGuestAcceptedGdprRules;
         this.primaryGuestAllowsEmailMarketing = primaryGuestAllowsEmailMarketing;
-        this.wifi = wifi;
-        this.payments = payments.map(p => {
-            if (p) return new EnzoPayment(p) ;
-        });
+        this.wifi = new EnzoWifi(wifi);
+        this.payments = payments.map(p => { if (p) return new EnzoPayment(p) }) ;
         this.folios = folios.map(f => new EnzoFolio(f)) ;
         this.guests = guests.map(g => new EnzoGuest(g));
+        this.availableRoomIds = availableRoomIds;
+        this.availableRoomTypeIds = availableRoomTypeIds;
+        this.availableOptionIds = availableOptionIds;
     }
 }
 
 class EnzoQrCode {
-    constructor({ qrCodeData = null, generatedBy = null, hotelId = null, pmsId = null, reservationId = null } = {}) 
+    constructor({ 
+        qrCodeData = null, generatedBy = null,
+        hotelId = null, pmsId = null,
+        reservationId = null 
+    } = {}) 
     {
         this.qrCodeData = qrCodeData;
         this.generatedBy = generatedBy;
@@ -485,6 +541,9 @@ class EnzoQrCode {
         this.reservationId = reservationId;
     }
 }
+
+
+
 class EnzoReservation  {
 
     static BOOKING_CHANNELS_LIST = ["Direct", "Booking.com", "Expedia", "Trivago", "Hotels.com", "Airbnb", "Agoda", "Hotelbeds", "Other"];
@@ -511,18 +570,17 @@ class EnzoReservation  {
     }
 }
 
-
-class EnzoStay {
-    constructor({ reservation = null, availableRoomIds = [],
-         availableRoomTypeIds = [], availableOptionIds = [] } = {})
-    {
-        this.reservation = reservation ? new EnzoReservation(reservation) : null;
-        this.availableRoomIds = availableRoomIds;
-        this.availableRoomTypeIds = availableRoomTypeIds;
-        this.availableOptionIds = availableOptionIds;
-    }
+// class EnzoStay {
+//     constructor({ reservation = null, availableRoomIds = [],
+//          availableRoomTypeIds = [], availableOptionIds = [] } = {})
+//     {
+//         this.reservation = reservation ? new EnzoReservation(reservation) : null;
+//         this.availableRoomIds = availableRoomIds;
+//         this.availableRoomTypeIds = availableRoomTypeIds;
+//         this.availableOptionIds = availableOptionIds;
+//     }
    
-}
+// }
 
 
 module.exports = {
@@ -537,14 +595,14 @@ module.exports = {
     EnzoAddress ,
     EnzoGuest,
     EnzoGuestIdentification,
-    EnzoHotelStay,
     EnzoHotel,
+    EnzoHotelStay,
     EnzoRoom,
     EnzoRoomType,
-    //EnzoRoomFeature,
+    EnzoRoomFeature,
     EnzoRoomStay,
     EnzoReservation,
-    EnzoStay,
+    Text,
     LocalText,
     Image,
     EnzoLocale,
