@@ -51,22 +51,15 @@ class Image {
     }
 }
 
- class Text {
-    constructor(locale = EnzoLocale.SUPPORTED_LOCALE.DEFAULT, text) 
-     {
-         this[locale] = text;
-     }
- }
 
 class LocalText {
     
-    constructor( ...v ) {
+    constructor(v) {
 
-        if (!v) return null;
-        else if ( typeof(v) === 'Object') { 
-            for (let i in V) { this[i] = v[i]; }
+        if ( typeof v === 'object') { 
+            for (let i in v) { this[i] = v[i]; }
         } else {
-            new Text(...v);
+            this[EnzoLocale.SUPPORTED_LOCALE.DEFAULT] = v;
         }
     }
 }
@@ -602,7 +595,6 @@ module.exports = {
     EnzoRoomFeature,
     EnzoRoomStay,
     EnzoReservation,
-    Text,
     LocalText,
     Image,
     EnzoLocale,
