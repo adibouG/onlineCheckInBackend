@@ -563,6 +563,104 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             console.log(e);
             throw e;
         } 
+    };
+
+    static JOBTYPES = { 
+        NEW_RESERVATION_FINDER : 'newReservationFinder',
+        EMAIL_SENDING : 'emailSending',
+        EMAIL_ERROR_RESEND : 'emailErrorResending'
+    }
+
+    static JOBSTATUS = { 
+        STARTED : 0,
+        FINISHED : 1,
+        ERROR : 9
+    }
+
+    async getJobStartLogs(id = null, type = null, status = null, day = null){
+        let client, query1, condition, args = [], query1result;
+        try {
+            client = await pgPool.connect();
+            query1 = 'SELECT * from job_status ';
+           
+            if (id) { 
+                args.push(id);
+                condition = ' WHERE job_id = $1' ;
+             } else {
+                if (type) { 
+                    args.push(type);
+                    condition = ' WHERE job_type = $1 ' ; 
+                } 
+                if (status) {  
+                    if (condition) { 
+                        args.push(status);
+                        condition += ` AND job_status = $${args.length} ` 
+                    } else {
+                        condition += ' WHERE job_status = $1 ' ;
+                    }
+                }    
+                // if (day) {  
+                //     if (condition) { 
+                //         args.push(day);
+                //         condition += ` AND job_started = to_timestamp($${args.length}) `
+                //     } else {
+                //         condition += ' WHERE job_started = to_timestamp($1) ' ;
+                //     }
+                // }    
+            }
+            if (condition) { 
+                query1 += condition;
+                query1 += ' ORDER BY job_started DESC ';
+                if (id) query1result = await client.query(query1 , [id]);
+                else { 
+                    if (args.length) query1result = await client.query(query1 , [...args]);
+                    else {
+                        let o = type || status;
+                        query1result = await client.query(query1 , [o]);
+                    }
+                    console.log(query1)
+                }
+            } else {
+                query1result = await client.query(query1);
+            } 
+            client.release();
+            return query1result.rows;
+        }catch(e) {
+            console.log(e);
+            throw e;
+        } 
+    }
+
+
+    async addJobStartLogs(type, jobId = null){
+        let client, query1, query1result;
+        
+        jobId = jobId || (parseInt(Math.random() * 10000)).toString() ;
+        let date = parseInt(Date.now() /1000) ;
+        jobId = `${type}#${date}#${jobId}` ; 
+        try {
+            client = await pgPool.connect();
+            query1 = 'INSERT INTO job_status(job_id, job_type, job_started, job_status) VALUES ($1, $2, to_timestamp($3), $4) RETURNING job_status_id';
+            query1result = await client.query(query1, [jobId, type, date , 1]);
+            client.release();
+            return ({ id: query1result.rows[0].job_status_id , name: jobId });
+        }catch(e) {
+            console.log(e);
+            throw e;
+        } 
+    }
+    async updateJobLogs(id, data){
+        let client, query1, query1result;
+        try {
+            client = await pgPool.connect();
+            query1 = 'UPDATE job_status SET job_status = $1, job_ended = to_timestamp($2) WHERE job_id = $3  ' ;
+            query1result = await client.query(query1, [data.status, data.endTime, id.name]);
+            client.release();
+            return query1result.rows;
+        }catch(e) {
+            console.log(e);
+            throw e;
+        } 
     }
 /*
 

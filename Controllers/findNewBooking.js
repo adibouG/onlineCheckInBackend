@@ -2,15 +2,33 @@ const { Database } = require('../Models/database.js');
 const helpers = require('../Helpers/helpers.js');
 const Enzo = require('../Models/Enzo.js');
 const { renderAndSendEmail } = require('./emails.js');
-const { makeEmailValues, newReservationFilter } = require('../Utilities/utilities.js');
+const { newReservationFilter } = require('../Utilities/utilities.js');
 const { MAILTYPES } = require('../Emails/enzoMails.js');
 const { winstonLogger } = require('../Logger/loggers.js');
+const SETTINGS = require('../settings.json');
 
 //get new reservation, return an array of enzoCheckIn, run at specified interval 
 const newReservationFinder = async () => {
-    console.log("Start process: newReservationFinder ....");
+    winstonLogger.log('info',"Start process: newReservationFinder ....");
     try {
         const db = new Database();
+        //we check how long was the last time an instance ran this job during the last 24 hours  
+        let joblogs = await db.getJobStartLogs(null, Database.JOBTYPES.NEW_RESERVATION_FINDER, null, (parseInt((Date.now() - (24 * 3600 * SETTINGS.RESERVATION_LOOKUP_INTERVAL_MINUTES))/1000)));
+        let startNew = joblogs.length ? false : true;
+        if (joblogs.length) {
+            let lastTime = (Date.now());
+            for (let i = 0; i < joblogs.length; i++) {
+                let jobstart = new Date(joblogs[i].job_started).getTime();
+                if ((lastTime - jobstart) >= (24 * 3600 * SETTINGS.RESERVATION_LOOKUP_INTERVAL_MINUTES)) {
+                    startNew = true ; 
+                    break;
+                }    
+            }
+        }
+        if (!startNew) { 
+            winstonLogger.log('info',"end process: newReservationFinder .... jobs offset not passed : stop process ");
+            return ;
+        }
         const results = await helpers.getReservations(null, null, db); 
         //Call the db to get the list of hotel clients and their pmsData
         const emailTrackingList = await helpers.getEmailTracking(null, null, null, db);
@@ -25,7 +43,11 @@ const newReservationFinder = async () => {
             }
         });
         //but only if there are actual tracked reservations
-        return await newReservationsProcess(filteredResults, db);
+        if (filteredResults.length > 0) return await newReservationsProcess(filteredResults, db);
+        else {
+            winstonLogger.log('info',"end process: newReservationFinder .... no reservations ");
+            return ;
+        }
     } catch (e) {
         console.log(e);
     }
@@ -34,6 +56,7 @@ const newReservationFinder = async () => {
 //get the new reservations,
 const newReservationsProcess = async (newValidStays, db = null) => {
     console.log("Start process: newValidStays ....");
+    const jobStatusId = await db.addJobStartLogs(Database.JOBTYPES.NEW_RESERVATION_FINDER);
     let count = 0;
     try {   
         db = db || new Database();
@@ -85,6 +108,7 @@ const newReservationsProcess = async (newValidStays, db = null) => {
         }
         console.log("End process: newValidStays .... processed " + count + " new emails");
         winstonLogger.info("End process: newValidStays .... processed " + count + " new emails");
+        await db.updateJobLogs(jobStatusId, { status: 2, endTime: (parseInt(Date.now() / 1000)) });
         return 1;
     } catch (e) {
          console.log(e);
