@@ -8,6 +8,7 @@ const { FINAL_STEP } = require('../settings.json');
 //Request a booking route controller (from token contained in email link acyually)
 const getBookingFromToken = async (req, res) => {
     
+    let token = null;
     let hotelStay = null;
     let booking = null;
     let hotelAppSettings = null;
@@ -15,7 +16,7 @@ const getBookingFromToken = async (req, res) => {
         //get the token
         const { authorization } = req?.headers ;
         const b64token = authorization ? authorization.split(' ')[1] : req?.query.token;
-        const token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
+        token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
         winstonLogger.info('received token :' + token);
         //get data and verify the token
         //TODO make a token verification function security check : algo, sign, iss ...
