@@ -2,7 +2,8 @@ const { Database } = require('../Models/database.js');
 const Enzo = require('../Models/Enzo.js');
 const { PmsModuleApi } = require('../Models/pmsModuleApi.js');
 const { findValidBooking, resetBookingDate } = require('../Utilities/utilities.js');
-const Models = require('../Models/errors.js');
+const Errors = require('../Models/errors.js');
+const Models = require('../Models/index.js');
 
 
 //get new reservation, return an array of enzoCheckIn, run at specified interval 
@@ -20,51 +21,36 @@ const getReservations = async (hotelId = null, reservationId = null, conf = null
         const db = conf && ( conf instanceof Database) ? conf : new Database();
         const pms = hotelPms || await db.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
         //get the reservations per hotel 
-        if (Array.isArray(pms) && pms.length) {
-            //loop through hotel result
-            for (let h of pms) {    
-                if (hotelId && h.hotel_id != hotelId) { continue; }
-                
-                const requestResult = await pmsApi.getReservationData({ 
-                    reservationId,
-                    pmsId: h.pms_id, 
-                    pmsUrl: h.pms_url, 
-                    pmsUser: h.pms_user, 
-                    pmsPwd: h.pms_pwd 
-                });
-                //we receive an array of enzoReservations data 
-                //we add the hotelId to the reservation 
-                console.log(requestResult);
-                if  (reservationId) {
-                    const er = new Enzo.EnzoReservation(requestResult);
-                    er.hotelId = h.hotel_id;
-                    results.push(er);
-                } else {
-                    requestResult.map((r) => {
-                        const er = new Enzo.EnzoReservation(r);
-                        er.hotelId = h.hotel_id;
-                        results.push(er);
-                    });
-                }
-            }
-        } else {
+    
+        //loop through hotel result
+        for (let row of pms) {    
+            const h = new Models.HotelPmsSettings({
+                hotelId: row.hotel_id, 
+                pmsId: row.pms_id, 
+                pmsUrl: row.pms_url,
+                pmsName: row.pms_name, 
+                pmsUser: row.pms_user, 
+                pmsPwd: row.pms_pwd
+            });
+            if (hotelId && h.hotelId != hotelId) { continue; }
             const requestResult = await pmsApi.getReservationData({ 
                 reservationId,
-                pmsId: pms.pms_id, 
-                pmsUrl: pms.pms_url, 
-                pmsUser: pms.pms_user, 
-                pmsPwd: pms.pms_pwd 
+                pmsId: h.pmsId, 
+                pmsUrl: h.pmsUrl, 
+                pmsUser: h.pmsUser, 
+                pmsPwd: h.pmsPwd 
             });
             //we receive an array of enzoReservations data 
             //we add the hotelId to the reservation 
-            if  (reservationId)  {
+            console.log(requestResult);
+            if  (reservationId) {
                 const er = new Enzo.EnzoReservation(requestResult);
-                er.hotelId = pms.hotel_id;
+                er.hotelId = h.hotelId;
                 results.push(er);
             } else {
                 requestResult.map((r) => {
                     const er = new Enzo.EnzoReservation(r);
-                    er.hotelId = pms.hotel_id;
+                    er.hotelId = h.hotelId;
                     results.push(er);
                 });
             }
@@ -74,7 +60,7 @@ const getReservations = async (hotelId = null, reservationId = null, conf = null
         console.error(e);
         throw e;
     }
-}
+};
 
 
 const postReservations = async (hotelId, reservationId, data, db = null) => { 
@@ -97,20 +83,20 @@ const postReservations = async (hotelId, reservationId, data, db = null) => {
         console.error(e);
         throw e;
     }
-}
+};
 
 const getBookingFromEmail = async (email) => {
     let hotelID = 1; 
     let bookings = []; 
     let validEmail = email.length > 0 || false;
     try {
-        if (!email || !validEmail) throw new Models.EnzoError('no email or invalid email');
+        if (!email || !validEmail) throw new Errors.EnzoError('no email or invalid email');
         let results = await getReservations(hotelID);
         results.map( er  => {
             if (er.roomStays.length && er.roomStays[0].guests.length && er.roomStays[0].guests[0].email === email) bookings.push(er) ;
             else if ( er.booker.email === email) bookings.push(er) ;
         });
-        if (!bookings.length) throw new Models.NotFound('no reservation found with this email') ; 
+        if (!bookings.length) throw new Errors.NotFound('no reservation found with this email') ; 
         //try to find a valid reservation
         let booking = findValidBooking(bookings);
         return booking ;
@@ -118,7 +104,7 @@ const getBookingFromEmail = async (email) => {
         console.log(e);
         throw e;
     } 
-}
+};
 
 const resetBookingStatus = async (email = null, reservationId = null, db = null) => {
     try {
@@ -153,7 +139,7 @@ const resetBookingStatus = async (email = null, reservationId = null, db = null)
         console.log(e);
         throw e;
     }
-}
+};
 
 const getHotelDetails = async (hotelId = null, db = null) => { 
     console.log("Start helper process: get hotel Details....");
@@ -166,7 +152,7 @@ const getHotelDetails = async (hotelId = null, db = null) => {
         console.log(e);
         throw e;
     } 
-}
+};
 
 
 //get new reservation, return an array of enzoCheckIn, run at specified interval 
@@ -284,36 +270,37 @@ const getHotelPmsInfo = async (hotelId, startDate, endDate, db = null) => {
 const getHotelOffers = async (hotelId, startDate, endDate, db = null, pmsAccess = null, pmsApi = null) => { 
     console.log("Start helper process: get hotel Stays....");
     try{
+        let pmsValPassed = !!pmsAccess;
         //Call the db to get the list of hotel clients and their pmsData
         db = db || new Database(hotelId);
         pmsAccess = pmsAccess || await db.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
         pmsApi = pmsApi || new PmsModuleApi(hotelId); //we use 1 generic manager (no hotelID) that will do request for each hotel 
         //get the hotel data from the pmsAPI
-        
+        if (!pmsValPassed) pmsAccess = pmsAccess[0];
         const hotelOffers = await pmsApi.getHotelOffers({ 
-                    pmsId:  hotelPms.pms_id,
-                    pmsUrl:  hotelPms.pms_url, 
-                    pmsUser:  hotelPms.pms_user,
-                    pmsPwd:  hotelPms.pms_pwd,
+                    pmsId:  pmsAccess.pms_id,
+                    pmsUrl:  pmsAccess.pms_url, 
+                    pmsUser:  pmsAccess.pms_user,
+                    pmsPwd:  pmsAccess.pms_pwd,
                     startDate, 
                     endDate  
                 });
         
        
-        const hotel = new Enzo.EnzoHotel({ 
-            hotelId: hotelId, 
-            name: hotelPms.hotel_name, 
-            phone: hotelDetails.phone,
-            email: hotelDetails.email, 
-            website: hotelDetails.website,
-            address: hotelDetails.address, 
-            logo: hotelDetails.logo, 
-            images: [ hotelDetails.image ], 
-            checkInTime: hotelDetails.checkInTime, 
-            checkOutTime: hotelDetails.checkOutTime 
-        });
-        const hotelStay = new Enzo.EnzoHotelStay({ hotel });
-        return hotelStay;
+        // const hotel = new Enzo.EnzoHotel({ 
+        //     hotelId: hotelId, 
+        //     name: hotelPms.hotel_name, 
+        //     phone: hotelDetails.phone,
+        //     email: hotelDetails.email, 
+        //     website: hotelDetails.website,
+        //     address: hotelDetails.address, 
+        //     logo: hotelDetails.logo, 
+        //     images: [ hotelDetails.image ], 
+        //     checkInTime: hotelDetails.checkInTime, 
+        //     checkOutTime: hotelDetails.checkOutTime 
+        // });
+        // const hotelStay = new Enzo.EnzoHotelStay({ hotel });
+        return hotelOffers;
     } catch (e) {
         console.log(e);
         throw e;

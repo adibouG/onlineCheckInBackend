@@ -6,7 +6,7 @@ const { pgClient, pgPool } = require('../DB/dbConfig.js');
  * it can be specialized object and method for an hotel, or generic for all hotels
  * it also provide the methods to manage the email tracking table  
  */ 
-class Database extends AsyncResource {
+class DatabaseAdmin extends AsyncResource {
     
     constructor(hotelId = null) {
         super('DbQuery');
@@ -18,18 +18,19 @@ class Database extends AsyncResource {
         console.log('getHotelPmsInfo....')
         hotelId = hotelId || this.hotelId ;
         let query1, query1result, data;
+     
         try {
             const client = await pgPool.connect();
             //get hotel pms
             if (hotelId) { 
                 query1 = 'SELECT a.*, b.pms_name, c.* from hotel a JOIN pms b ON a.pms_id = b.pms_id JOIN hotel_pms_connection c ON a.hotel_id = c.hotel_id WHERE a.hotel_id = $1' ;
                 query1result =  await client.query(query1, [hotelId]) ;
-                //data = query1result.rows[0];
+                data = query1result.rows[0];
             } else {
                 query1 = 'SELECT a.*, b.pms_name, c.* from hotel a JOIN pms b ON a.pms_id = b.pms_id JOIN hotel_pms_connection c ON a.hotel_id = c.hotel_id' ;
                 query1result = await client.query(query1) ;
+                data = query1result.rows;
             } 
-            data = query1result.rows;
             client.release();
             return data;
         } catch(e) {
@@ -97,6 +98,16 @@ class Database extends AsyncResource {
         let client;
         try {
             client = await pgPool.connect();
+
+            const queryVerifPms = 'SELECT * FROM pms WHERE pms_id=$1' ;
+            const queryVerifHotelName = 'SELECT * FROM hotel WHERE hotel_name=$1' ;
+
+            const validPms = await client.query(queryVerifPms, [newHotel.pmsId]) ;
+            const validName = await client.query(queryVerifHotelName, [newHotel.name]) ;
+            
+            if (!validPms.rows.length) throw new Error('invalid pms Id');
+            if (validName.rows.length) throw new Error('Customer/hotel Name already in used');
+    
              //insert hotel 
             const query1AddHotel = 'INSERT INTO hotel(hotel_name, pms_id) VALUES ($1, $2) RETURNING hotel_id' ;
             const query1result = await client.query(query1AddHotel, [hotelName, pmsId]) ;
@@ -204,7 +215,7 @@ class Database extends AsyncResource {
         } 
     }
 
-  //get the hotel details (name address etc ...)
+  // hotel details (name address etc ...)
     async getHotelDetails(hotelId){
         let client, query1, query1result;
         try {
@@ -271,7 +282,7 @@ class Database extends AsyncResource {
         } 
     }
 
-    //get the hotel app screen settings (style screens logo ...)
+    // hotel app screen settings (style screens logo ...)
     async getHotelScreenSettings(hotelId){
         try {
             const client = await pgPool.connect();
@@ -305,7 +316,7 @@ class Database extends AsyncResource {
                 return await this.updateHotelScreenSettings(hotelId, screenSettings);
             }
         
-            const query1 = 'INSERT INTO hotel_application_settings(hotel_id, hotel_screen_settings) VALUES (%1, %2) ';  ;
+            const query1 = 'INSERT INTO hotel_application_settings(hotel_id, hotel_screen_settings) VALUES ($1, $2) ';  ;
             await client.query(query1, [hotelId, screenSettings]) ;
             client.release();
             return ;
@@ -342,8 +353,8 @@ class Database extends AsyncResource {
         } 
     }
 
-    //get the hotel style settings (css style font logo ...)
-        //get the hotel app screen settings (style screens logo ...)
+    // hotel style settings (css style font logo ...)
+      
         async getHotelStyleSettings(hotelId){
             try {
                 const client = await pgPool.connect();
@@ -362,12 +373,12 @@ class Database extends AsyncResource {
         async addHotelStyleSettings(hotelId, styleSettings){
             try {
                 const client = await pgPool.connect();
-                const verif = await hasSetting(hotelId, client);
+                const verif = await this.hasSetting(hotelId, client);
                 if (verif > 0) {
                     return await this.updateHotelStyleSettings(hotelId, styleSettings);
                 }
             
-                const query1 = 'INSERT INTO hotel_application_settings(hotel_id, hotel_styles) VALUES (%1, %2) ';  ;
+                const query1 = 'INSERT INTO hotel_application_settings(hotel_id, hotel_styles) VALUES ($1, $2) ';  ;
                 await client.query(query1, [hotelId, styleSettings]) ;
                 client.release();
                 return ;
@@ -403,6 +414,83 @@ class Database extends AsyncResource {
             }
         }
     
+
+    //hotel documents (css style font logo ...)
+      
+    async getHotelDocuments(hotelId, docType = null, client = null){
+        try {
+            const client = await pgPool.connect();
+            //get hotel details
+            const query1 = 'SELECT * FROM hotel_documents WHERE hotel_id = $1'  ;
+            const query1result = await client.query(query1, [hotelId]) ;
+            client.release();
+            return query1result.rows;
+        }catch(e) {
+            console.log(e);
+            throw e;
+        }
+    }
+    async hasDocument(hotelId, docType, client = null ) {
+        try{
+            client = client ||  await pgPool.connect();
+            const result = await this.getHotelDocuments(hotelId, docType, client);
+            return result.rows ;
+        }catch(e){
+            console.log(e);
+            throw e;
+        }
+    }
+  
+    async addHotelDocument(hotelId, doc = {}){
+        try {
+            const client = await pgPool.connect();
+            const verif = await this.hasDocument(hotelId, doc.type, client);
+            if (verif.length > 0) {
+                doc.document_id = verif[0].document_id;
+                return await this.updateHotelDocument(hotelId, doc);
+            }
+        
+            const query1 = `INSERT INTO hotel_documents(
+                    hotel_id, document_type, document_name, location_url, document_content)
+                    VALUES ($1, $2, $3, $4, $5);`
+            await client.query(query1, [hotelId, doc.type, doc.name, doc.url, doc.content]) ;
+            client.release();
+            return ;
+        }catch(e) {
+            console.log(e);
+            throw e;
+        }
+    }
+    async updateHotelDocument(hotelId, doc = {}){
+        try {
+            const client = await pgPool.connect();
+            const styles = await this.getHotelStyleSettings(hotelId);
+            const newStyles = { ...styles, ...styleSettings };
+            
+            const query1 = `UPDATE public.hotel_documents
+            SET document_type=$3, document_name=$4, location_url=$5, document_content=$6
+            WHERE document_id=$2 AND hotel_id=$1`;
+            await client.query(query1, [hotelId, doc.document_id]) ;
+            return ;
+        }catch(e) {
+            console.log(e);
+            throw e;
+        } 
+    }
+    async deleteHotelStyleSettings(hotelId){
+        try {
+            const client = await pgPool.connect();
+            const query1 = 'UPDATE hotel_application_settings SET hotel_styles = null  WHERE hotel_id = $1';  ;
+            await client.query(query1, [hotelId]) ;
+            client.release();
+            return ;
+        }catch(e) {
+            console.log(e);
+            throw e;
+        }
+    }
+
+
 async getFullHotelDataSet(hotelId = null) {
     try {     
         const data = hotelId ? {} : [] ;  
@@ -724,5 +812,5 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
 } 
 
 module.exports = {
-    Database
+    DatabaseAdmin
 }

@@ -69,4 +69,13 @@ app.engine('htm', (filePath, options, callback) => {
 app.set('views', './Views'); // specify the views directory where the htm files are stored 
 app.set('view engine', 'htm'); // register the template engine to use  
 
+
+app.use((err, req, res, next) => {
+  // Simple error handling here... in real life we might
+  // want to be more specific
+  console.log(`I'm the error handler. '${err.message}'`);
+  res.status(500);
+  res.json({ error: err.message });
+});
+
 module.exports = app ;

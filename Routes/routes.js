@@ -9,6 +9,16 @@ const payment = require('../Controllers/payments.js') ;
 
 //Checkin APP endpoints 
 //TO DO : add security checks and middlewares
+const isAdmin = (req, res, next) => {
+    if (req.method === 'POST' || req.method === 'PUT') {
+        const {isAdmin} = req?.body;
+        if (isAdmin === true) return next();
+    } else {
+        const {isAdmin} = req?.query;
+        if (isAdmin === true) return next(); 
+    }
+    return res.status(401).end();
+}
 
 //endpoint to retrieve the reservation data from the token send by email and using the frontend app 
 api.post(`/checkin/getPaymentLink`, payment.getPaymentLinkFromToken);
@@ -18,56 +28,70 @@ api.post(`/checkin`, booking.postBooking);
 api.get(`/checkin`, booking.getBookingFromToken);
 
 //endpoint to retrieve the pms data from the pmsAPI 
-api.get(`/pms/:pmsId`, pms.getPms);
-api.get(`/pms`, pms.getPms);
+api.get(`/admin/pms/:pmsId`, pms.getPms);
+api.get(`/admin/pms`, pms.getPms);
 
-//endpoint to trigger a payment request 
-api.get(`/hotels/:hotelId/reservations/:reservationId/getPaymentResultById`, payment.getPaymentResultById);
-api.post(`/hotels/:hotelId/reservations/:reservationId/getPaymentUrl`, payment.getPaymentLinkFromToken);
+
+api.put(`/admin/hotels/:hotelId/pms`, isAdmin,  hotel.updateHotelPms) ;
+api.post(`/admin/hotels/:hotelId/pms`,isAdmin, hotel.addHotelPms) ;
+api.delete(`/admin/hotels/:hotelId/pms`,isAdmin, hotel.deleteHotelPms) ;
+api.get(`/admin/hotels/:hotelId/pms`,isAdmin, hotel.getHotelPms) ;
+
+api.put(`/admin/hotels/:hotelId/screens`,isAdmin, hotel.updateHotelScreenSetting) ;
+api.post(`/admin/hotels/:hotelId/screens`,isAdmin, hotel.addHotelScreenSetting) ;
+api.delete(`/admin/hotels/:hotelId/screens`,isAdmin, hotel.deleteHotelScreenSetting) ;
+api.get(`/admin/hotels/:hotelId/screens`,isAdmin, hotel.getHotelScreenSetting) ;
+
+api.post(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.addHotelStylesSetting) ;
+api.put(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.updateHotelStylesSetting) ;
+api.delete(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.deleteHotelStylesSetting) ;
+api.get(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.getHotelStylesSetting) ;
+
+api.post(`/admin/hotels/:hotelId/details`, isAdmin,hotel.addHotelDetails) ;
+api.put(`/admin/hotels/:hotelId/details`, isAdmin,hotel.updateHotelDetails) ;
+api.delete(`/admin/hotels/:hotelId/details`,isAdmin, hotel.deleteHotelDetails) ;
+api.get(`/admin/hotels/:hotelId/details`,isAdmin, hotel.getHotelDetails) ;
+
+
+api.post(`/admin/hotels/:hotelId/details`,isAdmin, hotel.addHotelDetails) ;
+api.put(`/admin/hotels/:hotelId/details`,isAdmin, hotel.updateHotelDetails) ;
+api.delete(`/admin/hotels/:hotelId/details`,isAdmin, hotel.deleteHotelDetails) ;
+api.get(`/admin/hotels/:hotelId/details`,isAdmin, hotel.getHotelDetails) ;
+
+
+//endpoint to get/add/update/delete hotel data  
+api.delete(`/admin/hotels/:hotelId`, isAdmin, hotel.deleteHotelFullData) ;
+api.put(`/admin/hotels/:hotelId`,isAdmin,  hotel.updateHotel) ;
+api.post(`/admin/hotels`,isAdmin, hotel.addHotel) ;
+api.get(`/admin/hotels/:hotelId`, isAdmin, hotel.getHotels) ;
+api.get(`/admin/hotels`,isAdmin, hotel.getHotels) ;
+
+api.get(`/hotels/:hotelId`, hotel.getHotelObject) ;
+api.get(`/hotels`, hotel.getHotels) ;
+
 
 //endpoint to save/update reservation data  
 api.put(`/hotels/:hotelId/reservations/:reservationId`, booking.updateBooking) ;
 api.get(`/hotels/:hotelId/reservations/:reservationId`, booking.getBookings) ;
 api.get(`/hotels/:hotelId/reservations`, booking.getBookings) ;
 
-api.put(`/hotels/:hotelId/pms`, hotel.updateHotelPms) ;
-api.post(`/hotels/:hotelId/pms`, hotel.addHotelPms) ;
-api.delete(`/hotels/:hotelId/pms`, hotel.deleteHotelPms) ;
-api.get(`/hotels/:hotelId/pms`, hotel.getHotelPms) ;
-
-api.put(`/hotels/:hotelId/screens`, hotel.updateHotelScreenSetting) ;
-api.post(`/hotels/:hotelId/screens`, hotel.addHotelScreenSetting) ;
-api.delete(`/hotels/:hotelId/screens`, hotel.deleteHotelScreenSetting) ;
-api.get(`/hotels/:hotelId/screens`, hotel.getHotelScreenSetting) ;
-
-api.post(`/hotels/:hotelId/styles`, hotel.addHotelStylesSetting) ;
-api.put(`/hotels/:hotelId/styles`, hotel.updateHotelStylesSetting) ;
-api.delete(`/hotels/:hotelId/styles`, hotel.deleteHotelStylesSetting) ;
-api.get(`/hotels/:hotelId/styles`, hotel.getHotelStylesSetting) ;
-
-api.post(`/hotels/:hotelId/details`, hotel.addHotelDetails) ;
-api.put(`/hotels/:hotelId/details`, hotel.updateHotelDetails) ;
-api.delete(`/hotels/:hotelId/details`, hotel.deleteHotelDetails) ;
-api.get(`/hotels/:hotelId/details`, hotel.getHotelDetails) ;
-
+//endpoint to trigger a payment request 
+api.get(`/hotels/:hotelId/reservations/:reservationId/getPaymentResultById`, payment.getPaymentResultById);
+api.post(`/hotels/:hotelId/reservations/:reservationId/getPaymentUrl`, payment.getPaymentLink);
 //endpoint to get hotel stay offers data   
 api.get(`/hotels/:hotelId/stays`, hotel.getHotelStays) ;
 
 //endpoint to trigger a QRCode email request 
 api.post(`/hotels/:hotelId/qrCode`, email.renderAndSendQrCode);
 
-api.get(`/hotels/count`, hotel.getHotelsCount) ;
-//endpoint to get/add/update/delete hotel data  
-api.delete(`/hotels/:hotelId`, hotel.deleteHotelFullData) ;
-api.put(`/hotels/:hotelId`, hotel.updateHotel) ;
-api.get(`/hotels/:hotelId`, hotel.getHotels) ;
-api.get(`/hotels`, hotel.getHotels) ;
-api.post(`/hotels`, hotel.addHotel) ;
-api.get(`/hotels`, hotel.getHotels) ;
+api.get(`hotels/count`, hotel.getHotelsCount) ;
 
 
 //endpoint to reset the reservation data (only for DEMO app)
 api.get(`/reset`, booking.resetBookings);
+api.get(`/token`, email.getToken);
+api.post(`/emailToken`, email.getEmailType);
+
 //Admin part : UI
 api.get('/admin', admin.displayDashboard);
 //AWS ALB healthCheck

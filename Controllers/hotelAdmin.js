@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { Database } = require('../Models/database.js');
+const { DatabaseAdmin } = require('../Models/databaseAdmin.js');
 
 const Models = require('../Models/index.js');
 const helpers = require('../Helpers/helpers.js');
@@ -123,8 +124,7 @@ const getHotelObject = async (req, res) => {
         const hotelId = req.params ? req.params.hotelId : null ;
         if (!hotelId) throw new Error('Missing hotel id');
         const dbManager = new Database();
-        const hotelCustomerData = await dbManager.getHotels(hotelId);
-      //  const hotelCustomerData = await dbManager.getHotels(hotelId);
+        const data = await dbManager.getHotelObject(hotelId);
         return res.status(200).send(data);
     } catch(e) {
         let error = e;
@@ -383,69 +383,69 @@ const deleteHotelStylesSetting = async (req, res, next) => {
 
 
 
-// const getHotelFullData = async (req, res) => {
-//     try{
-//         const { hotelName, pmsSettings, checkinAppSettings, hotelDetails } = req.body ;
-//         if (!pmsSettings.pmsId) throw new Error('Missing pms id');
-//         const newHotel = new Models.Hotel({ name: hotelName, pmsId: pmsSettings.pmsId });
-//         const newHotelPms = new Models.HotelPmsSettings(pmsSettings);
-//         const newHotelDetails = new Models.HotelDetails(hotelDetails);
-//         const newHotelAppSettings = new Models.HotelAppSettings(checkinAppSettings);
-//         const dbManager = new Database();
-//         let newId = await dbManager.addHotel({ hotelName: newHotel.name, pmsSettings: newHotelPms, hotelDetails: newHotelDetails, hotelAppSettings: newHotelAppSettings });
-//         return res.status(200).send({ hotelId: newId });
-//     } catch(e) {
-//         let error = e;
-//         console.log(error);
-//         return res.status(400).send(error) ;
-//     }
-// }
+const getHotelFullData = async (req, res) => {
+    try{
+        const { hotelName, pmsSettings, checkinAppSettings, hotelDetails } = req.body ;
+        if (!pmsSettings.pmsId) throw new Error('Missing pms id');
+        const newHotel = new Models.Hotel({ name: hotelName, pmsId: pmsSettings.pmsId });
+        const newHotelPms = new Models.HotelPmsSettings(pmsSettings);
+        const newHotelDetails = new Models.HotelDetails(hotelDetails);
+        const newHotelAppSettings = new Models.HotelAppSettings(checkinAppSettings);
+        const dbManager = new Database();
+        let newId = await dbManager.addHotel({ hotelName: newHotel.name, pmsSettings: newHotelPms, hotelDetails: newHotelDetails, hotelAppSettings: newHotelAppSettings });
+        return res.status(200).send({ hotelId: newId });
+    } catch(e) {
+        let error = e;
+        console.log(error);
+        return res.status(400).send(error) ;
+    }
+}
      
 
-// //add a full hotel data set 
-// const addHotelFullData = async (req, res) => {
-//     try{
-//         const { hotelName, pmsSettings, checkinAppSettings, hotelDetails } = req.body ;
-//         if (!pmsSettings.pmsId) throw new Error('Missing pms id');
-//         const newHotel = new Models.Hotel({ name: hotelName, pmsId: pmsSettings.pmsId });
-//         const newHotelPms = new Models.HotelPmsSettings(pmsSettings);
-//         const newHotelDetails = new Models.HotelDetails(hotelDetails);
-//         const newHotelAppSettings = new Models.HotelAppSettings(checkinAppSettings);
-//         const dbManager = new Database();
-//         let newId = await dbManager.addHotel({ hotelName: newHotel.name, pmsSettings: newHotelPms, hotelDetails: newHotelDetails, hotelAppSettings: newHotelAppSettings });
-//         return res.status(200).send({ hotelId: newId });
-//     } catch(e) {
-//         let error = e;
-//         console.log(error);
-//         return res.status(400).send(error) ;
-//     }
-// }
+//add a full hotel data set 
+const addHotelFullData = async (req, res) => {
+    try{
+        const { hotelName, pmsSettings, checkinAppSettings, hotelDetails } = req.body ;
+        if (!pmsSettings.pmsId) throw new Error('Missing pms id');
+        const newHotel = new Models.Hotel({ name: hotelName, pmsId: pmsSettings.pmsId });
+        const newHotelPms = new Models.HotelPmsSettings(pmsSettings);
+        const newHotelDetails = new Models.HotelDetails(hotelDetails);
+        const newHotelAppSettings = new Models.HotelAppSettings(checkinAppSettings);
+        const dbManager = new Database();
+        let newId = await dbManager.addHotel({ hotelName: newHotel.name, pmsSettings: newHotelPms, hotelDetails: newHotelDetails, hotelAppSettings: newHotelAppSettings });
+        return res.status(200).send({ hotelId: newId });
+    } catch(e) {
+        let error = e;
+        console.log(error);
+        return res.status(400).send(error) ;
+    }
+}
      
-// //update a full hotel data set 
-// const updateHotelFullData = async (req, res, next) => {
-//     try{
-//         const hotelId = req.params.hotelId ;
-//         const { hotelName, pmsSettings, checkinAppSettings, hotelDetails } = req.body ;
-//         if (!pmsSettings.pmsId) throw new Error('Missing pms id');
+//update a full hotel data set 
+const updateHotelFullData = async (req, res, next) => {
+    try{
+        const hotelId = req.params.hotelId ;
+        const { hotelName, pmsSettings, checkinAppSettings, hotelDetails } = req.body ;
+        if (!pmsSettings.pmsId) throw new Error('Missing pms id');
 
-//         const updtHotel = new Models.Hotel({ name: hotelName, pmsId: pmsSettings.pmsId });
-//         const updtHotelPms = new Models.HotelPmsSettings(pmsSettings);
-//         const updtHotelDetails = new Models.HotelDetails(hotelDetails);
-//         const updtHotelAppSettings = new Models.HotelAppSettings(checkinAppSettings);
+        const updtHotel = new Models.Hotel({ name: hotelName, pmsId: pmsSettings.pmsId });
+        const updtHotelPms = new Models.HotelPmsSettings(pmsSettings);
+        const updtHotelDetails = new Models.HotelDetails(hotelDetails);
+        const updtHotelAppSettings = new Models.HotelAppSettings(checkinAppSettings);
 
-//         const dbManager = new Database();
-//         await dbManager.updateHotel(hotelId, updtHotel);
-//         await dbManager.updateHotelDetails(hotelId, updtHotelDetails);
-//         await dbManager.updateHotelPmsSettings(hotelId, updtHotelPms);
-//         //await dbManager.updateHotelAppSettings(hotelId, updtHotelAppSettings);
+        const dbManager = new Database();
+        await dbManager.updateHotel(hotelId, updtHotel);
+        await dbManager.updateHotelDetails(hotelId, updtHotelDetails);
+        await dbManager.updateHotelPmsSettings(hotelId, updtHotelPms);
+        //await dbManager.updateHotelAppSettings(hotelId, updtHotelAppSettings);
         
-//         return res.status(200).send('OK');
-//     } catch(e) {
-//         let error = e;
-//         console.log(error);
-//         return res.status(400).send(error) ;
-//     }
-// }
+        return res.status(200).send('OK');
+    } catch(e) {
+        let error = e;
+        console.log(error);
+        return res.status(400).send(error) ;
+    }
+}
 
 
      
@@ -518,4 +518,5 @@ module.exports = {
     addHotelDetails,
     deleteHotelDetails,
     getHotelObject
+
 }

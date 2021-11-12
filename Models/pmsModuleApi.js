@@ -10,12 +10,12 @@ const PMS_API_BASEURL = process.env.PMS_API_BASEURL;
 const TIMEFILTER = { COLLIDING: 'Colliding', START: 'Start' };
 
 class PmsModuleApi {
-    constructor(hotel = null, reservation = null, pms = null, url = null,
+    constructor(hotelId = null, reservationId = null, pmsId = null, url = null,
         user = null, pwd = null, start = null, end = null, pmsTimefilter = null) {
         this.pmsModuleBaseApiUrl = new URL(PMS_API_BASEURL);        
-        this.hotelId = hotel;
-        this.reservationId = reservation;
-        this.pmsId = pms;
+        this.hotelId = hotelId;
+        this.reservationId = reservationId;
+        this.pmsId = pmsId;
         this.pmsUser = user;
         this.pmsPwd = pwd;
         this.pmsUrl = url;
@@ -142,7 +142,7 @@ class PmsModuleApi {
             const params = new URLSearchParams();
             const apiUrl = new URL(this.pmsModuleBaseApiUrl);
             if (!pmsId) throw new Error('missing pmsId');
-            apiUrl.pathname += `/pms/${pmsId}/hotelstayoffers` ;
+            apiUrl.pathname += `/pms/${pmsId}/hotelstay` ;
             const isDates = (startDate && endDate) || (this.startDate && this.endDate) ;
             if (isDates) {
                 startDate = new Date(startDate || this.startDate); 

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { PaymentLinkRequestBody, PaymentResult } = require('../Models/EnzoPayApi.js');
 const helpers = require('../Helpers/helpers.js');
+const { verifyToken } = require('../Utilities/utilities.js');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const SETTINGS = require('../settings.json');
@@ -47,10 +48,10 @@ const getPaymentLinkFromToken = async (req, res) => {
             customerEmail: guestEmail,
             description: `Payment Link request from Enzo Online Precheckin, hotelId :${hotelId}, reservationId : ${reservationId}` ,
             amountTotal: String(amount),  
-            languageCode: "en-US",
-            currency: currency,
-            method: "VISA" ,
-            issuerId: "RABOBANK"  
+            languageCode: language || "en-US",
+            currency: currency || "EUR",
+            method: method || "VISA" ,
+            issuerId: bank || "RABOBANK"  
         }) ;
         const payrequest = await axios.post(`${PAYAPIURL}${GETPAYRESULT}`, payload) ;
         //add payment session 
@@ -107,7 +108,6 @@ const getPaymentResultById = async (req, res) => {
 const getPaymentLink = async (req, res) => {
   
     const { hotelId, reservationId } = req?.params ;
-    const { guestName, guestEmail, language, amount, currency, bank, method } = req?.query ;
     try{
         const PAYAPIURL = process.env.PAYMENT_API_URL;
         const GETPAYRESULT = SETTINGS.PAYMENT_ENDPOINT.GET_PAYMENT_LINK;

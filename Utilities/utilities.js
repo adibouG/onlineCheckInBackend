@@ -82,11 +82,22 @@ const startTokenSign = {
     subject: 'precheckinapi/getBookingFromEmail',
     audience: 'Enzosystems/online precheckin api'       
 };
+
+const unlimitedTokenSign = { 
+    issuer: 'ENZOSYSTEMS ONLINE PRECHECKIN API',
+    subject: 'precheckinapi/getBookingFromEmail',
+    audience: 'Enzosystems/TEST online precheckin api'       
+};
 //function to generate customized tokens 
 
 const verifyToken = (token, booking) => {
+
+    const decoded = jwt.decode(token)
+    let test = String((decoded.aud).split('/')[1]).startsWith('TEST') ;
+    //let test = false
+    let sign =  test ? unlimitedTokenSign : startTokenSign ;
     try {
-        jwt.verify(token, secretKey + booking.pmsId + booking.status, startTokenSign);
+        jwt.verify(token, secretKey + booking.pmsId + booking.status, sign);
     } catch (e) {
         throw e;
     } 
@@ -106,6 +117,29 @@ const makeToken = (uuid, reservationId, status, hotelId) => {
         throw error;
     }
 };
+
+const makeUnlimitedToken = (reservationId, hotelId, status) => {
+
+    try{
+        //if a valid booking exist, generate the token for the 1rst email 
+        //TODO place the signature template in a specific module and set up a real secret with 32char/128bit entropy
+
+        const payload = { reservationId, hotelId } ;
+
+       
+
+        let token = jwt.sign(payload, secretKey + reservationId + status, unlimitedTokenSign) ;
+        let b64token = Buffer.from(token, 'utf8').toString('base64') ;
+        return b64token;
+
+    } catch(e) {
+        let error = e;
+        console.log(error);
+        throw error;
+    }
+};
+
+
 
 
 const findValidBooking = (bookings) => {
@@ -151,9 +185,9 @@ const isPreCheckedBooking = (book) => ("status" in book && book.status.toUpperCa
 //make a specific checkin app Response Body, handle the conversion to check in app format, verify the status and build response accordingly
 //take a EnzoStay as booking, the hotelId, and the hotel app Settings object ... 
 const makeCheckInAppResponseBody = ( res, stay, hotelStay, requestToken = null) => {
-      
+    hotelStay.reservation = stay;
     res.cookie( 'token', requestToken, { maxAge: 3000, httpOnly: true });
-    res.locals = { stay, hotelStay };
+    res.locals =  hotelStay ;
     return res;
 };
 
@@ -209,41 +243,27 @@ const resetBookingState = (book) => {
         book.primaryGuestAcceptedGdprRules = false;
         book.primaryGuestAllowsEmailMarketing = false;
         book.wifi = null;
-    
-        book.payments = [];
-        
-        if (book.folios) {
-            
-            let f = new Enzo.EnzoFolio();
-            f.currency = book.folios.currency;
-            f.totalCost = book.folios.totalCost;
-            f.alreadyPaid = 0;
-            f.remainingToPay = f.totalCost;
-            f.taxIncluded = 0;
-            f.name = new Enzo.LocalText('booking bill', 'en-GB');
-
-            let i = new Enzo.EnzoFolioItem();
-            i.type = Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.PAY;
-            i.subTotal = book.folios.totalCost;
-            i.numberOfItems = 1;
-            i.unitPrice = this.amount;
-            i.name = new Enzo.LocalText('booking bill', 'en-GB');
-
-            let fg = new Enzo.EnzoFolioGroup();
-            fg.subtotal = i.subTotal;
-            fg.name = new Enzo.LocalText('booking bill', 'en-GB');
-            fg.folioItems.push(i);
-            let fdg = new Enzo.EnzoFolioDateGroup();
-            fdg.subtotal = fg.subTotal;
-            fdg.name = new Enzo.LocalText('booking bill', 'en-GB');
-            fdg.folioGroups.push(fg);
-            
-            f.folioDateGroups.push(fdg);
+        book.qrCode = null;
+        bool.folios = [];
+        let f = new Enzo.EnzoFolio();
+       
+        f.totalCost = Math.floor(Math.random() * 5000)
+        f.alreadyPaid = 0;
+        f.remainingToPay = f.totalCost;
+        f.taxIncluded = 0;
+        f.name = new Enzo.LocalText({ 'en-GB' : 'booking bill'});
+        let i = new Enzo.EnzoFolioItem();
+        i.type = Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.CHARGE;
+        i.totalAmount = f.totalCost;
+        i.unitAmount = f.totalCost;
+        i.numberOfUnits = 1;
+        i.name = new Enzo.LocalText({ 'en-GB' : 'booking bill'});
            
-            book.folios = f;
-        } 
-    }
-
+        f.folioItems.push(i);
+           
+        book.folios.push(f);
+    } 
+    
     book.guests = book.guests.map(g => resetGuest(g));
 
     return book ;
@@ -253,11 +273,11 @@ const resetGuest = (guest) => {
     if (guest.phone) guest.phone = null;
     if (guest.note) guest.note = null;
     if (guest.address) {
-        if (guest.address.postalCode) guest.address.postalCode = null;
+        if (guest.address.postCode) guest.address.postCode = null;
         if (guest.address.city) guest.address.city = null;
         if (guest.address.country) guest.address.country = null;
-        if (guest.address.addressLine1) guest.address.addressLine1 = null;
-        if (guest.address.addressLine2) guest.address.addressLine2 = null;
+        if (guest.address.address1) guest.address.address1 = null;
+        if (guest.address.address2) guest.address.address2 = null;
     }
     return guest ;
 };
@@ -320,6 +340,7 @@ const makeEmailValues = async (type, reservation, hotelValues) => {
         let values = {} ;
         let email = reservation.roomStays[0].guests.length  && reservation.roomStays[0].guests[0].email ? reservation.roomStays[0].guests[0].email : reservation.booker.email;
         //let booking = { ...reservation.roomStays[0], ...reservation.booker } ;
+        if (!hotelValues.hotelId) { hotelValues.hotelId = reservation.hotelId ; }
         let firstName = reservation.roomStays[0].guests.length && reservation.roomStays[0].guests[0].firstName ? reservation.roomStays[0].guests[0].firstName : reservation.booker.firstName;
         let lastName = reservation.roomStays[0].guests.length && reservation.roomStays[0].guests[0].lastName ? reservation.roomStays[0].guests[0].lastName : reservation.booker.lastName;
         let guestName =  firstName + " " + lastName ;  
@@ -331,7 +352,7 @@ const makeEmailValues = async (type, reservation, hotelValues) => {
             let checkDates =  d1 + " - " + d2 ;
             // generate the token for the 1rst email 
             let token = makeToken(reservation.roomStays[0].pmsId, reservation.roomStays[0].pmsId, reservation.roomStays[0].status, hotelValues.hotelId); 
-            let base64Image = fs.existsSync(`./Views/${hotelValues.hotel.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelValues.hotel.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
+            let base64Image = fs.existsSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
             values = {
                 guestLinkName : guestName.replaceAll(' ', '.') ,
                 checkDates,
@@ -356,10 +377,11 @@ const makeEmailValues = async (type, reservation, hotelValues) => {
         }
         let hotelDetails = { 
             hotelName: hotelValues.name,
-            hotelAddress: hotelValues.address.addressLine2 ? hotelValues.address.addressLine1 + ' ' + hotelValues.address.addressLine2 : hotelValues.address.addressLine1 , 
-            hotelPostcode: hotelValues.address.postalCode,
+            hotelAddress: hotelValues.address.address2 ? hotelValues.address.address1 + ' ' + hotelValues.address.address2 : hotelValues.address.address1 , 
+            hotelPostcode: hotelValues.address.postCode,
             hotelCity: hotelValues.address.city,
             hotelCountry: hotelValues.address.country,
+            hotelState: hotelValues.address.state,
             hotelPhone: hotelValues.phone,
             hotelEmail: hotelValues.email
         }
@@ -395,6 +417,7 @@ module.exports = {
     verifyToken,
     verifySecureToken,
     makeSecureRequestToken,
+    makeUnlimitedToken,
     makeToken,
     makeEmailValues,
     newReservationFilter

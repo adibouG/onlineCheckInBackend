@@ -33,6 +33,19 @@ class HotelPmsSettings {
   }
 }
 
+
+
+
+class Pms { 
+    constructor({ pmsId = null,
+        pmsName = null , pmsClassName = null } = {}) {
+      
+        this.pmsId =  pmsId;   
+        this.pmsName = pmsName;
+        this.pmsClassName = pmsClassName ;
+    }
+}
+
 class HotelStylesSettings { 
     constructor({ fontFamily = null, backgroundImage = null,  cssFileUrl = null, logo = null } = {} ) { 
         
@@ -97,5 +110,6 @@ module.exports = {
     HotelScreenSettings,
     HotelDetails,
     HotelPmsSettings,
-    HotelStylesSettings
+    HotelStylesSettings,
+    Pms
 }
