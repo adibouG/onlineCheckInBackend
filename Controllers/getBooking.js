@@ -8,6 +8,7 @@ const { FINAL_STEP } = require('../settings.json');
 //Request a booking route controller (from token contained in email link acyually)
 const getBookingFromToken = async (req, res) => {
     
+    let hotelStay = null;
     let booking = null;
     let hotelAppSettings = null;
     try {
@@ -26,7 +27,7 @@ const getBookingFromToken = async (req, res) => {
         const reservation = booking[0];
         //token was signed using the reservation state in order to make it only 1 time use 
         verifyToken(token, reservation); 
-        const hotelStay = await helpers.getHotelOffers(hotelId, reservation.expectedArrival, reservation.expectedDeparture);
+        hotelStay = await helpers.getHotelOffers(hotelId, reservation.expectedArrival, reservation.expectedDeparture);
         const stay = new Enzo.EnzoReservation(reservation);
         hotelStay.reservation = stay;
         //get HotelPolicies screens values into the  booking

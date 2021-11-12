@@ -80,6 +80,7 @@ const getPaymentResultById = async (req, res) => {
     const token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
     winstonLogger.info('received token :' + token);
     if (!token) throw new Errors.EnzoError('no token');
+    if (!transactionId) throw new Errors.EnzoError('no transactionId');
     //get data and verify the token
     //TODO make a token verification function security check : algo, sign, iss ...
     const decoded = jwt.decode(token); 
