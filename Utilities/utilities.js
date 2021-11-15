@@ -46,15 +46,8 @@ const makeQrCode = async (hotelId, booking) => {
         lastName: booking.lastName 
     };
     return await QRCode.toDataURL(JSON.stringify(code));
-}
-
-
-const secureTokenSign = { 
-    expiresIn: SETTINGS.TOKEN.VALIDITY,
-    issuer: 'ENZOSYSTEMS ONLINE PRECHECKIN API',
-    subject: 'precheckinapi/reservation',
-    audience: 'Enzosystems/online precheckin api'
 };
+
 const makeSecureRequestToken = (reservationId, hotelId, steps, token = null) => {
 
     let tokenId = randomUUID();
@@ -67,6 +60,14 @@ const makeSecureRequestToken = (reservationId, hotelId, steps, token = null) => 
         return null;
     }
 }
+
+
+const secureTokenSign = { 
+    expiresIn: SETTINGS.TOKEN.VALIDITY,
+    issuer: 'ENZOSYSTEMS ONLINE PRECHECKIN API',
+    subject: 'precheckinapi/reservation',
+    audience: 'Enzosystems/online precheckin api'
+};
 
 const verifySecureToken = (token, enzoBooking) => {
     try {
@@ -90,14 +91,15 @@ const unlimitedTokenSign = {
 };
 //function to generate customized tokens 
 
-const verifyToken = (token, booking) => {
+const verifyToken = (token, booking = null) => {
 
     const decoded = jwt.decode(token)
     let test = String((decoded.aud).split('/')[1]).startsWith('TEST') ;
-    //let test = false
-    let sign =  test ? unlimitedTokenSign : startTokenSign ;
     try {
-        jwt.verify(token, secretKey + booking.pmsId + booking.status, sign);
+    let sec = !test &&  booking ? secretKey + booking.pmsId + booking.status : secretKey;
+    let sign =  test ? unlimitedTokenSign : startTokenSign ;
+
+        return jwt.verify(token, sec, sign);
     } catch (e) {
         throw e;
     } 
@@ -118,17 +120,15 @@ const makeToken = (uuid, reservationId, status, hotelId) => {
     }
 };
 
-const makeUnlimitedToken = (reservationId, hotelId, status) => {
+const makeUnlimitedToken = (reservationId = null, hotelId = null) => {
 
     try{
         //if a valid booking exist, generate the token for the 1rst email 
         //TODO place the signature template in a specific module and set up a real secret with 32char/128bit entropy
-
-        const payload = { reservationId, hotelId } ;
-
-       
-
-        let token = jwt.sign(payload, secretKey + reservationId + status, unlimitedTokenSign) ;
+        let rId = reservationId || '688fbfc5-1c43-42de-a1cf-f1f2c7a73c6f';
+        let hId = hotelId || 1 ;
+        const payload = {reservationId: rId , hotelId: hId } ;
+        let token = jwt.sign(payload, secretKey, unlimitedTokenSign) ;
         let b64token = Buffer.from(token, 'utf8').toString('base64') ;
         return b64token;
 

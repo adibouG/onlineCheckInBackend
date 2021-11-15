@@ -57,14 +57,15 @@ const renderAndSendQrCode = async (req, res, next)  => {
 }
      
 const getToken = async (req, res, next) => {
-    let {reservationId, hotelId} = req?.query ;
-    try {
-        if (!reservationId) {
-            reservationId ="688fbfc5-1c43-42de-a1cf-f1f2c7a73c6f";
-            hotelId = 1;
-        } 
-        const booking = await getReservations(hotelId, reservationId);
-        const token = makeUnlimitedToken(reservationId, hotelId, booking[0].roomStays[0].status);
+   // let {reservationId, hotelId} = req?.query ;
+   try {
+   //     if (!reservationId) {
+   //         reservationId ="688fbfc5-1c43-42de-a1cf-f1f2c7a73c6f";
+   //         hotelId = 1;
+   //     } 
+    //    const booking = await getReservations(hotelId, reservationId);
+        const token = makeUnlimitedToken();
+            //reservationId, hotelId, booking[0].roomStays[0].status);
         return res.status(200).send(token);
     }catch (err) {
         console.log(err);

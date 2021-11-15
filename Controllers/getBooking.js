@@ -9,7 +9,7 @@ const { FINAL_STEP } = require('../settings.json');
 const getBookingFromToken = async (req, res) => {
     
     let token = null;
-    let hotelStay = null;
+    let hotelStay = {};
     let booking = null;
     let hotelAppSettings = null;
     try {
@@ -26,11 +26,11 @@ const getBookingFromToken = async (req, res) => {
         booking = await helpers.getReservations(hotelId, reservationId);
         if (!booking.length) throw new Errors.NotFound() ;        
         const reservation = booking[0];
+        const roomStay = reservation.roomStays[0];
         //token was signed using the reservation state in order to make it only 1 time use 
-        verifyToken(token, reservation); 
-        hotelStay = await helpers.getHotelOffers(hotelId, reservation.expectedArrival, reservation.expectedDeparture);
-        const stay = new Enzo.EnzoReservation(reservation);
-        hotelStay.reservation = stay;
+        verifyToken(token, roomStay); 
+        hotelStay = await helpers.getHotelOffers(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
+        hotelStay.reservation = reservation;
         //get HotelPolicies screens values into the  booking
        // res = makeCheckInAppResponseBody(res, roomStay, hotelStay, token); 
         res.cookie( 'token', token, { maxAge: 3000, httpOnly: true });
