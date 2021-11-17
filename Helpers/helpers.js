@@ -8,49 +8,49 @@ const Models = require('../Models/index.js');
 
 //get new reservation, return an array of enzoCheckIn, run at specified interval 
 const getReservations = async (hotelId = null, reservationId = null, conf = null, hotelPms = null) => { 
-    console.log(`
-        Start helper process: 
-        get 
-        hotel ${hotelId} 
-        Reservations ${reservationId}`
-    );
+    console.log(`Start helper process: get hotel ${hotelId} Reservations ${reservationId}`);
     try{
         const results = [];                       
         //Call the db to get the list of hotel clients and their pmsData
         const pmsApi =  conf && ( conf instanceof PmsModuleApi) ? conf : new PmsModuleApi(); //we use 1 generic manager (no hotelID) that will do request for each hotel 
         const db = conf && ( conf instanceof Database) ? conf : new Database();
-        const pms = hotelPms || await db.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
+        let pms = hotelPms && ( hotelPms instanceof Models.HotelPmsSettings) ? hotelPms : await db.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
         //get the reservations per hotel 
-    
+        if (!Array.isArray(pms)) { pms = [pms]; }
         //loop through hotel result
         for (let row of pms) {    
-            const h = new Models.HotelPmsSettings({
-                hotelId: row.hotel_id, 
-                pmsId: row.pms_id, 
-                pmsUrl: row.pms_url,
-                pmsName: row.pms_name, 
-                pmsUser: row.pms_user, 
-                pmsPwd: row.pms_pwd
-            });
-            if (hotelId && h.hotelId != hotelId) { continue; }
-            const requestResult = await pmsApi.getReservationData({ 
-                reservationId,
-                pmsId: h.pmsId, 
-                pmsUrl: h.pmsUrl, 
-                pmsUser: h.pmsUser, 
-                pmsPwd: h.pmsPwd 
+            if (!(row instanceof Models.HotelPmsSettings)) {
+                row = new Models.HotelPmsSettings({
+                    hotelId: row.hotel_id, 
+                    pmsId: row.pms_id, 
+                    pmsUrl: row.pms_url,
+                    pmsName: row.pms_name, 
+                    pmsUser: row.pms_user, 
+                    pmsPwd: row.pms_pwd
+                });
+            } 
+            console.log(JSON.stringify(row))
+         
+            if (hotelId && row.hotelId != hotelId) { continue; }
+            
+            const reservationsRequest = await pmsApi.getReservationData({ 
+                reservationId, //can be null if we look for all the reservations from the hotel pms
+                pmsId: row.pmsId, 
+                pmsUrl: row.pmsUrl, 
+                pmsUser: row.pmsUser, 
+                pmsPwd: row.pmsPwd 
             });
             //we receive an array of enzoReservations data 
             //we add the hotelId to the reservation 
-            console.log(requestResult);
+            console.log(reservationsRequest);
             if  (reservationId) {
-                const er = new Enzo.EnzoReservation(requestResult);
-                er.hotelId = h.hotelId;
+                const er = new Enzo.EnzoReservation(reservationsRequest);
+                er.hotelId = row.hotelId;
                 results.push(er);
             } else {
-                requestResult.map((r) => {
+                reservationsRequest.map((r) => {
                     const er = new Enzo.EnzoReservation(r);
-                    er.hotelId = h.hotelId;
+                    er.hotelId = row.hotelId;
                     results.push(er);
                 });
             }
@@ -63,22 +63,27 @@ const getReservations = async (hotelId = null, reservationId = null, conf = null
 };
 
 
-const postReservations = async (hotelId, reservationId, data, db = null) => { 
+const postReservations = async (hotelId, reservationId, data, db = null, pms = null) => { 
     console.log("Start helper process: postReservations....");
     try{        //Call the db to get the pmsData
        
         db = db || new Database(hotelId);
-        const hotelPms = await db.getHotelPmsInfo(hotelId); //retrieve the hotel  pms info
+        pms =  pms || await db.getHotelPmsInfo(hotelId); 
+  
+       //retrieve the hotel  pms info 
         const pmsApi = new PmsModuleApi(hotelId); //we make a hotel specific
+        
         await pmsApi.updateReservationData({ 
             data,
-            reservationId: reservationId,  
-            pmsId: hotelPms.pms_id,
-            pmsUrl: hotelPms.pms_url,
-            pmsUser: hotelPms.pms_user,  
-            pmsPwd: hotelPms.pms_pwd
+            reservationId,  
+            pmsId: pms.pmsId,
+            pmsUrl: pms.pmsUrl,
+            pmsUser: pms.pmsUser,  
+            pmsPwd: pms.pmsPwd
         });
-        return 1;
+        console.log("End helper process: postReservations....");
+ 
+        return ;
     } catch(e) {
         console.error(e);
         throw e;
@@ -108,13 +113,13 @@ const getBookingFromEmail = async (email) => {
 
 const resetBookingStatus = async (email = null, reservationId = null, db = null) => {
     try {
-        const hotelId = 1; 
+        const hotelId = 1; //we reset the demo reservation thus the hotelId is known (for now at least) and this is hotel id 1
         db = db || new Database(hotelId);
-        const pms = await db.getHotelPmsInfo(hotelId);  
+        const pms = await db.getHotelPmsInfo(hotelId);        
         if (reservationId || email) {
             let newBook;
             if (reservationId) {
-                let bookings = await getReservations(hotelId, reservationId, db, pms);
+                let bookings = await getReservations(hotelId, reservationId, db, hpmspms);
                 newBook = resetBookingDate(bookings[0]);   
             } 
             if (email){
@@ -125,16 +130,20 @@ const resetBookingStatus = async (email = null, reservationId = null, db = null)
             await db.deleteEmailTrackingInfo(newBook.reservationId, hotelId);
         } else {
             let bookings = await getReservations(hotelId, null, db, pms);
-            console.log('Reset : bookings => ', bookings)
+            console.log('Reset : bookings => ', bookings);
+            //const toUpdate = [];
             for (let b of bookings) {
                 let r = await getReservations(hotelId, b.pmsId, db, pms);
                 let newBook = resetBookingDate(r[0]) ;
-                console.log('Reset ', b , newBook, db, pms);
-                await postReservations(hotelId, newBook.pmsId, newBook, db, pms); 
-                await db.deleteEmailTrackingInfo(newBook.pmsId, hotelId);
+                console.log('Reset ', b.pmsId, newBook);
+                await postReservations(hotelId, b.pmsId, newBook, db, pms) 
+                await db.deleteEmailTrackingInfo(b.pmsId, hotelId)
             }
+            
+            console.log('Reset : %s bookings ', bookings.length);
+          
         }
-        return 1;
+        return ;
     } catch(e) {
         console.log(e);
         throw e;
@@ -270,18 +279,16 @@ const getHotelPmsInfo = async (hotelId, startDate, endDate, db = null) => {
 const getHotelOffers = async (hotelId, startDate, endDate, db = null, pmsAccess = null, pmsApi = null) => { 
     console.log("Start helper process: get hotel Stays....");
     try{
-        let pmsValPassed = !!pmsAccess;
         //Call the db to get the list of hotel clients and their pmsData
         db = db || new Database(hotelId);
         pmsAccess = pmsAccess || await db.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
         pmsApi = pmsApi || new PmsModuleApi(hotelId); //we use 1 generic manager (no hotelID) that will do request for each hotel 
         //get the hotel data from the pmsAPI
-        if (!pmsValPassed) pmsAccess = pmsAccess[0];
         const hotelOffers = await pmsApi.getHotelOffers({ 
-                    pmsId:  pmsAccess.pms_id,
-                    pmsUrl:  pmsAccess.pms_url, 
-                    pmsUser:  pmsAccess.pms_user,
-                    pmsPwd:  pmsAccess.pms_pwd,
+                    pmsId:  pmsAccess.pmsId,
+                    pmsUrl:  pmsAccess.pmsUrl, 
+                    pmsUser:  pmsAccess.pmsUser,
+                    pmsPwd:  pmsAccess.pmsPwd,
                     startDate, 
                     endDate  
                 });
@@ -345,9 +352,6 @@ const getHotelAvailabilities = async (hotelId, startDate, endDate, db = null) =>
         throw e;
     } 
 }
-
-
-
 
 module.exports = {
     getReservations,

@@ -1,19 +1,17 @@
 
 class EnzoLocale {
     static SUPPORTED_LOCALE = {
-        DK: "da-DK",
-        DE: "de-DE", 
-        UK: "en-UK",
-        GB: "en-GB",
-        US: "en-US",
-        ES: "es-ES",
-        FR: "fr-FR",
-        IT: "it-IT",
-        NL: "nl-NL" ,
-        DEFAULT: "en-GB"
+        DK: "da",
+        DE: "de", 
+        EN: "en",
+        ES: "es",
+        FR: "fr",
+        IT: "it",
+        NL: "nl" ,
+        DEFAULT: "en"
     };
 
-    constructor(locale = EnzoLocale.SUPPORTED_LOCALE.GB){
+    constructor(locale = EnzoLocale.SUPPORTED_LOCALE.EN){
         this.locale = locale;
     }
 }
@@ -33,7 +31,7 @@ class EnzoCurrency {
         DEFAULT: "EUR"
     };
 
-    constructor(currency = EnzoCurrency.SUPPORTED_CURRENCY.EUR){
+    constructor(currency = EnzoCurrency.SUPPORTED_CURRENCY.DEFAULT){
         this.currency = currency;
     }
 }
@@ -49,23 +47,22 @@ class ImageFocusPoint {
 class Image {
     constructor({ 
         source = null,
-        width = 1,
-        height = 1, 
-        focusPoint = {}
+        width = 0,
+        height = 0, 
+        focusPoint = null
     } = {}) 
     {
         this.source = source;
         this.width = width ;
         this.height = height ;
-        this.focusPoint = new ImageFocusPoint(focusPoint) ;
+        this.focusPoint = focusPoint ? new ImageFocusPoint(focusPoint) : null ;
     }
 }
 
 
 class LocalText {
-    
     constructor(v) {
-
+        
         if ( typeof v === 'object') { 
             for (let i in v) { this[i] = v[i]; }
         } else {
@@ -74,12 +71,12 @@ class LocalText {
     }
 }
 class Address {
-    constructor({ address1 = null, address2 = null, postCode = null, city = null, state = null, country = null } = {}) {
+    constructor({ address1 = null, address2 = null, postcode = null, city = null, state = null, country = null } = {}) {
         this.address1 = address1  ;
         this.address2 = address2 ;
         this.city = city;
         this.state = state;
-        this.postCode = postCode; 
+        this.postcode = postcode; 
         this.country = country;
     }
 }
@@ -87,10 +84,10 @@ class Address {
 
 
 class Company {
-    constructor({ pmsId = null, name = {}, address = {}, email = null, phone = null, note= null } = {}) {
+    constructor({ pmsId = null, name = {}, address = {}, email = null, phone = null, note = null } = {}) {
         this.pmsId = pmsId  ;
-        this.name = new LocalText(name) ;
-        this.address = new Address(address); 
+        this.name = Object.values(name).length ? new LocalText(name) : null ;
+        this.address = address ? new Address(address) : null; 
         this.email = email;
         this.phone = phone;
         this.note = note;
@@ -149,14 +146,13 @@ class Car {
 }
 */
 class EnzoHotel {
-    constructor( { hotelId = null, pmsId = null, 
+    constructor( { pmsId = null, 
         chainName = null, name = null, email = null, 
         phone = null, website = null, address = null, 
-        logo = {}, images = [], 
-        hotelPolicies = {}, gdprRules = {}, guestRegistrationForm = {},
-        checkOutTime = null, checkInTime = null  } = {}) 
+        logo = null, images = [], 
+        hotelPolicies = null, gdprRules = null, guestRegistrationForm = null,
+        checkOutTime = null, checkInTime = null, checkOutTimeAllowed = null, checkInTimeAllowed = null } = {}) 
     {
-        this.hotelId = hotelId  ;
         this.pmsId = pmsId  ;
         this.chainName = chainName ;
         this.name = name; 
@@ -166,18 +162,21 @@ class EnzoHotel {
         this.address = address ? new Address(address) : null;
         this.logo = logo ? new Image(logo) : null;
         this.images = images.map(image => new Image(image));
-        this.hotelPolicies = new LocalText(hotelPolicies);
-        this.gdprRules = new LocalText(gdprRules) ;
-        this.guestRegistrationForm = new LocalText(guestRegistrationForm);
+        this.hotelPolicies = hotelPolicies ? new LocalText(hotelPolicies) : null;
+        this.gdprRules = gdprRules ? new LocalText(gdprRules) : null ;
+        this.guestRegistrationForm = guestRegistrationForm ? new LocalText(guestRegistrationForm) : null;
         this.checkInTime = checkInTime;
+        this.checkInTimeAllowed = checkInTimeAllowed;
         this.checkOutTime = checkOutTime;
+        this.checkOutTimeAllowed = checkOutTimeAllowed;
     }
 }
 
 class EnzoCommonParameters {
-    constructor({ defaultLanguage = EnzoLocale.SUPPORTED_LOCALE.DEFAULT, currency = EnzoCurrency.SUPPORTED_CURRENCY.DEFAULT } = {})
+    constructor({ defaultLanguage = EnzoLocale.SUPPORTED_LOCALE.DEFAULT, currency = EnzoCurrency.SUPPORTED_CURRENCY.DEFAULT, availableLanguages = [] } = {})
     {
-        this.defaultLanguage = defaultLanguage  ; 
+        this.defaultLanguage = defaultLanguage ; 
+        this.availableLanguages = availableLanguages ; 
         this.currency = currency;
     }
 }
@@ -255,14 +254,14 @@ class EnzoReservation  {
         HOTELBEDS: "Hotelbeds",
         OTHER: "Other"
     };
-    constructor({ pmsId = null, booker = null, bookerIsMember = false,
-        bookingChannel = EnzoReservation.BOOKING_CHANNELS.OTHER,
+    constructor({ pmsId = null, booker = {}, bookerIsMember = false,
+        bookingChannel = EnzoReservation.BOOKING_CHANNELS.DIRECT,
         roomStays = [] } = {}) 
     {
         this.pmsId = pmsId;
-        this.booker = booker ? new EnzoGuest(booker) : null;
+        this.booker = new EnzoBooker(booker);
         this.bookerIsMember = bookerIsMember;
-        this.bookingChannel = EnzoReservation.BOOKING_CHANNELS_LIST.includes(bookingChannel) ? bookingChannel : "Other";
+        this.bookingChannel = EnzoReservation.BOOKING_CHANNELS_LIST.includes(bookingChannel) ? bookingChannel : null;
         this.roomStays = roomStays.map(r => new EnzoRoomStay(r));
     }
 }
@@ -302,7 +301,7 @@ class EnzoRoomStay  {
         UNKNOWN: "Unknown"
     };
 
-    constructor({ pmsId = null, bookingRef = null,
+    constructor({ pmsId = null, bookingId = null, 
         expectedArrival = null, expectedDeparture = null, finalArrival = null, finalDeparture = null, 
         numberOfNights = 0, dayUse = false, numberOfGuests = 0, numberOfAdults = 0, numberOfChildren = 0, numberOfInfants = 0,
         primaryGuestIsMember = false, primaryGuestIsVIP = false, primaryGuestAcceptedHotelPolicies = false,
@@ -312,11 +311,10 @@ class EnzoRoomStay  {
         roomId = null, ratePlanId = null, roomTypeId = null,
         availableRoomIds = [], availableRoomTypeIds = [],
         availableOptionIds = [], preBookedOptionIds = [], addedOptionIds = [],
-        wifi = {}, cars = [],
-        note = null, qrCode = null } = {}) 
+        wifi = null, note = null, qrCode = null } = {}) 
     {
         this.pmsId = pmsId ;
-        this.bookingRef = bookingRef;
+        this.bookingId = bookingId;
         this.status = status;
         this.expectedArrival = expectedArrival ;
         this.finalArrival = finalArrival ; 
@@ -349,11 +347,10 @@ class EnzoRoomStay  {
         this.primaryGuestAcceptedGdprRules = primaryGuestAcceptedGdprRules;
         this.primaryGuestAllowsEmailMarketing = primaryGuestAllowsEmailMarketing;
 
-        this.cars = cars.map(c => new Car(c));
-        this.wifi = new EnzoWifi(wifi);
+        this.wifi = wifi ? new EnzoWifi(wifi) : null;
         this.note = note;
         this.purposeOfStay = purposeOfStay;
-        this.qrCode = qrCode;
+        this.qrCode = qrCode ? new EnzoQrCode(qrCode) : null;
     }
 }
 /*
@@ -403,11 +400,11 @@ class EnzoRoomStay  {
 
 class EnzoRatePlan {
 
-    constructor({ pmsId = null, name = {}, description = {}, optionIds = [] } = {}) 
+    constructor({ pmsId = null, name = null, description = null, optionIds = [] } = {}) 
     {
         this.pmsId = pmsId ;
-        this.name = new LocalText(name);
-        this.description = new LocalText(description);
+        this.name = name ? new LocalText(name) : null;
+        this.description = description ? new LocalText(description) : null;
         this.optionIds = optionIds;
     }
 }
@@ -479,17 +476,17 @@ class EnzoRoom {
         OCCUPIED: "Occupied",
         MAINTENANCE: "Maintenance"
     };
-    constructor({ pmsId = null, name = {}, roomTypeId = null, roomFeatureIds = [], status = EnzoRoom.ROOM_STATUS.DIRTY, images = [],
-        directions = {}, view = {} } = {}) 
+    constructor({ pmsId = null, name = null, roomTypeId = null, roomFeatureIds = [], status = EnzoRoom.ROOM_STATUS.DIRTY, images = [],
+        directions = null, view = null } = {}) 
     {
         this.pmsId = pmsId ;
-        this.name = new LocalText(name);
+        this.name = name ?  new LocalText(name) : null;
         this.roomTypeId = roomTypeId; 
         this.roomFeatureIds = roomFeatureIds; 
         this.status = status;
         this.images = images.map(image => new Image(image));
-        this.directions = new LocalText(directions);
-        this.view = new LocalText(view);
+        this.directions = directions ? new LocalText(directions) : null; 
+        this.view = view ? new LocalText(view) : null;
     }
 } 
 
@@ -548,29 +545,29 @@ class EnzoRoom {
 }
 */
 class EnzoRoomType {
-    constructor({ pmsId = null, name = {}, description = {}, descriptionLong = {},
+    constructor({ pmsId = null, name = null, description = null, descriptionLong = null,
         maxOccupancy = 1, minOccupancy = 1, beds = [], roomSize = 1, roomFeatureIds = [], 
-        view = {}, directions = {}, images = [] } = {}) 
+        view = null, directions = null, images = [] } = {}) 
     {
         this.pmsId = pmsId ;
-        this.name = new LocalText(name) ;
-        this.description = new LocalText(description);
-        this.descriptionLong = new LocalText(descriptionLong);
+        this.name = name ? new LocalText(name) : null;
+        this.description = description ? new LocalText(description) : null;
+        this.descriptionLong = descriptionLong ? new LocalText(descriptionLong) : null;
         this.minOccupancy = minOccupancy; 
         this.maxOccupancy = maxOccupancy;
         this.beds = beds.map(b => new Bed(b));
         this.roomSize = roomSize;
         this.roomFeatureIds = roomFeatureIds;
-        this.view = new LocalText(view);
-        this.directions = new LocalText(directions);
+        this.view = view ? new LocalText(view) : null;
+        this.directions = directions ? new LocalText(directions) : null; 
         this.images = images.map(i => new Image(i));
     }
 } 
 
 class Beds {
-    constructor({ pmsId = null, name = {}, numberOfBeds = 1 }) {
+    constructor({ pmsId = null, name = null, numberOfBeds = 1 }) {
         this.pmsId = pmsId ;
-        this.name = new LocalText(name) ;
+        this.name = name ?new LocalText(name) : null;
         this.numberOfBeds = numberOfBeds ;
     }
 }
@@ -588,11 +585,11 @@ beds
 
 
 class EnzoRoomFeature {
-    constructor({ pmsId = null, name = {}, images = [], description = {} } = {}) 
+    constructor({ pmsId = null, name = null, images = [], description = null } = {}) 
     {
         this.pmsId = pmsId ;
-        this.name = new LocalText(name) ;
-        this.description = new LocalText(description);
+        this.name = name  ? new LocalText(name) : null;
+        this.description = description ? new LocalText(description) : null;
         this.images = images.map(i => new Image(i));
     }
 } 
@@ -622,6 +619,29 @@ class EnzoRoomFeature {
     }
 }
 */
+
+class EnzoBooker {
+    constructor({ pmsId = null,
+        firstName = null, lastName = null, fullName = null,
+        email = null, address = null, phone= null, language = null,
+        nationality = null, identification = null, note = null, 
+        company = null } = {}) 
+    {
+        this.pmsId = pmsId;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.fullName = fullName;
+        this.address = address && Object.values(address).length > 0 ? new Address(address) : null;
+        this.language = language;        
+        this.nationality = nationality;        
+        this.identification = identification ? new EnzoGuestIdentification(identification) : null;
+        this.email = email;
+        this.phone = phone;
+        this.company = company ? new Company(company) : null;
+        this.note = note;
+    }
+}
+
 class EnzoGuest  {
     
    static AGE_CATEGORIES = { 
@@ -636,11 +656,11 @@ class EnzoGuest  {
     }; 
     constructor({ pmsId = null,
         firstName = null, lastName = null, fullName = null,
-        email = null, address = {}, phone= null,
+        email = null, address = null, phone= null,
         gender = EnzoGuest.GENDER_CATEGORIES.NEUTRAL, language = null,
         dateOfBirth = null, ageCategory = EnzoGuest.AGE_CATEGORIES.ADULT,
-        nationality = null, identification = {}, folios = [], note = null, 
-        signature = null, company = {} } = {}) 
+        nationality = null, identification = null, folios = [], car = null, note = null, 
+        signature = null, company = null } = {}) 
     {
         this.pmsId = pmsId;
         this.firstName = firstName;
@@ -653,11 +673,12 @@ class EnzoGuest  {
         this.language = language;        
         this.nationality = nationality;        
         this.signature = signature;
-        this.identification = new EnzoGuestIdentification(identification);
+        this.identification = identification ? new EnzoGuestIdentification(identification) : null;
         this.email = email;
         this.phone = phone;
         this.folios = folios.map(f => new EnzoFolio(f));
-        this.company = new Company(company);
+        this.car = car ? new EnzoGuestIdentification(car) : null;
+        this.company = company ? new Company(company) : null;
         this.note = note;
     }
 }
@@ -780,14 +801,14 @@ class EnzoFolioItem {
         PAYMENT: "Payment", 
         REFUND: "Refund" 
     };
-    constructor({ pmsId = null, folioItemGroupId = null, name = {}, 
-        type = EnzoFolioItem.FOLIO_ITEM_TYPES.CHARG, 
+    constructor({ pmsId = null, folioItemGroupId = null, name = null, 
+        type = EnzoFolioItem.FOLIO_ITEM_TYPES.CHARGE, 
         totalAmount = 0, unitAmount = 0, numberOfUnits = 0,
         dateTime = null } = {}) 
     {
         this.pmsId = pmsId ;
         this.folioItemGroupId = folioItemGroupId;
-        this.name = new LocalText(name) ;
+        this.name = name ?new LocalText(name) : null;
         this.unitAmount = unitAmount;
         this.numberOfUnits = numberOfUnits;
         this.totalAmount = totalAmount ;
@@ -827,10 +848,10 @@ class EnzoFolioItem {
 }
 */
 class EnzoFolioItemGroup {
-     constructor({ pmsId = null, name = {} } = {}) 
+     constructor({ pmsId = null, name = null } = {}) 
      {
         this.pmsId = pmsId ;
-        this.name = new LocalText(name) ;
+        this.name = name ? new LocalText(name) : null;
     }
 }
 /*
@@ -857,9 +878,9 @@ class EnzoFolioItemGroup {
 */
 
 class EnzoFolioTax {
-    constructor({  name = {}, grossAmount = 0, netAmount = 0, amount = 0 } = {}) 
+    constructor({  name = null, grossAmount = 0, netAmount = 0, amount = 0 } = {}) 
         {
-        this.name = new LocalText(name) ;
+        this.name = name ? new LocalText(name) : null;
         this.grossAmount = grossAmount;
         this.netAmount = netAmount;
         this.amount = amount ;
@@ -926,21 +947,21 @@ class EnzoAvailableOption {
         RULE: "Rule"
     };
     constructor({ pmsId = null, optionGroupId = null, categoryId = null,
-        name = {}, description = {}, descriptionLong = {},
+        name = null, description =null , descriptionLong = null,
         price = 0, priceType = EnzoAvailableOption.PRICING_METHOD.PERSTAY, 
         datetimeStart = null, datetimeEnd = null, 
         hidden = false, disabled = false,
         offered = EnzoAvailableOption.OFFER.ALWAYS, 
-        rule = {},
+        rule = null,
         accessCodes = [],
         images = [], 
      } = {}) {
         this.pmsId = pmsId ;
         this.optionGroupId = optionGroupId ;
         this.categoryId = categoryId ;
-        this.name = new LocalText(name); 
-        this.description = new LocalText(description);
-        this.descriptionLong = new LocalText(descriptionLong);
+        this.name = name ? new LocalText(name) : null; 
+        this.description = description ? new LocalText(description) : null;
+        this.descriptionLong = descriptionLong ? new LocalText(descriptionLong) : null;
         this.price = price;
         this.priceType = priceType;
         this.datetimeStart = datetimeStart;
@@ -1004,7 +1025,7 @@ class EnzoOptionGroup {
     } = {}) 
     {
         this.pmsId = pmsId, 
-        this.type = type, 
+        this.type = type , 
         this.minOptionsToSelect = minOptionsToSelect;
         this.maxOptionsToSelect = maxOptionsToSelect ;
         this.disabled = disabled;
@@ -1034,7 +1055,8 @@ class EnzoWifi {
 
 class EnzoQrCode {
     constructor({ 
-        qrCodeData = null, generatedBy = null,
+        qrCodeData = null, 
+        generatedBy = null,
         hotelId = null, 
         pmsId = null,
         reservationId = null 

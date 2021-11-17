@@ -20,9 +20,10 @@ const isAdmin = (req, res, next) => {
     return res.status(401).end();
 }
 
+api.get(`/checkin/qrcode`, email.getQrFromToken); 
 //endpoint to retrieve the reservation data from the token send by email and using the frontend app 
-api.post(`/checkin/getPaymentLink`, payment.getPaymentLinkFromToken);
-api.get(`/checkin/getPaymentResult`, payment.getPaymentResultById);
+api.post(`/checkin/getpaymentlink`, payment.getPaymentLinkFromToken);
+api.get(`/checkin/getpaymentresult`, payment.getPaymentResultById);
 
 api.post(`/checkin`, booking.postBooking);
 api.get(`/checkin`, booking.getBookingFromToken);
@@ -74,7 +75,6 @@ api.get(`/hotels`, hotel.getHotels) ;
 api.put(`/hotels/:hotelId/reservations/:reservationId`, booking.updateBooking) ;
 api.get(`/hotels/:hotelId/reservations/:reservationId`, booking.getBookings) ;
 api.get(`/hotels/:hotelId/reservations`, booking.getBookings) ;
-
 //endpoint to trigger a payment request 
 api.get(`/hotels/:hotelId/reservations/:reservationId/getPaymentResultById`, payment.getPaymentResultById);
 api.post(`/hotels/:hotelId/reservations/:reservationId/getPaymentUrl`, payment.getPaymentLink);
@@ -82,15 +82,13 @@ api.post(`/hotels/:hotelId/reservations/:reservationId/getPaymentUrl`, payment.g
 api.get(`/hotels/:hotelId/stays`, hotel.getHotelStays) ;
 
 //endpoint to trigger a QRCode email request 
-api.post(`/hotels/:hotelId/qrCode`, email.renderAndSendQrCode);
-
+api.post(`/hotels/:hotelId/qrcode`, email.renderAndSendQrCode);
 api.get(`hotels/count`, hotel.getHotelsCount) ;
-
 
 //endpoint to reset the reservation data (only for DEMO app)
 api.get(`/reset`, booking.resetBookings);
 api.get(`/token`, email.getToken);
-api.post(`/emailToken`, email.getEmailType);
+api.post(`/emailtoken`, email.getEmailType);
 
 //Admin part : UI
 api.get('/admin', admin.displayDashboard);

@@ -2,7 +2,7 @@ const Errors = require('../Models/errors.js');
 const Enzo = require('../Models/Enzo.js');
 const helpers = require('../Helpers/helpers.js');
 const jwt = require('jsonwebtoken') ;
-const { makeCheckInAppResponseBody, makeSecureRequestToken, verifyToken, verifySecureToken, setCheckBooking } = require('../Utilities/utilities.js');
+const {  verifyToken, setCheckBooking } = require('../Utilities/utilities.js');
 const { winstonLogger } = require('../Logger/loggers.js');
 const { FINAL_STEP } = require('../settings.json');
 //Request a booking route controller (from token contained in email link acyually)
@@ -33,23 +33,14 @@ const getBookingFromToken = async (req, res) => {
         hotelStay.reservation = reservation;
         //get HotelPolicies screens values into the  booking
        // res = makeCheckInAppResponseBody(res, roomStay, hotelStay, token); 
-        res.cookie( 'token', token, { maxAge: 3000, httpOnly: true });
+        //res.cookie( 'token', token, { maxAge: 3000, httpOnly: true });
       //  const response =  hotelStay ;
         return res.status(200).send(hotelStay);
     } catch(e) {
-        let error ;
-        if (e instanceof jwt.TokenExpiredError) error = new Errors.ExpiredLink() ;
-        else if (e instanceof jwt.JsonWebTokenError && e.message === 'invalid signature' && booking.length)  {
-            const response = makeCheckInAppResponseBody(res, booking[0].roomStays[0], hotelStay, token);
-            
-            return res.status(200).send(response);
-        } else {
-            error = e;
-        }
-        winstonLogger.error(error) ;
-        return res.status(error.code || 401).send(error.message || 'error') ;
+        winstonLogger.error(e) ;
+        return res.status(e.code || 401).send(e.message || 'error') ;
     }
-}
+};
 
 //Update booking route controller (received from the checkinApp for now) 
 const postBooking = async (req, res) => {
@@ -151,7 +142,6 @@ const resetBookings = async (req, res) => {
         return res.status(500).end();
     }
 }
-
 
 module.exports = {
     getBookingFromToken ,

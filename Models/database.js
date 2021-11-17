@@ -1,5 +1,8 @@
 const { AsyncResource, executionAsyncId } = require('async_hooks');
 const { pgClient, pgPool } = require('../DB/dbConfig.js');
+const Enzo = require('../Models/Enzo.js');
+const Errors = require('../Models/errors.js');
+const Models = require('../Models/index.js');
 
 /**
  * Database class is the main interface to the checkin app database 
@@ -9,13 +12,13 @@ const { pgClient, pgPool } = require('../DB/dbConfig.js');
 class Database extends AsyncResource {
     
     constructor(hotelId = null) {
-        super('DbQuery');
+        super('dbQuery');
         this.hotelId = hotelId;     //specialize the instance for a specific hotel
     }
 
     //get the hotel and pms related data (pms id, access, etc ...)
     async getHotelPmsInfo(hotelId = null){
-        console.log('getHotelPmsInfo....')
+        console.log('getHotelPmsInfo....');
         hotelId = hotelId || this.hotelId ;
         let query1, query1result, data;
         try {
@@ -29,9 +32,16 @@ class Database extends AsyncResource {
                 query1 = 'SELECT a.*, b.pms_name, c.* from hotel a JOIN pms b ON a.pms_id = b.pms_id JOIN hotel_pms_connection c ON a.hotel_id = c.hotel_id' ;
                 query1result = await client.query(query1) ;
             } 
-            data = query1result.rows;
+            data = query1result.rows.map(row => new Models.HotelPmsSettings({
+                hotelId: row.hotel_id, 
+                pmsId: row.pms_id, 
+                pmsUrl: row.pms_url,
+                pmsName: row.pms_name, 
+                pmsUser: row.pms_user, 
+                pmsPwd: row.pms_pwd
+            }));
             client.release();
-            return data;
+            return hotelId ? data[0] : data;
         } catch(e) {
             console.log(e);
             throw e;
@@ -212,8 +222,8 @@ class Database extends AsyncResource {
             //get hotel details
             query1 = 'SELECT a.*, b.hotel_name as hotel from hotel_details a JOIN hotel b ON a.hotel_id = b.hotel_id WHERE b.hotel_id = $1'  ;
             query1result = await client.query(query1, [hotelId]) ;
-            return query1result.rows[0];
             client.release();
+            return query1result.rows[0];
         }catch(e) {
             console.log(e);
             throw e;
@@ -364,7 +374,7 @@ class Database extends AsyncResource {
                 const client = await pgPool.connect();
                 const verif = await hasSetting(hotelId, client);
                 if (verif > 0) {
-                    return await this.updateHotelStyleSettings(hotelId, styleSettings);
+                    return await this.updateHotelStyleSettings(hotelId, styleSettings, client);
                 }
             
                 const query1 = 'INSERT INTO hotel_application_settings(hotel_id, hotel_styles) VALUES (%1, %2) ';  ;
@@ -376,14 +386,15 @@ class Database extends AsyncResource {
                 throw e;
             }
         }
-        async updateHotelStyleSettings(hotelId, styleSettings){
+        async updateHotelStyleSettings(hotelId, styleSettings, client = null){
             try {
-                const client = await pgPool.connect();
+                const client = client || await pgPool.connect();
                 const styles = await this.getHotelStyleSettings(hotelId);
                 const newStyles = { ...styles, ...styleSettings };
                 
                 const query1 = 'UPDATE hotel_application_settings SET hotel_styles = %1  WHERE hotel_id = $2';  ;
                 await client.query(query1, [newStyles, hotelId]) ;
+                client.release();
                 return ;
             }catch(e) {
                 console.log(e);

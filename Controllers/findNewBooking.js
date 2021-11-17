@@ -32,12 +32,12 @@ const newReservationFinder = async () => {
         const results = await helpers.getReservations(null, null, db); 
         //Call the db to get the list of hotel clients and their pmsData
         const emailTrackingList = await helpers.getEmailTracking(null, null, null, db);
-        //const emailTrackingList = await db.getEmailTrackingInfo();  
-         //compare the date if checkIn can be offer take a booking and the param name to check
+          //compare the date if checkIn can be offer take a booking and the param name to check
         // filter reservation for valid precheck dates and status
         // and check the actual trackring status and remove the already tracked ones
         const filteredResults = [];
-        results.map( er => {
+        
+        results.map( er => { 
             if (newReservationFilter(er.roomStays[0], er.hotelId, emailTrackingList)) {
                  filteredResults.push(er);
             }

@@ -38,13 +38,8 @@ const isItTracked = (reservation, hotelId, emailTrackingList) => {
 const newReservationFilter = (reservationId, hotelId, emailTrackList = null) => (preCheckInIsValid(reservationId) && !isItTracked(reservationId, hotelId, emailTrackList));
 
 
-const makeQrCode = async (hotelId, booking) => {
-    let code = {
-        bookingId: booking.pmsId, 
-        hotelId: hotelId, 
-        firstName: booking.firstName , 
-        lastName: booking.lastName 
-    };
+const makeQrCode = async (hotelId, bookingId, firstName, lastName) => {
+    let code = { bookingId, hotelId, firstName, lastName };
     return await QRCode.toDataURL(JSON.stringify(code));
 };
 
@@ -91,15 +86,14 @@ const unlimitedTokenSign = {
 };
 //function to generate customized tokens 
 
-const verifyToken = (token, booking = null) => {
+const verifyToken = (token, booking = null, cb = null  ) => {
 
     const decoded = jwt.decode(token)
     let test = String((decoded.aud).split('/')[1]).startsWith('TEST') ;
     try {
-    let sec = !test &&  booking ? secretKey + booking.pmsId + booking.status : secretKey;
-    let sign =  test ? unlimitedTokenSign : startTokenSign ;
-
-        return jwt.verify(token, sec, sign);
+        let sec = !test &&  booking ? secretKey + booking.pmsId + booking.status : secretKey;
+        let sign =  test ? unlimitedTokenSign : startTokenSign ;
+        return jwt.verify(token, sec, sign, cb);
     } catch (e) {
         throw e;
     } 
@@ -339,15 +333,14 @@ const makeEmailValues = async (type, reservation, hotelValues) => {
     try {
         let values = {} ;
         let email = reservation.roomStays[0].guests.length  && reservation.roomStays[0].guests[0].email ? reservation.roomStays[0].guests[0].email : reservation.booker.email;
-        //let booking = { ...reservation.roomStays[0], ...reservation.booker } ;
-        if (!hotelValues.hotelId) { hotelValues.hotelId = reservation.hotelId ; }
         let firstName = reservation.roomStays[0].guests.length && reservation.roomStays[0].guests[0].firstName ? reservation.roomStays[0].guests[0].firstName : reservation.booker.firstName;
         let lastName = reservation.roomStays[0].guests.length && reservation.roomStays[0].guests[0].lastName ? reservation.roomStays[0].guests[0].lastName : reservation.booker.lastName;
+        if (!hotelValues.hotelId) { hotelValues.hotelId = reservation.hotelId ; }
         let guestName =  firstName + " " + lastName ;  
+    
         let d1 = new Date(reservation.roomStays[0].expectedArrival).toLocaleDateString();
         let d2 = new Date(reservation.roomStays[0].expectedDeparture).toLocaleDateString();
         let booking = reservation.roomStays[0].bookingRef || reservation.roomStays[0].pmsId; 
-        let guestFullName = guestName ;
         if (type === MAILTYPES.START) {
             let checkDates =  d1 + " - " + d2 ;
             // generate the token for the 1rst email 
@@ -361,11 +354,11 @@ const makeEmailValues = async (type, reservation, hotelValues) => {
                 app_link_baseUrl: APP_BASE_URL,
             };
         } else if (type === MAILTYPES.QR) {
-            let url = await makeQrCode({ ...reservation.roomStays[0], ...reservation.booker });
+            let url = await makeQrCode(reservation.hotelId, reservation.pmsId, firstName, lastName);
             const numNights = dateDiffInDays(reservation.roomStays[0].expectedArrival, reservation.roomStays[0].expectedArrival);
             const roomType =  reservation.roomStays[0].roomTypeId;
             const numGuests = reservation.roomStays[0].numberOfAdults + reservation.roomStays[0].numberOfChildren ;
-            const checkInTime = hotelValues.checkInTime;
+            const checkInTime = hotelValues.checkInTime ;
             values = {
                 checkInDate: d1,
                 base64qrCode: url, 
@@ -377,15 +370,15 @@ const makeEmailValues = async (type, reservation, hotelValues) => {
         }
         let hotelDetails = { 
             hotelName: hotelValues.name,
-            hotelAddress: hotelValues.address.address2 ? hotelValues.address.address1 + ' ' + hotelValues.address.address2 : hotelValues.address.address1 , 
+            hotelAddress: hotelValues.address.address1, 
             hotelPostcode: hotelValues.address.postCode,
             hotelCity: hotelValues.address.city,
             hotelCountry: hotelValues.address.country,
             hotelState: hotelValues.address.state,
             hotelPhone: hotelValues.phone,
             hotelEmail: hotelValues.email
-        }
-        return ({ ...values, booking, email, guestFullName, ...hotelDetails, reservationId: reservation.roomStays[0].pmsId, hotelId: hotelValues.hotelId });
+        };
+        return ({ ...values, booking, email, guestName, ...hotelDetails, reservationId: reservation.roomStays[0].pmsId, hotelId: hotelValues.hotelId });
     } catch(e) {
         let error = e;
         console.log(error);
