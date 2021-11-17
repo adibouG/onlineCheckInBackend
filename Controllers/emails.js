@@ -76,10 +76,10 @@ const getEmailErrors = async () => {
         //if no result we can unset the intervalID and stop the lookup 
         if (!results.length) return stopCheckMailErrors();
         //otherwise for each email that wasn't sent
-        results.forEach(async (item) => {
-            try{
-                //make an EmailTracking Object 
-                const emailSentObject = new Models.EmailTracking({ 
+        for (let i = 0 ; i < results.length; i++) {
+            let emailSentObject = results[i] ;
+            //make an EmailTracking Object 
+            /* const emailSentObject = new Models.EmailTracking({ 
                     reservationId: item.reservation_id,
                     hotelId: item.hotel_id, 
                     emailType: item.email_type, 
@@ -87,33 +87,31 @@ const getEmailErrors = async () => {
                     sendingDate: item.original_sending_date, 
                     messageId: item.message_id,
                     attempts: item.attempts 
-                }); 
-                //get the reservation  
-                const result = await helpers.getReservations(emailSentObject.hotelId, emailSentObject.reservationId);
-                //get the hotel details  
-                const hd = await manager.getHotelDetails(emailSentObject.hotelId);
-                //generate the email template values 
-                const enzoHotel = new Enzo.EnzoHotel({
-                    hotelId: hd.hotel_id,  
-                    hotel: hd.hotel,
-                    name: hd.hotel_name,
-                    email: hd.hotel_email, 
-                    phone: hd.hotel_phone,
-                    address: { 
-                        addressLine1: hd.hotel_address,
-                        country: hd.hotel_country,
-                        postalCode: hd.hotel_postcode, 
-                        city: hd.hotel_city 
-                    }, 
-                    logo: hd.hotel_logo,
-                    checkInTime: hd.hotel_checkin_time 
-                });
-              //render and send the email 
-                await renderAndSendEmail(emailSentObject.emailType, result[0], enzoHotel, emailSentObject);
-            } catch (e) {
-                throw e;
-            } 
-        });
+                }); */
+             //get the reservation  
+             const result = await helpers.getReservations(emailSentObject.hotelId, emailSentObject.reservationId);
+             //get the hotel details  
+             const enzoHotel = await manager.getHotelDetails(emailSentObject.hotelId);
+             //generate the email template values 
+             /*const enzoHotel = new Enzo.EnzoHotel({
+                 hotelId: hd.hotel_id,  
+                 hotel: hd.hotel,
+                 name: hd.hotel_name,
+                 email: hd.hotel_email, 
+                 phone: hd.hotel_phone,
+                 address: { 
+                     addressLine1: hd.hotel_address,
+                     country: hd.hotel_country,
+                     postalCode: hd.hotel_postcode, 
+                     city: hd.hotel_city 
+                 }, 
+                 logo: hd.hotel_logo,
+                 checkInTime: hd.hotel_checkin_time 
+             });*/
+           //render and send the email 
+             await renderAndSendEmail(emailSentObject.emailType, result[0], enzoHotel, emailSentObject);
+        } 
+        return ;
     } catch (e) {
         console.log(e);
         throw e;

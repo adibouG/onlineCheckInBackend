@@ -9,8 +9,8 @@ const { makeEmailValues, makeQrCode, makeUnlimitedToken } = require('../Utilitie
 
 const sendEmail = async (type, booking, hotelId) => {
     try {
-        const hotelDetails = await getHotelDetails(hotelId);
-        const eh = new Enzo.EnzoHotel({
+        const eh = await getHotelDetails(hotelId);
+        /*const eh = new Enzo.EnzoHotel({
             hotelId: hotelId,
             name: hotelDetails.hotel_name, 
             email: hotelDetails.hotel_email, 
@@ -23,7 +23,7 @@ const sendEmail = async (type, booking, hotelId) => {
                 country: hotelDetails.hotel_country,
             }),
             logo: hotelDetails.hotel_logo, 
-        });
+        });*/
         const values = await makeEmailValues(type, booking, eh);
         const emailTrack = await getEmailTracking(hotelId, booking.pmsId, type);
         let mailObject = emailTrack.length ? emailTrack[0] : null;

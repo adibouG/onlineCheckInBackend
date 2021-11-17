@@ -50,6 +50,7 @@ const newReservationFinder = async () => {
         }
     } catch (e) {
         console.log(e);
+        throw e;
     }
 }
 
@@ -66,7 +67,7 @@ const newReservationsProcess = async (newValidStays, db = null) => {
             //get the hotelId to retrieve the hotel details and store it for use with each reservation in this hotel
             if (!hotels[er.hotelId]) {
                 const hd = await db.getHotelDetails(er.hotelId);
-                hotels[er.hotelId] = new Enzo.EnzoHotel({ 
+                hotels[er.hotelId] = hd; /* new Enzo.EnzoHotel({ 
                     hotelId: hd.hotel_id,  
                     hotel: hd.hotel,
                     name: hd.hotel_name,
@@ -80,10 +81,9 @@ const newReservationsProcess = async (newValidStays, db = null) => {
                     }, 
                     logo: hd.hotel_logo,
                     checkInTime: hd.hotel_checkin_time 
-                });
+                });*/
             }
             //get the full  details and send an email for each roomstay of the reservation for  
-            //for (let rs of er.roomStays) {
             const stayData = await helpers.getReservations(er.hotelId, er.roomStays[0].pmsId, db);
             if (stayData.length && stayData[0].roomStays.length) {
                     //as we provide a roomStayId as reservationId and hotelId we have only one result a
@@ -109,7 +109,7 @@ const newReservationsProcess = async (newValidStays, db = null) => {
         console.log("End process: newValidStays .... processed " + count + " new emails");
         winstonLogger.info("End process: newValidStays .... processed " + count + " new emails");
         await db.updateJobLogs(jobStatusId, { status: 2, endTime: (parseInt(Date.now() / 1000)) });
-        return 1;
+        return ;
     } catch (e) {
          console.log(e);
         throw e;

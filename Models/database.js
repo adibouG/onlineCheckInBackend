@@ -223,7 +223,24 @@ class Database extends AsyncResource {
             query1 = 'SELECT a.*, b.hotel_name as hotel from hotel_details a JOIN hotel b ON a.hotel_id = b.hotel_id WHERE b.hotel_id = $1'  ;
             query1result = await client.query(query1, [hotelId]) ;
             client.release();
-            return query1result.rows[0];
+           const images = [];
+            let hd = query1result.rows[0];
+            return  new Enzo.EnzoHotel({ 
+                name: hd.hotel_name,
+                email: hd.hotel_email, 
+                phone: hd.hotel_phone,
+                address: new Enzo.Address({ 
+                    address1: hd.hotel_address,
+                    country: hd.hotel_country,
+                    postcode: hd.hotel_postcode, 
+                    city: hd.hotel_city 
+                }), 
+                logo: hd.hotel_logo,
+                website: hd.hotel_website,
+                images:  images , 
+                checkInTime: hd.hotel_checkin_time, 
+                checkOutTime: hd.hotel_checkout_time  
+            });
         }catch(e) {
             console.log(e);
             throw e;
@@ -584,7 +601,15 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             query1 = 'SELECT * from email_tracking WHERE success_sent_date is NULL' ;
             query1result = await client.query(query1);
             client.release();
-            return query1result.rows;
+            return query1result.rows.map(item => new Models.EmailTracking({ 
+                reservationId: item.reservation_id,
+                hotelId: item.hotel_id, 
+                emailType: item.email_type, 
+                sentDate: item.success_sent_date,
+                sendingDate: item.original_sending_date, 
+                messageId: item.message_id,
+                attempts: item.attempts 
+            }))
         }catch(e) {
             console.log(e);
             throw e;
