@@ -17,16 +17,16 @@ const preCheckInIsValid = (booking, offset = CHECKIN_REQUEST_START_DAY_OFFSET) =
 const isItTracked = (reservation, hotelId, emailTrackingList) => {
     let isTracked = false;
     if (!emailTrackingList) return false;
-    for (let track of emailTrackingList) {
-        const trckObj = new Models.EmailTracking({ 
-            reservationId: track.reservation_id,
-            hotelId: track.hotel_id, 
-            emailType: track.email_type, 
-            sentDate: track.success_sent_date, 
-            sendingDate: track.original_sending_date, 
-            messageId: track.message_id, 
-            attempts: track.attempts 
-        });
+    for (let trckObj of emailTrackingList) {
+        // const trckObj = new Models.EmailTracking({ 
+        //     reservationId: track.reservation_id,
+        //     hotelId: track.hotel_id, 
+        //     emailType: track.email_type, 
+        //     sentDate: track.success_sent_date, 
+        //     sendingDate: track.original_sending_date, 
+        //     messageId: track.message_id, 
+        //     attempts: track.attempts 
+        // });
         if (trckObj.reservationId == reservation.pmsId && trckObj.hotelId == hotelId) {
             isTracked = true; 
             break;
@@ -37,10 +37,15 @@ const isItTracked = (reservation, hotelId, emailTrackingList) => {
 
 const newReservationFilter = (reservationId, hotelId, emailTrackList = null) => (preCheckInIsValid(reservationId) && !isItTracked(reservationId, hotelId, emailTrackList));
 
-
-const makeQrCode = async (hotelId, bookingId, firstName, lastName) => {
-    let code = { bookingId, hotelId, firstName, lastName };
-    return await QRCode.toDataURL(JSON.stringify(code));
+const makeQrCode = async (hotelId, booking) => {
+    let code;
+    if (hotelId === 1 && (booking.bookingId === "KDKTest-04" || booking.bookingId === "KDKTest-03" )) {
+        code = booking.bookingId ;
+        return await QRCode.toDataURL(code);
+    } else {
+        code = { bookingId: booking.bookingId, hotelId, firstName: booking.firstName, lastName: booking.lastName };
+        return await QRCode.toDataURL(JSON.stringify(code));
+    }
 };
 
 const makeSecureRequestToken = (reservationId, hotelId, steps, token = null) => {
@@ -102,8 +107,8 @@ const makeToken = (uuid, reservationId, status, hotelId) => {
     try{
         //if a valid booking exist, generate the token for the 1rst email 
         //TODO place the signature template in a specific module and set up a real secret with 32char/128bit entropy
-        let steps = [-2, -1, 0, 1];
-        let payload = { reservationId, hotelId, uuid, steps } ;
+        //let steps = [-2, -1, 0, 1];
+        let payload = { reservationId, hotelId, uuid } ;
         let token = jwt.sign(payload, secretKey + reservationId + status, startTokenSign) ;
         let b64token = Buffer.from(token, 'utf8').toString('base64') ;
         return b64token;
@@ -132,9 +137,6 @@ const makeUnlimitedToken = (reservationId = null, hotelId = null) => {
         throw error;
     }
 };
-
-
-
 
 const findValidBooking = (bookings) => {
     let booking ;
@@ -245,14 +247,14 @@ const resetBookingState = (book) => {
         f.alreadyPaid = 0;
         f.remainingToPay = f.totalCost;
         f.taxIncluded = 0;
-        f.name = new Enzo.LocalText({ 'en-GB' : 'booking bill'});
+        f.name = new Enzo.LocalText({ 'en' : 'booking bill'});
         let i = new Enzo.EnzoFolioItem();
         i.type = Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.CHARGE;
         i.totalAmount = f.totalCost;
         i.unitAmount = f.totalCost;
         i.numberOfUnits = 1;
-        i.name = new Enzo.LocalText({ 'en-GB' : 'booking bill'});
-           
+        i.name = new Enzo.LocalText({ 'en' : 'booking bill'});
+
         f.folioItems.push(i);
            
         book.folios.push(f);
@@ -267,7 +269,7 @@ const resetGuest = (guest) => {
     if (guest.phone) guest.phone = null;
     if (guest.note) guest.note = null;
     if (guest.address) {
-        if (guest.address.postCode) guest.address.postCode = null;
+        if (guest.address.postcode) guest.address.postcode = null;
         if (guest.address.city) guest.address.city = null;
         if (guest.address.country) guest.address.country = null;
         if (guest.address.address1) guest.address.address1 = null;
@@ -329,22 +331,21 @@ const makeFormatedDate = (d = null, l = null) =>   {
 const addDay = (date, d) => (new Date(new Date(date).getTime() + (d * MS_PER_DAY))) ;
 
 //return a value object containing the values needed to render the email templates  
-const makeEmailValues = async (type, reservation, hotelValues) => {
+const makeEmailValues = async (type, hotelId, reservation, hotelValues) => {
     try {
         let values = {} ;
         let email = reservation.roomStays[0].guests.length  && reservation.roomStays[0].guests[0].email ? reservation.roomStays[0].guests[0].email : reservation.booker.email;
         let firstName = reservation.roomStays[0].guests.length && reservation.roomStays[0].guests[0].firstName ? reservation.roomStays[0].guests[0].firstName : reservation.booker.firstName;
         let lastName = reservation.roomStays[0].guests.length && reservation.roomStays[0].guests[0].lastName ? reservation.roomStays[0].guests[0].lastName : reservation.booker.lastName;
-        if (!hotelValues.hotelId) { hotelValues.hotelId = reservation.hotelId ; }
+
         let guestName =  firstName + " " + lastName ;  
-    
         let d1 = new Date(reservation.roomStays[0].expectedArrival).toLocaleDateString();
         let d2 = new Date(reservation.roomStays[0].expectedDeparture).toLocaleDateString();
-        let booking = reservation.roomStays[0].bookingRef || reservation.roomStays[0].pmsId; 
+        let booking = reservation.roomStays[0].bookingId || reservation.roomStays[0].pmsId; 
         if (type === MAILTYPES.START) {
             let checkDates =  d1 + " - " + d2 ;
             // generate the token for the 1rst email 
-            let token = makeToken(reservation.roomStays[0].pmsId, reservation.roomStays[0].pmsId, reservation.roomStays[0].status, hotelValues.hotelId); 
+            let token = makeToken(reservation.roomStays[0].pmsId, reservation.roomStays[0].pmsId, reservation.roomStays[0].status, hotelId); 
             let base64Image = fs.existsSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
             values = {
                 guestLinkName : guestName.replaceAll(' ', '.') ,
@@ -354,7 +355,7 @@ const makeEmailValues = async (type, reservation, hotelValues) => {
                 app_link_baseUrl: APP_BASE_URL,
             };
         } else if (type === MAILTYPES.QR) {
-            let url = await makeQrCode(reservation.hotelId, reservation.pmsId, firstName, lastName);
+            let url = await makeQrCode(hotelId, reservation);
             const numNights = dateDiffInDays(reservation.roomStays[0].expectedArrival, reservation.roomStays[0].expectedArrival);
             const roomType =  reservation.roomStays[0].roomTypeId;
             const numGuests = reservation.roomStays[0].numberOfAdults + reservation.roomStays[0].numberOfChildren ;
@@ -378,7 +379,7 @@ const makeEmailValues = async (type, reservation, hotelValues) => {
             hotelPhone: hotelValues.phone,
             hotelEmail: hotelValues.email
         };
-        return ({ ...values, booking, email, guestName, ...hotelDetails, reservationId: reservation.roomStays[0].pmsId, hotelId: hotelValues.hotelId });
+        return ({ ...values, booking, email, guestName, ...hotelDetails, reservationId: reservation.roomStays[0].pmsId, hotelId });
     } catch(e) {
         let error = e;
         console.log(error);

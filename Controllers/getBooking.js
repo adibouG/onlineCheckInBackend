@@ -14,7 +14,7 @@ const getBookingFromToken = async (req, res) => {
     let hotelAppSettings = null;
     try {
         //get the token
-        const { authorization } = req?.headers ;
+        const { authorization } = req?.headers;
         const b64token = authorization ? authorization.split(' ')[1] : req?.query.token;
         token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
         winstonLogger.info('received token :' + token);
@@ -32,9 +32,6 @@ const getBookingFromToken = async (req, res) => {
         hotelStay = await helpers.getHotelOffers(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
         hotelStay.reservation = reservation;
         //get HotelPolicies screens values into the  booking
-       // res = makeCheckInAppResponseBody(res, roomStay, hotelStay, token); 
-        //res.cookie( 'token', token, { maxAge: 3000, httpOnly: true });
-      //  const response =  hotelStay ;
         return res.status(200).send(hotelStay);
     } catch(e) {
         winstonLogger.error(e) ;

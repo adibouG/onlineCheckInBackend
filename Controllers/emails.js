@@ -16,38 +16,41 @@ var intervalCheckId = null;
 
 //Render and send the email from templates regarding the email type requested and using the values object to fill the placeholders
 //in the email error context, a mailtracking object can be provided with the previous email values that weren't sent due to errors  
-const renderAndSendEmail = async (type, stayData, hotels, mailTracking = null, valueReady = false) => {
+const renderAndSendEmail = async (type, hotelId, stayData, hotels, mailTracking = null, valueReady = false) => {
     //get the template file name 
     let template = type === MAILTYPES.START ? START_PRECHECK_INVITE : QRCODE_PRECHECK_COMPLETED; 
     let values ;
     try {
-        if (!valueReady) values = await makeEmailValues(MAILTYPES.START, stayData, hotels);
+        if (!valueReady) values = await makeEmailValues(type, hotelId, stayData, hotels);
         //set the mailTracking object from the passed argument or create a new one for new email
         else values = stayData;
-        const mailTrackingObj = (mailTracking instanceof Models.EmailTracking ) ? mailTracking : new Models.EmailTracking({ 
+        const mailTrackingObj = mailTracking ? mailTracking : new Models.EmailTracking({ 
             reservationId: values.reservationId, 
             hotelId: values.hotelId, 
             emailType: type
         });
-        //add +1 to sending attempts
-        ++mailTrackingObj.attempts;
         //call the express rendering engine for htm files define in app.js
-        return app.render(template, values, async (err, content) => {
-            let manager = new Database();
-            const mailTrack = mailTrackingObj; 
-            try {
+        app.render(template, values, async (err, content) => {
+            let mailTrack,  manager; 
+            try{
+                manager = new Database();
+                mailTrack = mailTrackingObj; 
+                
+                    //add +1 to sending attempts
+                mailTrack.attempts = mailTrack.attempts + 1;
                 if (err) throw err ;
                 //set the email attachment file for the image/qrCode from the base64 string or from the image file
                 //TO DO: import the image from the hotel settings 
                 const attach = type === MAILTYPES.QR ? values.base64qrCode : values.base64image ;
                 if (values.email && process.env.NODE_ENV !== 'production' && !values.email.toLowerCase().includes('@enzosystems.com'))  { return; }
-                return await sendEmailRequest(type, content, values.email, mailTrackingObj.messageId, attach);
+                await sendEmailRequest(type, content, values.email, mailTrackingObj.messageId, attach);
+                return 
             } catch (e) {
                 mailTrack.sentDate = null ;
                 console.log('renderAndSendEmail error ...', e);
                 //as an error was throw, we start the email errors checks by setting the intervalCheckID variable if it wasn't already
                 if (!intervalCheckId) return startCheckMailErrors() ;
-               // throw e ; //TODO : Test => not sure we need to re-throw the error as it's handled and the response headers should be already sent 
+                throw e ; //TODO : Test => not sure we need to re-throw the error as it's handled and the response headers should be already sent 
             } finally {
                 //if no db manager anymore, we get a new one. 
                 if (!manager) manager = new Database(); 
@@ -109,7 +112,7 @@ const getEmailErrors = async () => {
                  checkInTime: hd.hotel_checkin_time 
              });*/
            //render and send the email 
-             await renderAndSendEmail(emailSentObject.emailType, result[0], enzoHotel, emailSentObject);
+             await renderAndSendEmail(emailSentObject.emailType, emailSentObject.hotelId, result[0], enzoHotel, emailSentObject);
         } 
         return ;
     } catch (e) {

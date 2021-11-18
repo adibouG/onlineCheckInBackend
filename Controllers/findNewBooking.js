@@ -36,7 +36,6 @@ const newReservationFinder = async () => {
         // filter reservation for valid precheck dates and status
         // and check the actual trackring status and remove the already tracked ones
         const filteredResults = [];
-        
         results.map( er => { 
             if (newReservationFilter(er.roomStays[0], er.hotelId, emailTrackingList)) {
                  filteredResults.push(er);
@@ -67,21 +66,7 @@ const newReservationsProcess = async (newValidStays, db = null) => {
             //get the hotelId to retrieve the hotel details and store it for use with each reservation in this hotel
             if (!hotels[er.hotelId]) {
                 const hd = await db.getHotelDetails(er.hotelId);
-                hotels[er.hotelId] = hd; /* new Enzo.EnzoHotel({ 
-                    hotelId: hd.hotel_id,  
-                    hotel: hd.hotel,
-                    name: hd.hotel_name,
-                    email: hd.hotel_email, 
-                    phone: hd.hotel_phone,
-                    address: { 
-                        addressLine1: hd.hotel_address,
-                        country: hd.hotel_country,
-                        postalCode: hd.hotel_postcode, 
-                        city: hd.hotel_city 
-                    }, 
-                    logo: hd.hotel_logo,
-                    checkInTime: hd.hotel_checkin_time 
-                });*/
+                hotels[er.hotelId] = hd;
             }
             //get the full  details and send an email for each roomstay of the reservation for  
             const stayData = await helpers.getReservations(er.hotelId, er.roomStays[0].pmsId, db);
@@ -98,7 +83,7 @@ const newReservationsProcess = async (newValidStays, db = null) => {
                 if (email && !emailTracking.length) {
                     ++count;
                     console.log('sending email to '+  email + ' for reservation ' + stayData[0].roomStays[0].pmsId + ' from hotel ' + er.hotelId )
-                    await renderAndSendEmail(MAILTYPES.START, stayData[0], hotels[er.hotelId]);
+                    await renderAndSendEmail(MAILTYPES.START, er.hotelId, stayData[0], hotels[er.hotelId]);
                 } else if (email && emailTracking.length) {
                     console.log('email to '+  email + ' for reservation ' + stayData[0].roomStays[0].pmsId + ' from hotel ' + er.hotelId + " was already sent")
                 } else if (!email) {

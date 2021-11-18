@@ -10,24 +10,10 @@ const { makeEmailValues, makeQrCode, makeUnlimitedToken } = require('../Utilitie
 const sendEmail = async (type, booking, hotelId) => {
     try {
         const eh = await getHotelDetails(hotelId);
-        /*const eh = new Enzo.EnzoHotel({
-            hotelId: hotelId,
-            name: hotelDetails.hotel_name, 
-            email: hotelDetails.hotel_email, 
-            phone: hotelDetails.hotel_phone,  
-            website: hotelDetails.hotel_email, 
-            address: new Enzo.Address({ 
-                address1:   hotelDetails.hotel_address, 
-                postCode: hotelDetails.hotel_postcode, 
-                city: hotelDetails.hotel_city,
-                country: hotelDetails.hotel_country,
-            }),
-            logo: hotelDetails.hotel_logo, 
-        });*/
-        const values = await makeEmailValues(type, booking, eh);
+        const values = await makeEmailValues(type, hotelId, booking, eh);
         const emailTrack = await getEmailTracking(hotelId, booking.pmsId, type);
         let mailObject = emailTrack.length ? emailTrack[0] : null;
-        return await renderAndSendEmail(type, values, mailObject, true);
+        return await renderAndSendEmail(type, hotelId, values, null, mailObject, true);
     }catch (err) {
         console.log(err);
         throw err;
@@ -39,10 +25,10 @@ const getEmailType = async (req, res, next) => {
     try {
         const hotelDetails = await getHotelDetails(hotelId);
         const booking = await getReservations(hotelId, bookingId);
-        const values = await makeEmailValues(type, booking, hotelDetails);
+        const values = await makeEmailValues(type, hotelId, booking, hotelDetails);
         const emailTrack = await getEmailTracking(hotelId, booking.pmsId, type);
         let mailObject = emailTrack ? emailTrack[0] : null;
-        await renderAndSendEmail(type, values, mailObject, true);
+        await renderAndSendEmail(type, hotelId, values, mailObject, true);
         return res.status(200).send(values.token)
     }catch (err) {
         console.log(err);
@@ -108,18 +94,14 @@ const getQrFromToken = async (req, res, next) => {
         const token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
         if (!token) throw new Error('no token') ; 
         const decoded = jwt.decode(token);
-        let reservation, roomStay;
-        const booking = await getReservations(decoded.hotelId, decoded.bookingId);
-        if (!booking) throw new Models.NotFound() ;
+        let reservation, roomstay;
+        const booking = await getReservations(decoded.hotelId, decoded.reservationId);
+        if (!booking.length) throw new Models.NotFound() ;
         if (booking.length) reservation = new Enzo.EnzoReservation(booking[0]);
-        roomStay = reservation.roomStays[0];
+        roomstay = reservation.roomStays[0];
         //TO DO  verification on token  
-        let email = roomStay.guests.length  && roomStay.guests[0].email ? roomStay.guests[0].email : reservation.booker.email;
-        let firstName = roomStay.guests.length && roomStay.guests[0].firstName ? roomStay.guests[0].firstName : reservation.booker.firstName;
-        let lastName = roomStay.guests.length && roomStay.guests[0].lastName ? roomStay.guests[0].lastName : reservation.booker.lastName;
-       
-        await sendEmail(MAILTYPES.QR, reservation, decoded.hotelId);
-        const dataUrl = await makeQrCode(decoded.hotelId, reservation.pmsId, firstName, lastName);
+          await sendEmail(MAILTYPES.QR, reservation, decoded.hotelId);
+        const dataUrl = await makeQrCode(decoded.hotelId, roomstay);
         return res.send(dataUrl);
     }catch (err) {
         console.log(err);

@@ -28,9 +28,7 @@ const getReservations = async (hotelId = null, reservationId = null, conf = null
                     pmsUser: row.pms_user, 
                     pmsPwd: row.pms_pwd
                 });
-            } 
-            console.log(JSON.stringify(row))
-         
+            }          
             if (hotelId && row.hotelId != hotelId) { continue; }
             
             const reservationsRequest = await pmsApi.getReservationData({ 
@@ -254,19 +252,19 @@ const getHotelPmsInfo = async (hotelId, startDate, endDate, db = null) => {
         //            endDate  
         //        });
         //
-        const hotelDetails = await db.getHotelDetails(hotelId);
-        const hotel = new Enzo.EnzoHotel({ 
-            hotelId: hotelId, 
-            name: hotelPms.hotel_name, 
-            phone: hotelDetails.phone,
-            email: hotelDetails.email, 
-            website: hotelDetails.website,
-            address: hotelDetails.address, 
-            logo: hotelDetails.logo, 
-            images: [ hotelDetails.image ], 
-            checkInTime: hotelDetails.checkInTime, 
-            checkOutTime: hotelDetails.checkOutTime 
-        });
+        const hotel = await db.getHotelDetails(hotelId);
+        // const hotel = new Enzo.EnzoHotel({ 
+        //     hotelId: hotelId, 
+        //     name: hotelDetails.hotel_name, 
+        //     phone: hotelDetails.phone,
+        //     email: hotelDetails.email, 
+        //     website: hotelDetails.website,
+        //     address: hotelDetails.address, 
+        //     logo: hotelDetails.logo, 
+        //     images: [ hotelDetails.image ], 
+        //     checkInTime: hotelDetails.checkInTime, 
+        //     checkOutTime: hotelDetails.checkOutTime 
+        // });
         const hotelStay = new Enzo.EnzoHotelStay({ hotel });
         return hotelStay;
     } catch (e) {
@@ -332,19 +330,19 @@ const getHotelAvailabilities = async (hotelId, startDate, endDate, db = null) =>
         //            endDate  
         //        });
         //
-        const hotelDetails = await db.getHotelDetails(hotelId);
-        const hotel = new Enzo.EnzoHotel({ 
-            hotelId: hotelId, 
-            name: hotelPms.hotel_name, 
-            phone: hotelDetails.phone,
-            email: hotelDetails.email, 
-            website: hotelDetails.website,
-            address: hotelDetails.address, 
-            logo: hotelDetails.logo, 
-            images: [ hotelDetails.image ], 
-            checkInTime: hotelDetails.checkInTime, 
-            checkOutTime: hotelDetails.checkOutTime 
-        });
+        const hotel = await db.getHotelDetails(hotelId);
+        // const hotel = new Enzo.EnzoHotel({ 
+        //     hotelId: hotelId, 
+        //     name: hotelPms.hotel_name, 
+        //     phone: hotelDetails.phone,
+        //     email: hotelDetails.email, 
+        //     website: hotelDetails.website,
+        //     address: hotelDetails.address, 
+        //     logo: hotelDetails.logo, 
+        //     images: [ hotelDetails.image ], 
+        //     checkInTime: hotelDetails.checkInTime, 
+        //     checkOutTime: hotelDetails.checkOutTime 
+        // });
         const hotelStay = new Enzo.EnzoHotelStay({ hotel });
         return hotelStay;
     } catch (e) {

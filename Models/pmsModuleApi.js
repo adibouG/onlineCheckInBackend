@@ -61,9 +61,10 @@ class PmsModuleApi extends AsyncResource {
                 if (pmsPwd) params.set('pmsPwd', pmsPwd);
                 apiUrl.search = params;
                 const request = await axios.get(apiUrl.toString()/*, { validateStatus: s => (s < 500) }*/);
+                console.log('PmsModuleApi.getReservationData end...  pmsId:' , pmsId )
                 return request.data;            
             } catch(e) {
-                console.error(e);
+                console.error(e.message);
                 throw e;
             }
         }

@@ -526,7 +526,15 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
                 query1result = await client.query(query1);
             }
             client.release();
-            return query1result.rows;;
+            return query1result.rows.map(r => new Models.EmailTracking({
+                reservationId: r.reservation_id,
+                hotelId: r.hotel_id, 
+                emailType: r.email_type, 
+                sentDate: r.success_sent_date, 
+                sendingDate: r.original_sending_date, 
+                messageId: r.message_id, 
+                attempts: r.attempts
+             })); 
         }catch(e) {
             console.log(e);
             throw e;
@@ -541,7 +549,16 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             query1 = 'SELECT * from email_tracking WHERE message_id = $1' ;
             query1result = await client.query(query1, [messageId]);
             client.release();
-            return query1result.rows;
+            let mailTracks =  query1result.rows.map(r => new Models.EmailTracking({
+                reservationId: r.reservation_id,
+                hotelId: r.hotel_id, 
+                emailType: r.email_type, 
+                sentDate: r.success_sent_date, 
+                sendingDate: r.original_sending_date, 
+                messageId: r.message_id, 
+                attempts: r.attempts
+             })); 
+            return mailTracks;   
         }catch(e) {
             console.log(e);
             throw e;
