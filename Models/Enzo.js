@@ -84,9 +84,9 @@ class Address {
 
 
 class Company {
-    constructor({ pmsId = null, name = {}, address = {}, email = null, phone = null, note = null } = {}) {
+    constructor({ pmsId = null, name = null, address = null, email = null, phone = null, note = null } = {}) {
         this.pmsId = pmsId  ;
-        this.name = Object.values(name).length ? new LocalText(name) : null ;
+        this.name = name ? new LocalText(name) : null ;
         this.address = address ? new Address(address) : null; 
         this.email = email;
         this.phone = phone;
@@ -210,7 +210,7 @@ class EnzoHotelStay {
         this.roomTypes = roomTypes.map(r => new EnzoRoomType(r)); 
         this.roomFeatures = roomFeatures.map(r => new EnzoRoomFeature(r));
         this.ratePlans = ratePlans.map(r => new EnzoRatePlan(r));
-        this.options = options.map(r => new EnzoOption(r));
+        this.options = options.map(r => new EnzoAvailableOption(r));
         this.optionGroups = optionGroups.map(r => new EnzoOptionGroup(r));
         this.folioItemGroups = folioItemGroups.map(r => new EnzoFolioItemGroup(r));
         this.minibar = minibar ? new EnzoMinibar(minibar) : null;
@@ -254,13 +254,13 @@ class EnzoReservation  {
         HOTELBEDS: "Hotelbeds",
         OTHER: "Other"
     };
-    constructor({ pmsId = null, booker = {}, bookerIsMember = false,
-        bookingChannel = EnzoReservation.BOOKING_CHANNELS.DIRECT,
+    constructor({ pmsId = null, booker = {}, bookerCompany = null,
+        bookingChannel = EnzoReservation.BOOKING_CHANNELS.OTHER,
         roomStays = [] } = {}) 
     {
         this.pmsId = pmsId;
         this.booker = new EnzoBooker(booker);
-        this.bookerIsMember = bookerIsMember;
+        this.bookerCompany = bookerCompany;
         this.bookingChannel = EnzoReservation.BOOKING_CHANNELS_LIST.includes(bookingChannel) ? bookingChannel : null;
         this.roomStays = roomStays.map(r => new EnzoRoomStay(r));
     }
@@ -302,12 +302,13 @@ class EnzoRoomStay  {
     };
 
     constructor({ pmsId = null, bookingId = null, 
-        expectedArrival = null, expectedDeparture = null, finalArrival = null, finalDeparture = null, 
+        expectedArrival = null, finalArrival = null,
+        expectedDeparture = null, finalDeparture = null, 
         numberOfNights = 0, dayUse = false, numberOfGuests = 0, numberOfAdults = 0, numberOfChildren = 0, numberOfInfants = 0,
         primaryGuestIsMember = false, primaryGuestIsVIP = false, primaryGuestAcceptedHotelPolicies = false,
         primaryGuestAcceptedGdprRules = false, primaryGuestAllowsEmailMarketing = false,
         status = EnzoRoomStay.STAY_STATUS.UNKNOWN, purposeOfStay = EnzoRoomStay.STAY_PURPOSE.LEISURE,
-        folios = [], guests = [],
+        folios = [], guests = [], 
         roomId = null, ratePlanId = null, roomTypeId = null,
         availableRoomIds = [], availableRoomTypeIds = [],
         availableOptionIds = [], preBookedOptionIds = [], addedOptionIds = [],
@@ -317,6 +318,7 @@ class EnzoRoomStay  {
         this.bookingId = bookingId;
         this.status = status;
         this.expectedArrival = expectedArrival ;
+        //this.estimatedTimeOfArrival = estimatedTimeOfArrival ;
         this.finalArrival = finalArrival ; 
         this.numberOfNights = numberOfNights ; 
         this.dayUse = dayUse ; 
@@ -623,21 +625,14 @@ class EnzoRoomFeature {
 class EnzoBooker {
     constructor({ pmsId = null,
         firstName = null, lastName = null, fullName = null,
-        email = null, address = null, phone= null, language = null,
-        nationality = null, identification = null, note = null, 
-        company = null } = {}) 
+        email = null, phone= null, note = null } = {}) 
     {
         this.pmsId = pmsId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.fullName = fullName;
-        this.address = address && Object.values(address).length > 0 ? new Address(address) : null;
-        this.language = language;        
-        this.nationality = nationality;        
-        this.identification = identification ? new EnzoGuestIdentification(identification) : null;
         this.email = email;
         this.phone = phone;
-        this.company = company ? new Company(company) : null;
         this.note = note;
     }
 }
@@ -930,6 +925,7 @@ class EnzoAvailableOption {
 
     static PRICING_METHOD = {
         PERDAY:"PerDay",
+        PERITEM: "PerItem",
         PERNIGHT: "PerNight", 
         PERSTAY: "PerStay",
         PERGUEST: "PerGuest",
@@ -1083,6 +1079,7 @@ module.exports = {
     EnzoFolioItemGroup,
     EnzoFolioTax,
     EnzoFolio,
+    EnzoBooker,
     EnzoGuest,
     EnzoGuestIdentification,
     EnzoHotel,

@@ -18,15 +18,6 @@ const isItTracked = (reservation, hotelId, emailTrackingList) => {
     let isTracked = false;
     if (!emailTrackingList) return false;
     for (let trckObj of emailTrackingList) {
-        // const trckObj = new Models.EmailTracking({ 
-        //     reservationId: track.reservation_id,
-        //     hotelId: track.hotel_id, 
-        //     emailType: track.email_type, 
-        //     sentDate: track.success_sent_date, 
-        //     sendingDate: track.original_sending_date, 
-        //     messageId: track.message_id, 
-        //     attempts: track.attempts 
-        // });
         if (trckObj.reservationId == reservation.pmsId && trckObj.hotelId == hotelId) {
             isTracked = true; 
             break;
@@ -232,6 +223,7 @@ const getDay = (d , loc = false) => new Date(d).toLocaleDateString(loc, { weekda
 
 const resetBookingState = (book) => {
 
+
     if (isPreCheckedBooking(book)) {
         book.status = 'waitingForGuest';
         book.primaryGuestIsMember = false;
@@ -241,14 +233,14 @@ const resetBookingState = (book) => {
         book.wifi = null;
         book.qrCode = null;
         bool.folios = [];
-        let f = new Enzo.EnzoFolio();
-       
-        f.totalCost = Math.floor(Math.random() * 5000)
-        f.alreadyPaid = 0;
-        f.remainingToPay = f.totalCost;
-        f.taxIncluded = 0;
-        f.name = new Enzo.LocalText({ 'en' : 'booking bill'});
-        let i = new Enzo.EnzoFolioItem();
+        const amount = ((Math.floor(Math.random() * 10000)) / 100); 
+        const tax = ((Math.floor(Math.random() * 10000)) / 100);         const f = new Enzo.EnzoFolio({
+            type: EnzoFolio.FOLIO_TYPES.CHARGE, 
+            totalCosts: amount,
+            alreadyPaid: 0, 
+            remainingToPay: amount
+        });
+        const i = new Enzo.EnzoFolioItem();
         i.type = Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.CHARGE;
         i.totalAmount = f.totalCost;
         i.unitAmount = f.totalCost;

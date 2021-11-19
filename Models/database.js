@@ -220,27 +220,28 @@ class Database extends AsyncResource {
         try {
             client = await pgPool.connect();
             //get hotel details
-            query1 = 'SELECT a.*, b.hotel_name as hotel from hotel_details a JOIN hotel b ON a.hotel_id = b.hotel_id WHERE b.hotel_id = $1'  ;
+            query1 = 'SELECT * from hotel_details WHERE hotel_id = $1'  ;
             query1result = await client.query(query1, [hotelId]) ;
             client.release();
-           const images = [];
-            let hd = query1result.rows[0];
-            return  new Enzo.EnzoHotel({ 
+          
+            let hd = query1result.rows.map(hd => new Enzo.EnzoHotel({ 
                 name: hd.hotel_name,
                 email: hd.hotel_email, 
                 phone: hd.hotel_phone,
                 address: new Enzo.Address({ 
-                    address1: hd.hotel_address,
+                    address1: hd.hotel_address1,
+                    address2: hd.hotel_address2,
                     country: hd.hotel_country,
                     postcode: hd.hotel_postcode, 
                     city: hd.hotel_city 
                 }), 
-                logo: hd.hotel_logo,
+                logo: new Enzo.Image({ source: hd.hotel_logo }),
                 website: hd.hotel_website,
-                images:  images , 
+                images:  [],
                 checkInTime: hd.hotel_checkin_time, 
                 checkOutTime: hd.hotel_checkout_time  
-            });
+            }));
+            return hotelId ? hd[0] : hd; 
         }catch(e) {
             console.log(e);
             throw e;

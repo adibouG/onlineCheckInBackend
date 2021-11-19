@@ -89,12 +89,12 @@ const postReservations = async (hotelId, reservationId, data, db = null, pms = n
 };
 
 const getBookingFromEmail = async (email) => {
-    let hotelID = 1; 
+    let hotelId = 1; 
     let bookings = []; 
     let validEmail = email.length > 0 || false;
     try {
         if (!email || !validEmail) throw new Errors.EnzoError('no email or invalid email');
-        let results = await getReservations(hotelID);
+        let results = await getReservations(hotelId);
         results.map( er  => {
             if (er.roomStays.length && er.roomStays[0].guests.length && er.roomStays[0].guests[0].email === email) bookings.push(er) ;
             else if ( er.booker.email === email) bookings.push(er) ;
@@ -290,22 +290,7 @@ const getHotelOffers = async (hotelId, startDate, endDate, db = null, pmsAccess 
                     startDate, 
                     endDate  
                 });
-        
-       
-        // const hotel = new Enzo.EnzoHotel({ 
-        //     hotelId: hotelId, 
-        //     name: hotelPms.hotel_name, 
-        //     phone: hotelDetails.phone,
-        //     email: hotelDetails.email, 
-        //     website: hotelDetails.website,
-        //     address: hotelDetails.address, 
-        //     logo: hotelDetails.logo, 
-        //     images: [ hotelDetails.image ], 
-        //     checkInTime: hotelDetails.checkInTime, 
-        //     checkOutTime: hotelDetails.checkOutTime 
-        // });
-        // const hotelStay = new Enzo.EnzoHotelStay({ hotel });
-        return hotelOffers;
+        return new Enzo.EnzoHotelStay(hotelOffers);
     } catch (e) {
         console.log(e);
         throw e;

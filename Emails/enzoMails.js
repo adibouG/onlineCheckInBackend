@@ -46,7 +46,7 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
             "messageId": `${messageId}`,
             "subject": `${TITLE}`,
             "to": [mail],
-            "cc": ['ad.gonzalezoliva@gmail.com', 'adrien@enzosystems.com']
+            "cc": ['ad.gonzalezoliva@gmail.com']
         }); 
     
 }

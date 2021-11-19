@@ -2,14 +2,13 @@ const Errors = require('../Models/errors.js');
 const Enzo = require('../Models/Enzo.js');
 const helpers = require('../Helpers/helpers.js');
 const jwt = require('jsonwebtoken') ;
-const {  verifyToken, setCheckBooking } = require('../Utilities/utilities.js');
+const { verifyToken, setCheckBooking } = require('../Utilities/utilities.js');
 const { winstonLogger } = require('../Logger/loggers.js');
 const { FINAL_STEP } = require('../settings.json');
 //Request a booking route controller (from token contained in email link acyually)
 const getBookingFromToken = async (req, res) => {
     
     let token = null;
-    let hotelStay = {};
     let booking = null;
     let hotelAppSettings = null;
     try {
@@ -21,7 +20,7 @@ const getBookingFromToken = async (req, res) => {
         //get data and verify the token
         //TODO make a token verification function security check : algo, sign, iss ...
         const decoded = jwt.decode(token); 
-        const { uuid, hotelId, reservationId, email, steps } = decoded;
+        const { hotelId, reservationId } = decoded;
         if (!token || !hotelId || !reservationId) throw new Errors.EnzoError('no valid token');
         booking = await helpers.getReservations(hotelId, reservationId);
         if (!booking.length) throw new Errors.NotFound() ;        
@@ -29,8 +28,28 @@ const getBookingFromToken = async (req, res) => {
         const roomStay = reservation.roomStays[0];
         //token was signed using the reservation state in order to make it only 1 time use 
         verifyToken(token, roomStay); 
-        hotelStay = await helpers.getHotelOffers(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
+        const hotelStay = await helpers.getHotelOffers(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
+        
+        const  availableRoomTypeIds = [];
+        const  availableOptionIds = [];
+        const availableRoomId = hotelStay.rooms.map(r => {
+            if(r.status === Enzo.EnzoRoom.ROOM_STATUS.CLEAN) {
+                if (!availableRoomTypeIds.includes(r.roomTypeId)) {
+                    availableRoomTypeIds.push(r.roomTypeId);
+                }
+                return r.pmsId;
+            }
+        });
+                    
+        hotelStay.options.map( o => {
+            availableOptionIds.push(o.pmsId);
+        });
+        reservation.roomStays[0].availableOptionIds = availableOptionIds;
+        reservation.roomStays[0].availableRoomTypeIds = availableRoomTypeIds;
+        reservation.roomStays[0].availableRoomIds = availableRoomIds;
+    
         hotelStay.reservation = reservation;
+
         //get HotelPolicies screens values into the  booking
         return res.status(200).send(hotelStay);
     } catch(e) {
