@@ -32,7 +32,7 @@ const getBookingFromToken = async (req, res) => {
         
         const  availableRoomTypeIds = [];
         const  availableOptionIds = [];
-        const availableRoomId = hotelStay.rooms.map(r => {
+        const availableRoomIds = hotelStay.rooms.map(r => {
             if(r.status === Enzo.EnzoRoom.ROOM_STATUS.CLEAN) {
                 if (!availableRoomTypeIds.includes(r.roomTypeId)) {
                     availableRoomTypeIds.push(r.roomTypeId);
