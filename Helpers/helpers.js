@@ -238,35 +238,9 @@ const getHotelPmsInfo = async (hotelId, startDate, endDate, db = null) => {
     console.log("Start helper process: get hotel Stays....");
     try{
         //Call the db to get the list of hotel clients and their pmsData
-        db = db || new Database(hotelId);
-        const hotelPms = await db.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
-        const pmsApi = new PmsModuleApi(hotelId); //we use 1 generic manager (no hotelID) that will do request for each hotel 
-        //get the hotel data from the pmsAPI
-        
-        //const hotelData = await pmsApi.getHotelData({ 
-        //            pmsId:  hotelPms.pms_id,
-        //            pmsUrl:  hotelPms.pms_url, 
-        //            pmsUser:  hotelPms.pms_user,
-        //            pmsPwd:  hotelPms.pms_pwd,
-        //            startDate, 
-        //            endDate  
-        //        });
-        //
+        db = db || new Database(hotelId);        //get the hotel data from the pmsAPI
         const hotel = await db.getHotelDetails(hotelId);
-        // const hotel = new Enzo.EnzoHotel({ 
-        //     hotelId: hotelId, 
-        //     name: hotelDetails.hotel_name, 
-        //     phone: hotelDetails.phone,
-        //     email: hotelDetails.email, 
-        //     website: hotelDetails.website,
-        //     address: hotelDetails.address, 
-        //     logo: hotelDetails.logo, 
-        //     images: [ hotelDetails.image ], 
-        //     checkInTime: hotelDetails.checkInTime, 
-        //     checkOutTime: hotelDetails.checkOutTime 
-        // });
-        const hotelStay = new Enzo.EnzoHotelStay({ hotel });
-        return hotelStay;
+        return new Enzo.EnzoHotelStay({ hotel });
     } catch (e) {
         console.log(e);
         throw e;
@@ -302,34 +276,10 @@ const getHotelAvailabilities = async (hotelId, startDate, endDate, db = null) =>
     try{
         //Call the db to get the list of hotel clients and their pmsData
         db = db || new Database(hotelId);
-        const hotelPms = await db.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
-        const pmsApi = new PmsModuleApi(hotelId); //we use 1 generic manager (no hotelID) that will do request for each hotel 
         //get the hotel data from the pmsAPI
-        
-        //const hotelData = await pmsApi.getHotelData({ 
-        //            pmsId:  hotelPms.pms_id,
-        //            pmsUrl:  hotelPms.pms_url, 
-        //            pmsUser:  hotelPms.pms_user,
-        //            pmsPwd:  hotelPms.pms_pwd,
-        //            startDate, 
-        //            endDate  
-        //        });
-        //
         const hotel = await db.getHotelDetails(hotelId);
-        // const hotel = new Enzo.EnzoHotel({ 
-        //     hotelId: hotelId, 
-        //     name: hotelPms.hotel_name, 
-        //     phone: hotelDetails.phone,
-        //     email: hotelDetails.email, 
-        //     website: hotelDetails.website,
-        //     address: hotelDetails.address, 
-        //     logo: hotelDetails.logo, 
-        //     images: [ hotelDetails.image ], 
-        //     checkInTime: hotelDetails.checkInTime, 
-        //     checkOutTime: hotelDetails.checkOutTime 
-        // });
-        const hotelStay = new Enzo.EnzoHotelStay({ hotel });
-        return hotelStay;
+        return new Enzo.EnzoHotelStay({ hotel });
+
     } catch (e) {
         console.log(e);
         throw e;

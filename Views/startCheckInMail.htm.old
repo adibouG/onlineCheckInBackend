@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
+<html xmlns='https://www.w3.org/1999/xhtml' lang='en' xml:lang='en' xmlns:v='urn:schemas-microsoft-com:vml' xmlns:o='urn:schemas-microsoft-com:office:office'>
+
+<head></head>
+
+<head>
+
+<meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
+<!--[if !mso]><!-->
+<meta http-equiv='X-UA-Compatible' content='IE=edge'>
+<!--<![endif]-->
+<meta name='viewport' content='width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0'>
+<title>Email invitation for online pre-check-in</title>
+
+<meta name='x-apple-disable-message-reformatting' />
+
+<style type='text/css'>
+
+* {box-sizing: border-box; margin: 0; padding: 0; user-select: none;}
+
+html {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-spacing: 0px;
+    border-collapse: collapse;
+    vertical-align: top;
+}
+
+
+a:active {
+      text-decoration: none !important;
+      color: inherit !important;
+}
+
+
+table {
+    border-collapse: collapse;
+    mso-table-lspace: 0pt;
+    mso-table-rspace: 0pt;
+}
+
+.tablescale {
+    width:550px; 
+}
+
+img {     
+    display: block;
+}
+
+a[x-apple-data-detectors='true'] {
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+
+@media only screen and (max-width: 550px) {
+
+    .tablescale {
+        width: 100% !important;
+        margin-top: 0px;
+    }
+
+    .mobileImg {
+        width: 100%!important;
+        min-width: 100%!important;
+        max-width: 1000px!important;
+        height: auto!important;
+    }
+}
+
+
+
+</style>
+
+<!--[if gte mso 9]><xml>
+<o:OfficeDocumentSettings>
+<o:AllowPNG/>
+<o:PixelsPerInch>96</o:PixelsPerInch>
+</o:OfficeDocumentSettings>
+</xml><![endif]-->
+
+
+</head>
+
+
+
+
+<body style='background-color: #ffffff; margin: 0; padding: 0; user-select: none;'>
+            
+
+<table class='tablescale' align='center' cellpadding='0' cellspacing='0' style='background-color: rgb(255, 255, 255); border: 0; margin-left: auto; margin-right:auto; font-family: open sans, -apple-system, Arial, Helvetica, sans-serif; '>
+
+    <tr><td style='background-color: #ed7829; height:50px;'>
+        <table align='center' cellpadding='0' cellspacing='0' style='border: 0; border-collapse: collapse; border-spacing: 0px; background-color: #ed7829; width:100%; color:#ffffff; text-align: center;'>
+            <tr><td style='font-size: 16px; font-weight: lighter; padding: 10px 10px 5px;'>Your stay</td></tr>
+            <tr><td style='font-size: 24px; font-weight: bold; padding: 0px 10px;'><span id='checkInDate'>#checkDates#</span></td></tr> 
+            <tr><td style='font-size: 16px; font-weight: lighter; padding: 5px 10px 10px;'>booking <span id='checkInTime'>#booking#</span></td></tr> 
+        </table>
+    </td></tr>
+    <tr><td  class='header' style=''>
+        <img class='mobileImg' width='100%' height='100%' src='data:image/png;base64, #base64Image#' >
+
+    </td></tr>
+
+  
+    <tr><td>
+        <table cellpadding='0' cellspacing='0' style='border: 0; text-align: center; margin: auto;'>
+            <tr><td style='height: 25px'></td></tr>        
+            <tr><td style='font-size: 32px; font-weight: bold; padding: 0px 10px 10px;'>Hello <span id='guestFullName'>#guestFullName#</span>!</td></tr>
+            <tr><td style='font-size: 18px; font-weight: normal; padding: 10px 10px 40px;'>
+                Your stay in our hotel is due soon and to make your check-in as fast and smooth as possible, please consider using our online pre-check-in facility.</td></tr>
+            <tr><td align='center'>
+                
+                <a href='#app_url#?token=#token#&name=#guestLinkName#&hotel=#hotelId#' target='_blank' style='text-decoration:none !important; text-decoration:none; background-color: #ed7829 ;border-radius: 10px; -webkit-border-radius: 10px; -moz-border-radius: 10px; font-family: Helvetica, Arial, sans-serif;font-size: 28px; color: #ffffff; font-weight: bold; display: inline-block; border: solid #ed7829 10px; '>&nbsp;&nbsp;&nbsp;Pre-check-in&nbsp;&nbsp;&nbsp;</a>
+            
+            </td></tr>
+            <tr><td style='height:30px;'></td></tr> 
+
+            <tr><td style='color: #ed7829; font-size: 16px; font-weight: bold; line-height: 25px; padding: 0px 10px;'>How it works</td></tr>
+            <tr><td style='height: 15px;'></td></tr>
+            <tr><td style='color: #ed7829; font-size: 16px; font-weight: normal; line-height: 25px; padding: 0px 10px;'>Press the 'Pre-check-in' button</td></tr>
+            <tr><td style='color: #ed7829; font-size: 16px; font-weight: normal; line-height: 25px; padding: 0px 10px;'>Fill in your details and receive your QR-code confirmation</td></tr>
+            <tr><td style='height: 15px;'></td></tr>
+            <tr><td style='color: #ed7829; font-size: 16px; font-weight: normal; line-height: 25px; padding: 0px 10px;'>Look in the hotel lobby for the key pick up kiosk</td></tr>
+            <tr><td style='color: #ed7829; font-size: 16px; font-weight: normal; line-height: 25px; padding: 0px 10px;'>Scan your QR-code to get your room key</td></tr>
+            <tr><td style='height: 15px;'></td></tr>
+            <tr><td style='color: #ed7829; font-size: 16px; font-weight: normal; line-height: 25px; padding: 0px 10px;'>Enjoy your stay!</td></tr>
+            <tr><td style='height: 30px;'></td></tr>  
+         
+        </table>
+    </td></tr>
+
+  
+    <tr><td style='background-color: #ed7829;'>
+        <table align='center' cellpadding='0' cellspacing='0' style='color:#ffffff; border: 0; width: 100%; text-align: center;'>
+            <tr><td style='font-size: 24px; font-weight: 600; padding: 15px 10px 5px;'><span id='hotelName'>#hotelName#</span></td></tr>
+            <tr><td style='font-size: 16px; font-weight: 200; padding: 0px 10px'><span id='hotelAddress'>#hotelAddress#</span> - <span id='hotelPostcode'>#hotelPostcode#</span> <span id='hotelCity'>#hotelCity#</span> - <span id='hotelCountry'>#hotelCountry#</span></td></tr>
+            <tr><td style='font-size: 16px; font-weight: 200; padding: 0px 10px 15px;'><span  id='hotelPhone'>#hotelPhone#</span> - <span id='hotelEmail'>#hotelEmail#</span></td></tr>
+        </table>
+    </td></tr>
+</table>
+
+</body>
+</html>

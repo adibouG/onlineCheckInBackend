@@ -30,10 +30,12 @@ const getBookingFromToken = async (req, res) => {
         verifyToken(token, roomStay); 
         const hotelStay = await helpers.getHotelOffers(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
         
+        const availableRoomIds = [];
         const  availableRoomTypeIds = [];
         const  availableOptionIds = [];
-        const availableRoomIds = hotelStay.rooms.map(r => {
+        hotelStay.rooms.map(r => {
             if(r.status === Enzo.EnzoRoom.ROOM_STATUS.CLEAN) {
+                availableRoomIds.push(r.pmsId);
                 if (!availableRoomTypeIds.includes(r.roomTypeId)) {
                     availableRoomTypeIds.push(r.roomTypeId);
                 }

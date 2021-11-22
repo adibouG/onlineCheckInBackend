@@ -232,26 +232,18 @@ const resetBookingState = (book) => {
         book.primaryGuestAllowsEmailMarketing = false;
         book.wifi = null;
         book.qrCode = null;
-        bool.folios = [];
-        const amount = ((Math.floor(Math.random() * 10000)) / 100); 
-        const tax = ((Math.floor(Math.random() * 10000)) / 100);         const f = new Enzo.EnzoFolio({
-            type: EnzoFolio.FOLIO_TYPES.CHARGE, 
-            totalCosts: amount,
-            alreadyPaid: 0, 
-            remainingToPay: amount
-        });
-        const i = new Enzo.EnzoFolioItem();
-        i.type = Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.CHARGE;
-        i.totalAmount = f.totalCost;
-        i.unitAmount = f.totalCost;
-        i.numberOfUnits = 1;
-        i.name = new Enzo.LocalText({ 'en' : 'booking bill'});
+        book.folios.remainingToPay =  book.folios.totalCosts;
+        book.folios.alreadyPaid = 0 ;
 
-        f.folioItems.push(i);
-           
-        book.folios.push(f);
-    } 
-    
+     //   const amount = ((Math.floor(Math.random() * 10000)) / 100); 
+     //   const tax = ((Math.floor(Math.random() * 10000)) / 100);
+     book.folios.folioItems.forEach((item, idx) => {
+         if (item.type === Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.PAYMENT) {
+            book.folios.folioItems.splice(idx, 1);
+         }
+     });
+     
+    }
     book.guests = book.guests.map(g => resetGuest(g));
 
     return book ;

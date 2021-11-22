@@ -232,8 +232,8 @@ class EnzoHotelStay {
         "roomFeatures": {"type": "array", "title": "Room features", "items": {"$ref": "/schemas/hotel/room_feature"}},
         "ratePlans": {"type": "array", "title": "Rate plans", "items": {"$ref": "/schemas/hotel/rate_plan"}},
         "optionGroups": {"type": "array", "title": "Option groups", "items": {"$ref": "/schemas/hotel/option_group"}},
-        "options": {"type": "array", "title": "Options", "items": {"$ref": "/schemas/hotel/option"}},
         "folioItemGroups": {"type": "array", "title": "Folio item groups", "items": {"$ref": "/schemas/hotel/folio_item_group"}},
+        "options": {"type": "array", "title": "Options", "items": {"$ref": "/schemas/hotel/option"}},
         "minibar": {"$ref": "/schemas/hotel/minibar"}
     }
 }
@@ -260,7 +260,7 @@ class EnzoReservation  {
     {
         this.pmsId = pmsId;
         this.booker = new EnzoBooker(booker);
-        this.bookerCompany = bookerCompany;
+        this.bookerCompany = bookerCompany ? new Company(bookerCompany) : null;
         this.bookingChannel = EnzoReservation.BOOKING_CHANNELS_LIST.includes(bookingChannel) ? bookingChannel : null;
         this.roomStays = roomStays.map(r => new EnzoRoomStay(r));
     }
@@ -851,6 +851,10 @@ class EnzoFolioItemGroup {
 }
 /*
 // folioItemGroup
+"optionGroups": {"type": "array", "title": "Option groups", "items": {"$ref": "/schemas/hotel/option_group"}},
+        
+"folioItemGroups": {"type": "array", "title": "Folio item groups", "items": {"$ref": "/schemas/hotel/folio_item_group"}},
+       
 {
     "$id": "https://enzosystems.com/schemas/hotel/folio_item_group",
     
