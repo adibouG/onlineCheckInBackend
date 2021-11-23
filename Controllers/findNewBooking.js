@@ -1,6 +1,5 @@
 const { Database } = require('../Models/database.js');
 const helpers = require('../Helpers/helpers.js');
-const Enzo = require('../Models/Enzo.js');
 const { renderAndSendEmail } = require('./emails.js');
 const { newReservationFilter } = require('../Utilities/utilities.js');
 const { MAILTYPES } = require('../Emails/enzoMails.js');

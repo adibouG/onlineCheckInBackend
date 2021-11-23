@@ -3,6 +3,7 @@ const { AsyncResource, executionAsyncId } = require('async_hooks');
 const axios = require('axios');
 const { addDay } = require('../Utilities/utilities.js');
 const { CHECKIN_REQUEST_START_DAY_OFFSET } = require('../settings.json');
+const { path } = require('../app.js');
 
 const PMS_API_BASEURL = process.env.PMS_API_BASEURL; 
 //Reservation time filter
@@ -26,7 +27,7 @@ class PmsModuleApi extends AsyncResource {
             this.endDate = end;
             this.filter = pmsTimefilter ? TIMEFILTER[pmsTimefilter.toUpperCase()] : TIMEFILTER.START ;
             //TODO: add values or token to secure the pms api access too
-        } 
+        }
     //get the reservation from
     async getReservationData({ reservationId = this.reservationId, 
                                 pmsId = this.pmsId, startDate = this.startDate, endDate = this.endDate, filter = this.filter,

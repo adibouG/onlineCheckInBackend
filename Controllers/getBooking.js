@@ -1,8 +1,8 @@
+const jwt = require('jsonwebtoken') ;
 const Errors = require('../Models/errors.js');
 const Enzo = require('../Models/Enzo.js');
 const helpers = require('../Helpers/helpers.js');
-const jwt = require('jsonwebtoken') ;
-const { verifyToken, setCheckBooking } = require('../Utilities/utilities.js');
+const { verifyToken, setCheckBooking, unlimitedTokenSign, startTokenSign } = require('../Utilities/utilities.js');
 const { winstonLogger } = require('../Logger/loggers.js');
 const { FINAL_STEP } = require('../settings.json');
 //Request a booking route controller (from token contained in email link acyually)
@@ -19,7 +19,7 @@ const getBookingFromToken = async (req, res) => {
         winstonLogger.info('received token :' + token);
         //get data and verify the token
         //TODO make a token verification function security check : algo, sign, iss ...
-        const decoded = jwt.decode(token); 
+        let decoded = jwt.decode(token);
         const { hotelId, reservationId } = decoded;
         if (!token || !hotelId || !reservationId) throw new Errors.EnzoError('no valid token');
         booking = await helpers.getReservations(hotelId, reservationId);
@@ -49,7 +49,7 @@ const getBookingFromToken = async (req, res) => {
         reservation.roomStays[0].availableOptionIds = availableOptionIds;
         reservation.roomStays[0].availableRoomTypeIds = availableRoomTypeIds;
         reservation.roomStays[0].availableRoomIds = availableRoomIds;
-    
+        if (reservation.hotelId) delete reservation.hotelId;
         hotelStay.reservation = reservation;
 
         //get HotelPolicies screens values into the  booking
@@ -97,8 +97,10 @@ const getBookings = async (req, res, next) => {
         const { hotelId, reservationId } = req?.params ;
 
         const hotelReservations = await helpers.getReservations(hotelId, reservationId);
-        if (!hotelReservations.length) return res.status(404).send(hotelReservations) ;
-        else if (reservationId) return res.status(200).send(hotelReservations[0]);
+        if (!hotelReservations.length) {
+            if (reservationId) return res.status(404).send({}) ;
+            return res.status(404).send([]) ;
+        } else if (reservationId) return res.status(200).send(hotelReservations[0]);
         else return res.status(200).send(hotelReservations);
     } catch(e) {
         let error = e;
