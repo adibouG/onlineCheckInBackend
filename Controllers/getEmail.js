@@ -69,7 +69,7 @@ const renderAndSendQrCode = async (req, res, next)  => {
 }
      
 const getToken = async (req, res, next) => {
-   let {reservationId, hotelId} = req?.query ;
+   let { reservationId, hotelId } = req?.query ;
    let booking;
    try {
         if (!reservationId) {

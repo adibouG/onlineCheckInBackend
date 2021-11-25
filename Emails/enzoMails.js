@@ -20,7 +20,6 @@ const TITLES = {
 const mailFormat = (type, message, mail, messageId, attach = null) => {
     let TITLE = '';
     let MESSAGE = '';
-    let FILE = '';
     
     const ATTACHMENTS = attach ? [{"content" : `${attach.toString()}`, "name": "image_attached.jpg"}] : null ;
     if (type === MAILTYPES.QR) {
@@ -38,7 +37,7 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
             "messageId": `${messageId}`,
             "subject": `${TITLE}`,
             "to": [mail],
-            "cc": ['ad.gonzalezoliva@gmail.com', 'adrien@enzosystems.com']
+            "cc": ['adrien@enzosystems.com']
         }) :
         ({
             "body": {"html": `${MESSAGE}`},
@@ -46,7 +45,7 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
             "messageId": `${messageId}`,
             "subject": `${TITLE}`,
             "to": [mail],
-            "cc": ['ad.gonzalezoliva@gmail.com']
+            "cc": ['adrien@enzosystems.com']
         }); 
     
 }
@@ -61,7 +60,7 @@ const sendEmailRequest = async (type, message, email, messageId, attach = null) 
         let result = await axios({ url: EMAIL_SERVICE_URL, method: 'POST', data: formattedMail });
         console.log('ok ', result.data) ;
         winstonLogger.info(`Email type ${type} was sent to ${email} for reservationId ${reservationId} with messageId ${messageId}`);
-        return result.data;
+        return result;
     } catch (err) {  
         console.log('ko ', err) ;
         winstonLogger.error(`Email type ${type} was NOT sent to ${email} for reservationId ${reservationId} with messageId ${messageId}`);

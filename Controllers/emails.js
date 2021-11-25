@@ -32,35 +32,39 @@ const renderAndSendEmail = async (type, hotelId, stayData, hotels, mailTracking 
         //call the express rendering engine for htm files define in app.js
         app.render(template, values, async (err, content) => {
             let mailTrack,  manager; 
+            if (err) throw err ;
             try{
                 manager = new Database();
-                mailTrack = mailTrackingObj; 
-                
-                    //add +1 to sending attempts
+                const mailTracking = await manager.getEmailInfo(mailTrackingObj.messageId); 
+                //add +1 to sending attempts
+                if (mailTracking.length) mailTrack = mailTracking[0];
+                else mailTrack = mailTrackingObj;
+                if (mailTrack.sentDate) return ; //sent successfully already , maybe another instance
                 mailTrack.attempts = mailTrack.attempts + 1;
-                if (err) throw err ;
                 //set the email attachment file for the image/qrCode from the base64 string or from the image file
                 //TO DO: import the image from the hotel settings 
                 const attach = type === MAILTYPES.QR ? values.base64qrCode : values.base64image ;
-                if (values.email && process.env.NODE_ENV !== 'production' && !values.email.toLowerCase().includes('@enzosystems.com'))  { return; }
-                await sendEmailRequest(type, content, values.email, mailTrackingObj.messageId, attach);
-                return 
+                if (values.email && process.env.NODE_ENV !== 'production' && !values.email.toLowerCase().includes('adrien@enzosystems.com'))  { return; }
+                const result = await sendEmailRequest(type, content, values.email, mailTrackingObj.messageId, attach);
+                if (result.status === 200) { mailTrack.sentDate = Date.now();}
+                return ;
             } catch (e) {
                 mailTrack.sentDate = null ;
                 console.log('renderAndSendEmail error ...', e);
                 //as an error was throw, we start the email errors checks by setting the intervalCheckID variable if it wasn't already
                 if (!intervalCheckId) return startCheckMailErrors() ;
-                throw e ; //TODO : Test => not sure we need to re-throw the error as it's handled and the response headers should be already sent 
+                //throw e ; //TODO : Test => not sure we need to re-throw the error as it's handled and the response headers should be already sent 
             } finally {
                 //if no db manager anymore, we get a new one. 
                 if (!manager) manager = new Database(); 
                 if (mailTrack.attempts > 1) {
                     console.log('renderAndSendEmail finally ...update emailTrack', mailTrack);
-                    return await manager.updateEmailTrackingInfo(mailTrack) ;
+                    await manager.updateEmailTrackingInfo(mailTrack) ;
                 } else {
                     console.log('renderAndSendEmail finally ...add emailTrack', mailTrack);
-                    return await manager.addEmailTrackingInfo(mailTrack);
+                    await manager.addEmailTrackingInfo(mailTrack);
                 }
+                return;
             }
         });
     } catch (e) {
@@ -81,37 +85,11 @@ const getEmailErrors = async () => {
         //otherwise for each email that wasn't sent
         for (let i = 0 ; i < results.length; i++) {
             let emailSentObject = results[i] ;
-            //make an EmailTracking Object 
-            /* const emailSentObject = new Models.EmailTracking({ 
-                    reservationId: item.reservation_id,
-                    hotelId: item.hotel_id, 
-                    emailType: item.email_type, 
-                    sentDate: item.success_sent_date,
-                    sendingDate: item.original_sending_date, 
-                    messageId: item.message_id,
-                    attempts: item.attempts 
-                }); */
              //get the reservation  
              const result = await helpers.getReservations(emailSentObject.hotelId, emailSentObject.reservationId);
              //get the hotel details  
              const enzoHotel = await manager.getHotelDetails(emailSentObject.hotelId);
-             //generate the email template values 
-             /*const enzoHotel = new Enzo.EnzoHotel({
-                 hotelId: hd.hotel_id,  
-                 hotel: hd.hotel,
-                 name: hd.hotel_name,
-                 email: hd.hotel_email, 
-                 phone: hd.hotel_phone,
-                 address: { 
-                     addressLine1: hd.hotel_address,
-                     country: hd.hotel_country,
-                     postalCode: hd.hotel_postcode, 
-                     city: hd.hotel_city 
-                 }, 
-                 logo: hd.hotel_logo,
-                 checkInTime: hd.hotel_checkin_time 
-             });*/
-           //render and send the email 
+            //render and send the email 
              await renderAndSendEmail(emailSentObject.emailType, emailSentObject.hotelId, result[0], enzoHotel, emailSentObject);
         } 
         return ;

@@ -681,12 +681,12 @@ class EnzoGuest  {
 
 class EnzoGuestIdentification  {
     
-    static IDENTIFICATION_TYPES_LIST =  ["Passport", "TravelDocumentCard", "DriverLicense", "Visa"] ;
     static IDENTIFICATION_TYPES =  {
         PASSPORT: "Passport",
         TRAVELCARD: "TravelDocumentCard",
         DRIVERLIC: "DriverLicense",
         VISA: "Visa",
+        ID: "IdCard",
         OTHER: "Other"
     };
     constructor({ pmsId = null, firstName = null, lastName = null, fullName = null, 

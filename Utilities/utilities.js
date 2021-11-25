@@ -149,7 +149,7 @@ const findValidBooking = (bookings) => {
     }
     if (!booking) { // if none try to find a checked reservation
         for (let b of bookings) {
-            if (!preCheckInIsValid(b) && b.status.toUpperCase() === 'INHOUSE'){ 
+            if (!preCheckInIsValid(b) && b.status.toUpperCase() === 'CHECKEDIN'){ 
                 booking = b ;
                 break;
             }
@@ -208,8 +208,8 @@ const dateDiffInDays = (a, b) => {
     // Discard the time and time-zone information.
     let d1 = new Date(a);
     let d2 = new Date(b);
-    if (d1 >= d2) { return Math.floor(((d1 - d2) / MS_PER_DAY)) }
-    if (d1 < d2) { return Math.floor(((d2 - d1) / MS_PER_DAY)) }
+    if (d1 >= d2) { return Math.ceil(((d1 - d2) / MS_PER_DAY)) }
+    if (d1 < d2) { return Math.ceil(((d2 - d1) / MS_PER_DAY)) }
 }
 
 const makeDate = () => {
@@ -221,7 +221,6 @@ const makeDate = () => {
 const getDay = (d , loc = false) => new Date(d).toLocaleDateString(loc, { weekday: 'long' });
 
 const resetBookingState = (book) => {
-
 
     if (isPreCheckedBooking(book)) {
         book.status = 'waitingForGuest';
@@ -243,7 +242,9 @@ const resetBookingState = (book) => {
      });
      
     }
-    book.guests = book.guests.map(g => resetGuest(g));
+    let guest = resetGuest(book.guests[0]);
+
+    book.guests = [guest];
 
     return book ;
 };
@@ -251,13 +252,7 @@ const resetBookingState = (book) => {
 const resetGuest = (guest) => {
     if (guest.phone) guest.phone = null;
     if (guest.note) guest.note = null;
-    if (guest.address) {
-        if (guest.address.postcode) guest.address.postcode = null;
-        if (guest.address.city) guest.address.city = null;
-        if (guest.address.country) guest.address.country = null;
-        if (guest.address.address1) guest.address.address1 = null;
-        if (guest.address.address2) guest.address.address2 = null;
-    }
+    if (guest.address) guest.address = null;
     return guest ;
 };
 
@@ -285,12 +280,12 @@ const resetBookingDate = (reservation) => {
             book.finalArrival = newDates.otherDate ;
             book.expectedArrival = newDates.otherDate ;
             book.expectedDeparture = newDates.today ;
-            book.status = 'inHouse';
+            book.status = 'CheckedIn';
         } else {
             newDates = makeCheckDates(false) ; 
             book.expectedArrival = newDates.today ;
             book.expectedDeparture = newDates.otherDate ;
-            book.status = 'waitingForGuest';
+            book.status = 'WaitingForGuest';
             book = resetBookingState(book);
         }
         updated.push(book);
@@ -321,15 +316,16 @@ const makeEmailValues = async (type, hotelId, reservation, hotelValues) => {
         let firstName = reservation.roomStays[0].guests.length && reservation.roomStays[0].guests[0].firstName ? reservation.roomStays[0].guests[0].firstName : reservation.booker.firstName;
         let lastName = reservation.roomStays[0].guests.length && reservation.roomStays[0].guests[0].lastName ? reservation.roomStays[0].guests[0].lastName : reservation.booker.lastName;
 
-        let guestName =  firstName + " " + lastName ;  
+        let guestName =  firstName && lastName ? firstName + " " + lastName : firstName ? firstName : email ? email : '';  
         let d1 = new Date(reservation.roomStays[0].expectedArrival).toLocaleDateString();
         let d2 = new Date(reservation.roomStays[0].expectedDeparture).toLocaleDateString();
         let booking = reservation.roomStays[0].bookingId || reservation.roomStays[0].pmsId; 
+        let base64Logo =  hotelValues.logoImage ? hotelValues.logoImage : fs.existsSync(`./Views/${hotelValues.name.toLowerCase()}_base64logo.txt`) ? fs.readFileSync(`./Views/${hotelValues.name.toLowerCase()}_base64logo.txt`) : fs.readFileSync(`./Views/base64logo.txt`);
         if (type === MAILTYPES.START) {
             let checkDates =  d1 + " - " + d2 ;
             // generate the token for the 1rst email 
             let token = makeToken(reservation.roomStays[0].pmsId, reservation.roomStays[0].pmsId, reservation.roomStays[0].status, hotelId); 
-            let base64Image = fs.existsSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
+            let base64Image = hotelValues.bgImage ? hotelValues.bgImage :  fs.existsSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
             values = {
                 guestLinkName : guestName.replaceAll(' ', '.') ,
                 checkDates,
@@ -341,7 +337,7 @@ const makeEmailValues = async (type, hotelId, reservation, hotelValues) => {
             let url = await makeQrCode(hotelId, reservation);
             const numNights = dateDiffInDays(reservation.roomStays[0].expectedArrival, reservation.roomStays[0].expectedArrival);
             const roomType =  reservation.roomStays[0].roomTypeId;
-            const numGuests = reservation.roomStays[0].numberOfAdults + reservation.roomStays[0].numberOfChildren ;
+            const numGuests = reservation.roomStays[0].numberOfGuests ;
             const checkInTime = hotelValues.checkInTime ;
             values = {
                 checkInDate: d1,
@@ -354,15 +350,15 @@ const makeEmailValues = async (type, hotelId, reservation, hotelValues) => {
         }
         let hotelDetails = { 
             hotelName: hotelValues.name,
-            hotelAddress: hotelValues.address.address1, 
-            hotelPostcode: hotelValues.address.postCode,
+            hotelAddress:  hotelValues.address.address2 ? hotelValues.address.address1 + ' ' + hotelValues.address.address2 : hotelValues.address.address1 , 
+            hotelPostcode: hotelValues.address.postcode,
             hotelCity: hotelValues.address.city,
             hotelCountry: hotelValues.address.country,
             hotelState: hotelValues.address.state,
             hotelPhone: hotelValues.phone,
             hotelEmail: hotelValues.email
         };
-        return ({ ...values, booking, email, guestName, ...hotelDetails, reservationId: reservation.roomStays[0].pmsId, hotelId });
+        return ({ ...values, booking, base64Logo, email, guestName, ...hotelDetails, reservationId: reservation.roomStays[0].pmsId, hotelId });
     } catch(e) {
         let error = e;
         console.log(error);

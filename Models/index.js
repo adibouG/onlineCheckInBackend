@@ -88,7 +88,7 @@ class EmailTracking {
         this.reservationId =  reservationId ; 
         this.emailType = emailType ; 
         this.sendingDate = new Date(sendingDate).getTime() || Date.now() ;
-        this.sentDate = new Date(sentDate).getTime() || Date.now() ;
+        this.sentDate = sentDate ? new Date(sentDate).getTime() : null;
         this.messageId = messageId || (hotelId + '#' +  reservationId + "#" + emailType);
         this.attempts = attempts ;
   }
