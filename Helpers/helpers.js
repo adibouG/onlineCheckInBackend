@@ -323,7 +323,7 @@ const addPaymentSession = async (data, db = null) => {
     console.log("Start helper process: get pay  sessions....");
     try{
         //Call the db to get the list of hotel clients and their pmsData
-        db = db || new Database(hotelId);
+        db = db || new Database(data.hotelId);
         //get the hotel data from the pmsAPI
         await db.addPaymentSession(data);
         return 

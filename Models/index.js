@@ -75,10 +75,12 @@ class HotelAppSettings {
 }
 
 class Hotel { 
-    constructor({ hotelId = null, name = null, pmsId = null }) {
+    constructor({ hotelId = null, name = null, pmsId = null, merchantId = null }) {
         this.hotelId = hotelId ; 
         this.pmsId = pmsId ; 
-        this.name = name ; 
+        this.name = name ;
+        this.merchantId = merchantId ;
+         
   }
 }
 

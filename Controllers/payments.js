@@ -19,61 +19,67 @@ const getPaymentLinkFromToken = async (req, res) => {
     const token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
     winstonLogger.info('received token :' + token);
     try{
+
         if (!token) throw new Errors.EnzoError('no token');
+        const { bank, method, language, currency  } = req?.body
         //get data and verify the token
         //TODO make a token verification function security check : algo, sign, iss ...
         const decoded = jwt.decode(token); 
         const { uuid, hotelId, reservationId, email, steps } = decoded;
         
         const booking = await helpers.getReservations(hotelId, reservationId);
-        const roomStay = booking[0].roomStays[0];
+        
+        const hotelInfo = await helpers.getHotelInfo(hotelId) ;
+        
         if (!booking.length) throw new Errors.NotFound() ;        
+        const roomStay = booking[0].roomStays[0];
+        const hotelStay = await helpers.getHotelOffers(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
         //token was signed using the reservation state in order to make it only 1 time use 
-        const folioToPay = 0;
-        for (let f of roomStay.folios) {
-            if (f.type === Enzo.EnzoFolio.FOLIO_TYPES.GUEST && 
-                f.remainingToPay > 0) 
-            { 
-                folioToPay = f.remainingToPay;
-                break;
-            }
-        }    
-        const { guestName, language, guestEmail, amount, currency, bank, method } = req?.body ;
         verifyToken(token, roomStay); 
+        const folioToPay = roomStay.folios.reduce((t, f) => {
+            if (f.type === Enzo.EnzoFolio.FOLIO_TYPES.GUEST && f.remainingToPay > 0) 
+            { 
+                return f.remainingToPay + t;
+            }
+        } , 0 );   
         //check amuount match against folio account
-        if (folioToPay != amount) throw new Error('amount not correct with the folio total')   
-       
-       //check if a session already exist and in process 
+        /// if (folioToPay != amount) throw new Error('amount not correct with the folio total')   
+        
+        //check if a session already exist and in process 
         let hasSession = false;
         const sessions = await helpers.getPaymentSession(hotelId, reservationId);
         if (sessions.length) {
             for (let s of sessions) {
                 if (s.status === Models.PaymentSession.PAYMENT_SESSION_STATUS.STARTED) {
                     hasSession = true;
-                  return res.status(200).send({ message: 'payment processing', transactionId : s.transactionId });
+                    return res.status(401).send({ message: 'payment processing', transactionId : s.transactionId });
                 }
             }
         }
+        const guestName = roomStay.guests[0].fullName ;
+        const guestEmail = roomStay.guests[0].email;
+        const amount = folioToPay;
+        const cur =  currency || hotelStay.commonParameters.currency;
+        const lang = language || hotelStay.commonParameters.language;
         const PAYAPIURL = process.env.PAYMENT_API_URL;
         const GETPAYMENTLINK = SETTINGS.PAYMENT_ENDPOINT.GET_PAYMENT_LINK;
-        const hotelInfo = await helpers.getHotelInfo(hotelId) ;
         const applicationId = "onlinecheckin";
-        const hotelName = hotelInfo.hotel_name;
+        const hotelName = hotelInfo.name;
+        const merchant = hotelInfo.merchantId;
         console.log(hotelInfo)
         const payload = new PaymentLinkRequestBody({ 
-            merchantId: hotelName,
+            merchantId: merchant || hotelName,
             customerId: reservationId, 
             customerName: guestName,
             customerEmail: guestEmail,
-            description: `Payment Link request from Enzo Online Precheckin, hotelId :${hotelId}, reservationId : ${reservationId}` ,
+            description: `Payment Link for Enzo Online Precheckin, hotelId :${hotelId}, reservationId : ${reservationId}` ,
             amountTotal: String(amount),  
-            languageCode: language || "en-US",
-            currency: currency || "EUR",
+            languageCode: lang || "en-US",
+            currency: cur || "EUR",
             method: method || "VISA" ,
             issuerId: bank || "RABOBANK"  
         }) ;
-
-
+        console.log(payload)
         const payrequest = await axios.post(`${PAYAPIURL}${GETPAYMENTLINK}`, payload) ;
         //add payment session 
         if (payrequest.status !== 200) throw new Error('paymentLink not retrieved')
@@ -180,7 +186,7 @@ const getPaymentLink = async (req, res) => {
         const GETPAYRESULT = SETTINGS.PAYMENT_ENDPOINT.GET_PAYMENT_LINK;
         const hotelInfo = await helpers.getHotelInfo(hotelId) 
         const applicationId = "checkin";
-        const hotelName = hotelInfo.hotel_name;
+        const hotelName = hotelInfo.name;
         console.log(hotelInfo)
         const payload = new PaymentLinkRequestBody({ 
             merchantId: hotelName,

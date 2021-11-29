@@ -99,7 +99,8 @@ class Database extends AsyncResource {
             return queryResult.rows.map(h => new Models.Hotel({ 
                 hotelId: h.hotel_id, 
                 name: h.hotel_name, 
-                pmsId: h.pms_id 
+                pmsId: h.pms_id ,
+                merchantId: h.merchant_id 
             })); 
         }catch(e) {
             console.log(e);
