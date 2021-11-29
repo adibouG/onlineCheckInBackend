@@ -17,11 +17,16 @@ const TITLES = {
     QR : 'Email confirmation with QR-code for online pre-check-in' ,
     START : 'Email invitation for online pre-check-in' ,
 };
-const mailFormat = (type, message, mail, messageId, attach = null) => {
+const mailFormat = (type, message, mail, messageId, attach = []) => {
     let TITLE = '';
     let MESSAGE = '';
     
-    const ATTACHMENTS = attach ? [{"content" : `${attach.toString()}`, "name": "image_attached.jpg"}] : null ;
+    let ATTACHMENTS = [];
+    if (attach.length > 0) {
+        attach.forEach((a, idx) => { 
+            if (a) return ATTACHMENTS.push({"content" : `${a.toString()}`, "name": `image_attached${idx}.png`})
+        });
+    } 
     if (type === MAILTYPES.QR) {
         TITLE = TITLES.QR;
         MESSAGE = message ; 
@@ -29,7 +34,7 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
         TITLE = TITLES.START;
         MESSAGE = message;
     }
-    return ATTACHMENTS ? 
+    return ATTACHMENTS.length > 0 ? 
         ({
             "attachments": ATTACHMENTS  ,
             "body": {"html": `${MESSAGE}`},
@@ -50,12 +55,12 @@ const mailFormat = (type, message, mail, messageId, attach = null) => {
     
 }
 
-const sendEmailRequest = async (type, message, email, messageId, attach = null) => {  
+const sendEmailRequest = async (type, message, email, messageId, attach = []) => {  
     let reservationId;
     try{ 
+        reservationId = messageId.length && messageId.includes('#') ? messageId.split('#')[1] : null ;
         console.log('*** sendEmailRequest : .... ****' ) ;
         winstonLogger.info(`Try sending email type ${type} to ${email} for reservationId ${reservationId} with messageId ${messageId}`);
-        reservationId = messageId.length && messageId.includes('#') ? messageId.split('#')[1] : null ;
         let formattedMail = mailFormat(type, message, email, messageId, attach);
         let result = await axios({ url: EMAIL_SERVICE_URL, method: 'POST', data: formattedMail });
         console.log('ok ', result.data) ;

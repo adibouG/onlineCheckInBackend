@@ -1,7 +1,6 @@
 const { AsyncResource, executionAsyncId } = require('async_hooks');
 const { pgClient, pgPool } = require('../DB/dbConfig.js');
 const Enzo = require('../Models/Enzo.js');
-const Errors = require('../Models/errors.js');
 const Models = require('../Models/index.js');
 
 /**
@@ -97,7 +96,11 @@ class Database extends AsyncResource {
                 queryResult = await client.query(query) ;
             }
             client.release();
-            return queryResult.rows; 
+            return queryResult.rows.map(h => new Models.Hotel({ 
+                hotelId: h.hotel_id, 
+                name: h.hotel_name, 
+                pmsId: h.pms_id 
+            })); 
         }catch(e) {
             console.log(e);
             throw e;
@@ -134,6 +137,7 @@ class Database extends AsyncResource {
             const query = 'UPDATE hotel SET hotel_name=$1, pms_id=$2 WHERE hotel_id=$3' ;
             await client.query(query, [newHotel.name, newHotel.pmsId, hotelId]) ;
             client.release();
+            return;
         } catch(e) {
             console.log(e);
             throw e;
@@ -147,6 +151,7 @@ class Database extends AsyncResource {
             const query1 = 'DELETE hotel WHERE hotel_id = $1' ;
             await client.query(query1, [hotelId]) ;
             client.release();
+            return;
         } catch(e) {
             console.log(e);
             throw e;
@@ -177,7 +182,8 @@ class Database extends AsyncResource {
             VALUES ($1, $2, $3, $4, $5)`;
             await client.query(query, [hotelId, newPmsSettings.pmsId, newPmsSettings.pmsUser,
                 newPmsSettings.pmsUrl, newPmsSettings.pmsPwd]) ;
-                client.release();
+            client.release();
+            return;
         } catch(e) {
             console.log(e);
             throw e;
@@ -195,7 +201,8 @@ class Database extends AsyncResource {
             const query = `UPDATE hotel_pms_connection SET pms_id=$1, pms_user=$2, pms_url=$3, pms_pwd=$4 WHERE hotel_id=$5`;
             await client.query(query, [newPmsSettings.pmsId, newPmsSettings.pmsUser,
                 newPmsSettings.pmsUrl, newPmsSettings.pmsPwd, hotelId]) ;
-                client.release();
+            client.release();
+            return;
         } catch(e) {
             console.log(e);
             throw e;
@@ -208,6 +215,7 @@ class Database extends AsyncResource {
             const query = `DELETE hotel_pms_connection WHERE hotel_id = $1`;
             await client.query(query, [hotelId]) ;
             client.release();
+            return;
         } catch(e) {
             console.log(e);
             throw e;
@@ -221,6 +229,8 @@ class Database extends AsyncResource {
             client = await pgPool.connect();
             //get hotel details
             query1 = 'SELECT * from hotel_details WHERE hotel_id = $1'  ;
+         //   query2 = 'SELECT * from images WHERE hotel_id = $1'  ;
+
             query1result = await client.query(query1, [hotelId]) ;
             client.release();
           
@@ -260,7 +270,8 @@ class Database extends AsyncResource {
                 hotelDetails.city, hotelDetails.country,
                 hotelDetails.phone, hotelDetails.email, 
                 hotelDetails.logo, hotelDetails.checkinTime]) ;
-                client.release();
+            client.release();
+            return;
         } catch(e) {
             console.log(e);
             throw e;
@@ -279,7 +290,8 @@ class Database extends AsyncResource {
                 hotelDetails.phone, hotelDetails.email, 
                 hotelDetails.logo, hotelDetails.checkinTime,
                 hotelDetails.displayedName]) ;
-                client.release();
+            client.release();
+            return;
         } catch(e) {
             console.log(e);
             throw e;
@@ -293,6 +305,7 @@ class Database extends AsyncResource {
             const query = `DELETE hotel_details WHERE hotel_id = $1`;
             await client.query(query, [hotelId]) ;
             client.release();
+            return;
         } catch(e) {
             console.log(e);
             throw e;
@@ -506,6 +519,7 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             await client.query(query2, [hotelId]);
             await client.query(query3, [hotelId]);
             await client.query('COMMIT');
+            return;
         }catch(e) {
             await client.query('ROLLBACK');
             client.release();
@@ -577,6 +591,7 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             query1 = 'INSERT INTO email_tracking(message_id, reservation_id, hotel_id, email_type, success_sent_date, original_sending_date, attempts) VALUES ($1, $2, $3, $4, to_timestamp($5), to_timestamp($6), $7);' ;
             await client.query(query1, [emailTracking.messageId, emailTracking.reservationId, emailTracking.hotelId, emailTracking.emailType, emailTracking.sentDate, emailTracking.sendingDate, emailTracking.attempts]);
             client.release();
+            return;
         }catch(e) {
             console.log(e);
             throw e;
@@ -592,6 +607,7 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             query1 = 'UPDATE email_tracking SET success_sent_date = to_timestamp($1), attempts = $2 WHERE message_id =$3 ;' ;
             await client.query(query1, [emailTracking.sentDate, emailTracking.attempts, emailTracking.messageId]);
             client.release();
+            return;
         }catch(e) {
             console.log(e);
             throw e;   
@@ -606,6 +622,7 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             query1 = 'DELETE FROM email_tracking WHERE reservation_id = $1 AND hotel_id = $2';
             await client.query(query1, [reservationId, hotelId]);
             client.release();
+            return;
         }catch(e) {
             console.log(e);
             throw e;
@@ -655,7 +672,7 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             if (id) { 
                 args.push(id);
                 condition = ' WHERE job_id = $1' ;
-             } else {
+             } else  {
                 if (type) { 
                     args.push(type);
                     condition = ' WHERE job_type = $1 ' ; 
@@ -731,14 +748,45 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             throw e;
         } 
     }
-/*
 
-    async getPaymentSession(){
+
+    async getPaymentSession({ hotelId, reservationId, transactionId }){
         let client, query1, query1result;
         try {
             client = await pgPool.connect();
-            query1 = 'SELECT * from payment_session' ;
-            query1result = await client.query(query1);
+            query1 = 'SELECT * from payment_session WHERE hotel_id = $1 AND reservation_id = $2 ' ;
+            const args = [ hotelId, reservationId,]
+            if (transactionId) {
+                query1 += 'AND transaction_id = $3 ' ; 
+                args.push(transactionId);
+            }
+            query1result = await client.query(query1, args);
+            client.release();
+            return query1result.rows;
+        }catch(e) {
+            console.log(e);
+            throw e;
+        } 
+    }
+
+    async addPaymentSession(data){
+        let client, query1, query1result;
+        try {
+            client = await pgPool.connect();
+            query1 = `INSERT INTO payment_session(
+                hotel_id, 
+                status, 
+                reservation_id, 
+                transaction_id, 
+                started_at
+            ) VALUES ($1,$2,$3,$4,to_timestamp($5))` ;
+            query1result = await client.query(query1, [
+                data.hotelId,
+                Models.PaymentSession.PAYMENT_SESSION_STATUS.CREATED,
+                data.reservationId, 
+                data.transactionId, 
+                data.startedAt / 1000 
+            ]);
             client.release();
             return query1result.rows;
         }catch(e) {
@@ -751,8 +799,12 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
         let client, query1, query1result;
         try {
             client = await pgPool.connect();
-            query1 = 'INSERT INTO payment_session VALUES ($1,$2,$3,$4,$5)' ;
-            query1result = await client.query(query1, [data.transactionId, data.hotelId, data.reservationId, data.startedAt, ]);
+            query1 = 'UPDATE payment_session SET status=$1 , updated_at = to_timestamp($2) WHERE transaction_id = $3' ;
+            query1result = await client.query(query1, [
+                data.status,
+                data.updatedAt / 1000, 
+                data.transactionId, 
+            ]);
             client.release();
             return query1result.rows;
         }catch(e) {
@@ -760,12 +812,11 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             throw e;
         } 
     }
-
-    async updatePaymentSession(){
+    async deletePaymentSession(){
         let client, query1, query1result;
         try {
             client = await pgPool.connect();
-            query1 = 'UPDATE payment_session SET ' ;
+            query1 = 'DELETE FROM payment_session WHERE reservation_id = $1 AND transaction_id = $2' ;
             query1result = await client.query(query1);
             client.release();
             return query1result.rows;
@@ -774,7 +825,6 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             throw e;
         } 
     }
-*/
 } 
 
 module.exports = {

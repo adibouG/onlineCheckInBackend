@@ -45,15 +45,16 @@ app.engine('htm', (filePath, options, callback) => {
             .replaceAll('#checkInTime#', options.checkInTime)
             .replaceAll('#token#', options.token)
             .replaceAll('#hotelId#', options.hotelId)
+            .replaceAll('#logoUrl#', options.logoUrl)
+            .replaceAll('#base64Logo#', options.base64Logo)
             .replaceAll('#base64Image#', options.base64Image)
             .replaceAll('#base64qrCode#', options.base64qrCode)
-            .replaceAll('#guestFullName#', options.guestFullName)
+            .replaceAll('#guestFullName#', options.guestName)
             .replaceAll('#guestLinkName#', options.guestLinkName)
             .replaceAll('#booking#', options.booking)
             .replaceAll('#roomType#', options.roomType)
             .replaceAll('#numNights#', options.numNights)
             .replaceAll('#numGuests#', options.numGuests)
-            .replaceAll('#booking#', options.booking)
             .replaceAll('#booking#', options.booking)
             .replaceAll('#hotelName#', options.hotelName)
             .replaceAll('#hotelAddress#', options.hotelAddress)
@@ -70,12 +71,10 @@ app.set('views', './Views'); // specify the views directory where the htm files 
 app.set('view engine', 'htm'); // register the template engine to use  
 
 
-app.use((err, req, res, next) => {
-  // Simple error handling here... in real life we might
-  // want to be more specific
-  console.log(`I'm the error handler. '${err.message}'`);
-  res.status(500);
-  res.json({ error: err.message });
+app.use((err, req, res, cb) => { 
+  if (cb) return cb(err, req, res) ;
+  winstonLogger.log('error', JSON.stringify(err));
+  res.status(err.code||500).send(err);
 });
 
 module.exports = app ;

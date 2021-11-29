@@ -102,6 +102,23 @@ class SuccessBody {
     }
 }
 
+class PaymentSession { 
+
+    static PAYMENT_SESSION_STATUS = {
+        CREATED: 'CREATED',
+        STARTED: 'STARTED',
+        FINISHED: 'FINISHED'
+    };
+    constructor({ reservationId, hotelId, transactionId, startedAt = null, updatedAt = null, status = null} = {}) {
+        this.hotelId =  hotelId ; 
+        this.reservationId =  reservationId ; 
+        this.transactionId = transactionId ; 
+        this.startedAt = new Date(startedAt).getTime() || Date.now() ;
+        this.updatedAt = updatedAt ? new Date(updatedAt).getTime() : null;
+        this.status = status ? PaymentSession.PAYMENT_SESSION_STATUS[status.toUpperCase()] : null;
+  }
+}
+
 module.exports = {
     SuccessBody ,
     EmailTracking,
@@ -111,5 +128,6 @@ module.exports = {
     HotelDetails,
     HotelPmsSettings,
     HotelStylesSettings,
-    Pms
+    Pms,
+    PaymentSession
 }

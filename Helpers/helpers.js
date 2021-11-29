@@ -1,9 +1,14 @@
+require('dotenv').config();
 const { Database } = require('../Models/database.js');
-const Enzo = require('../Models/Enzo.js');
 const { PmsModuleApi } = require('../Models/pmsModuleApi.js');
 const { findValidBooking, resetBookingDate } = require('../Utilities/utilities.js');
 const Errors = require('../Models/errors.js');
 const Models = require('../Models/index.js');
+const {PaymentResult} = require('../Models/EnzoPayApi.js');
+const Enzo = require('../Models/Enzo.js');
+
+const axios = require('axios');
+const SETTINGS = require('../settings.json');
 
 
 //get new reservation, return an array of enzoCheckIn, run at specified interval 
@@ -18,42 +23,35 @@ const getReservations = async (hotelId = null, reservationId = null, conf = null
         //get the reservations per hotel 
         if (!Array.isArray(pms)) { pms = [pms]; }
         //loop through hotel result
+
         for (let row of pms) {    
-            if (!(row instanceof Models.HotelPmsSettings)) {
-                row = new Models.HotelPmsSettings({
-                    hotelId: row.hotel_id, 
-                    pmsId: row.pms_id, 
-                    pmsUrl: row.pms_url,
-                    pmsName: row.pms_name, 
-                    pmsUser: row.pms_user, 
-                    pmsPwd: row.pms_pwd
-                });
-            }          
             if (hotelId && row.hotelId != hotelId) { continue; }
-            
+           
             const reservationsRequest = await pmsApi.getReservationData({ 
-                reservationId, //can be null if we look for all the reservations from the hotel pms
-                pmsId: row.pmsId, 
-                pmsUrl: row.pmsUrl, 
-                pmsUser: row.pmsUser, 
-                pmsPwd: row.pmsPwd 
-            });
+                    reservationId, //can be null if we look for all the reservations from the hotel pms
+                    pmsId: row.pmsId, 
+                    pmsUrl: row.pmsUrl, 
+                    pmsUser: row.pmsUser, 
+                    pmsPwd: row.pmsPwd 
+                });
+        
             //we receive an array of enzoReservations data 
             //we add the hotelId to the reservation 
             console.log(reservationsRequest);
-            if  (reservationId) {
+            if  (reservationId && reservationsRequest.pmsId) {
                 const er = new Enzo.EnzoReservation(reservationsRequest);
                 er.hotelId = row.hotelId;
                 results.push(er);
             } else {
                 reservationsRequest.map((r) => {
                     const er = new Enzo.EnzoReservation(r);
-                    er.hotelId = row.hotelId;
+                    er.hotelId = hotelId;
                     results.push(er);
                 });
             }
         }
         return results;
+            
     } catch(e) {
         console.error(e);
         throw e;
@@ -137,9 +135,7 @@ const resetBookingStatus = async (email = null, reservationId = null, db = null)
                 await postReservations(hotelId, b.pmsId, newBook, db, pms) 
                 await db.deleteEmailTrackingInfo(b.pmsId, hotelId)
             }
-            
             console.log('Reset : %s bookings ', bookings.length);
-          
         }
         return ;
     } catch(e) {
@@ -279,11 +275,114 @@ const getHotelAvailabilities = async (hotelId, startDate, endDate, db = null) =>
         //get the hotel data from the pmsAPI
         const hotel = await db.getHotelDetails(hotelId);
         return new Enzo.EnzoHotelStay({ hotel });
-
     } catch (e) {
         console.log(e);
         throw e;
     } 
+}
+
+
+const getPaymentResult = async ({ transactionId, hotelId }, db = null ) => {
+    try{
+        const payApiUrl = process.env.PAYMENT_API_URL;
+        const api = SETTINGS.PAYMENT_ENDPOINT.GET_PAYMENT_RESULT;
+        const hotelInfo = await getHotelInfo(hotelId, db); 
+        const applicationId = "checkin";
+        const hotelName = hotelInfo.name;
+        console.log(hotelInfo)
+        const payload = { 
+            merchantId: hotelName,
+            transactionId: transactionId, 
+        } ;
+        console.log(payload)
+        const payResultRequest = await axios.post(`${payApiUrl}${api}`, payload) ;
+        const payResult = new Models.PaymentResult(payResultRequest.data);
+        return payResult;
+    }catch(e){
+        console.log(e);
+        throw e;
+    }
+}
+
+const getPaymentSession = async (hotelId, reservationId, transactionId = null, db = null) => { 
+    console.log("Start helper process: get pay  sessions....");
+    try{
+        //Call the db to get the list of hotel clients and their pmsData
+        db = db || new Database(hotelId);
+        //get the hotel data from the pmsAPI
+        const sessions = await db.getPaymentSession({ hotelId, reservationId, transactionId });
+        return sessions.map(session => new Models.PaymentSession(session));
+    } catch (e) {
+        console.log(e);
+        throw e;
+    } 
+}
+
+
+const addPaymentSession = async (data, db = null) => { 
+    console.log("Start helper process: get pay  sessions....");
+    try{
+        //Call the db to get the list of hotel clients and their pmsData
+        db = db || new Database(hotelId);
+        //get the hotel data from the pmsAPI
+        await db.addPaymentSession(data);
+        return 
+    } catch (e) {
+        console.log(e);
+        throw e;
+    } 
+}
+const updatePaymentSession = async (data, db = null) => { 
+    console.log("Start helper process: get pay  sessions....");
+    try{
+        //Call the db to get the list of hotel clients and their pmsData
+        db = db || new Database(hotelId);
+        //get the hotel data from the pmsAPI
+        await db.updatePaymentSession(data);
+        return 
+    } catch (e) {
+        console.log(e);
+        throw e;
+    } 
+}
+
+const makeQrCodeEmail = async (hotelId, booking) =>{
+
+if (!booking.length) throw new Models.NotFound() ;
+
+roomStay = booking.roomStays[0];
+
+if (roomStay) booking =  new Enzo.EnzoRoomStay(roomStay);
+if (!booking) throw new Models.NotFound() ;
+if (!token) throw new Error('no token') ; 
+//TO DO  verification on token  
+let firstName = roomStay.guests.length && roomStay.guests[0].firstName ? roomStays.guests[0].firstName : reservation.booker.firstName;
+let lastName = roomStay.guests.length && roomStay.guests[0].lastName ? roomStays.guests[0].lastName : reservation.booker.lastName;
+
+await sendEmail(MAILTYPES.QR, booking, hotelId);
+const dataUrl = await makeQrCode(hotelId, booking.pmsId, firstName, lastName);
+return dataUrl;
+}
+
+
+const isPaymentDone = async (hotelId, reservationId) => {
+    let isDone = false;
+    const paySessions = await getPaymentSession(hotelId, reservationId);
+    if (paySessions.length) {
+       
+        for (let s of paySessions) {
+            let sess;
+            if (s.status === Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED) {
+                sess = s ;
+            }   
+            const payRes = await getPaymentResult({ transactionId: sess.transactionId, hotelId: sess.hotelId });
+            if (payRes.status === PaymentResult.PAYMENT_RESULTS.PAID) { 
+                isDone = true;
+                break;
+            } 
+        }
+    }
+    return isDone;
 }
 
 module.exports = {
@@ -299,5 +398,11 @@ module.exports = {
     getHotelInfo,
     getHotelPmsInfo,
     getHotelOffers ,
-    getHotelAvailabilities
+    getHotelAvailabilities,
+    isPaymentDone,
+    getPaymentResult,
+    getPaymentSession,
+    addPaymentSession,
+    updatePaymentSession,
+    makeQrCodeEmail
 }

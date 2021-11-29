@@ -24,6 +24,15 @@ class PaymentLinkRequestBody{
 }
 
 class PaymentResult {
+  static PAYMENT_RESULTS = {
+    CREATED: 'CREATED',
+    PAID: 'PAID',
+    EXPIRED: 'EXPIRED',
+    ABORTED: 'ABORTED',
+    FAILED: 'FAILED',
+    DECLINED: 'DECLINED'
+  }
+
   constructor({ 
           transactionId = null,
           merchantId = null,

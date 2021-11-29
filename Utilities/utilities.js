@@ -1,14 +1,14 @@
+require('dotenv').config(); 
 const { randomUUID } = require('crypto');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const { secretKey } = require('../Crypto/crypto.js');
 let QRCode = require('qrcode') ;
-const Models = require('../Models/index.js');
 const Enzo = require('../Models/Enzo.js');
 const Errors = require('../Models/errors.js');
 const SETTINGS = require('../settings.json') ;
 const { MAILTYPES } = require('../Emails/enzoMails.js') ;
-const { CHECKIN_REQUEST_START_DAY_OFFSET, VALID_ENZO_STATUS, APP_BASE_URL } = SETTINGS ;
+const { CHECKIN_REQUEST_START_DAY_OFFSET, VALID_ENZO_STATUS } = SETTINGS ;
 
 const preCheckInIsValid = (booking, offset = CHECKIN_REQUEST_START_DAY_OFFSET) => {
     const startDate = booking.expectedArrival ? new Date(booking.expectedArrival) : null;
@@ -160,7 +160,7 @@ const findValidBooking = (bookings) => {
 };
 
 const setCheckBooking = (bookingUpdt) => {
-    bookingUpdt.status = 'PRECHECKEDIN' ;
+    bookingUpdt.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN ;
     return bookingUpdt ;
 } ;
 
@@ -185,7 +185,7 @@ const findValueInDataStore = ({ value, key, store }) => {
             objectToFind.push(store) ;
         } else if (Object.keys(store[entry]) && Object.keys(store[entry]).length){
             let child = store[entry] ;
-            return findValueInDataStore({ value , key , store: child }) ;
+            return findValueInDataStore({ value, key, store: child }) ;
         } 
     }
     return objectToFind ;
@@ -223,7 +223,7 @@ const getDay = (d , loc = false) => new Date(d).toLocaleDateString(loc, { weekda
 const resetBookingState = (book) => {
 
     if (isPreCheckedBooking(book)) {
-        book.status = 'waitingForGuest';
+        
         book.primaryGuestIsMember = false;
         book.primaryGuestAcceptedHotelPolicies = false;
         book.primaryGuestAcceptedGdprRules = false;
@@ -232,10 +232,7 @@ const resetBookingState = (book) => {
         book.qrCode = null;
         book.folios.remainingToPay =  book.folios.totalCosts;
         book.folios.alreadyPaid = 0 ;
-
-     //   const amount = ((Math.floor(Math.random() * 10000)) / 100); 
-     //   const tax = ((Math.floor(Math.random() * 10000)) / 100);
-     book.folios.folioItems.forEach((item, idx) => {
+         book.folios.folioItems.forEach((item, idx) => {
          if (item.type === Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.PAYMENT) {
             book.folios.folioItems.splice(idx, 1);
          }
@@ -280,12 +277,12 @@ const resetBookingDate = (reservation) => {
             book.finalArrival = newDates.otherDate ;
             book.expectedArrival = newDates.otherDate ;
             book.expectedDeparture = newDates.today ;
-            book.status = 'CheckedIn';
+            book.status = Enzo.EnzoRoomStay.STAY_STATUS.CHECKEDIN;
         } else {
             newDates = makeCheckDates(false) ; 
             book.expectedArrival = newDates.today ;
             book.expectedDeparture = newDates.otherDate ;
-            book.status = 'WaitingForGuest';
+            book.status = Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST;
             book = resetBookingState(book);
         }
         updated.push(book);
@@ -320,18 +317,19 @@ const makeEmailValues = async (type, hotelId, reservation, hotelValues) => {
         let d1 = new Date(reservation.roomStays[0].expectedArrival).toLocaleDateString();
         let d2 = new Date(reservation.roomStays[0].expectedDeparture).toLocaleDateString();
         let booking = reservation.roomStays[0].bookingId || reservation.roomStays[0].pmsId; 
-        let base64Logo =  hotelValues.logoImage ? hotelValues.logoImage : fs.existsSync(`./Views/${hotelValues.name.toLowerCase()}_base64logo.txt`) ? fs.readFileSync(`./Views/${hotelValues.name.toLowerCase()}_base64logo.txt`) : fs.readFileSync(`./Views/base64logo.txt`);
+        let base64Logo = fs.existsSync(`./Views/${hotelValues.name.toLowerCase()}_base64logo.txt`) ? fs.readFileSync(`./Views/${hotelValues.name.toLowerCase()}_base64logo.txt`) : fs.readFileSync(`./Views/base64logo.txt`);
+      //  let base64LogoUrl =  hotelValues.logo && hotelValues.logo.source  ? hotelValues.logo.source : null ;
         if (type === MAILTYPES.START) {
             let checkDates =  d1 + " - " + d2 ;
             // generate the token for the 1rst email 
             let token = makeToken(reservation.roomStays[0].pmsId, reservation.roomStays[0].pmsId, reservation.roomStays[0].status, hotelId); 
-            let base64Image = hotelValues.bgImage ? hotelValues.bgImage :  fs.existsSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
+           // let base64Image = hotelValues.images.length && hotelValues.images[0].source ?  hotelValues.images[0].source : fs.existsSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) ? fs.readFileSync(`./Views/${hotelValues.name.toLowerCase()}_base64image.txt`) : fs.readFileSync(`./Views/enzo_base64image.txt`);
             values = {
                 guestLinkName : guestName.replaceAll(' ', '.') ,
                 checkDates,
                 token,
-                base64Image,
-                app_link_baseUrl: APP_BASE_URL,
+               // base64Image,
+                app_link_baseUrl: process.env.LINK_URL,
             };
         } else if (type === MAILTYPES.QR) {
             let url = await makeQrCode(hotelId, reservation);

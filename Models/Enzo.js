@@ -52,6 +52,7 @@ class Image {
         focusPoint = null
     } = {}) 
     {
+        if (!source) return ;
         this.source = source;
         this.width = width ;
         this.height = height ;
@@ -62,7 +63,7 @@ class Image {
 
 class LocalText {
     constructor(v) {
-        
+        if (!v) return;
         if ( typeof v === 'object') { 
             for (let i in v) { this[i] = v[i]; }
         } else {
@@ -161,7 +162,9 @@ class EnzoHotel {
         this.website = website;
         this.address = address ? new Address(address) : null;
         this.logo = logo ? new Image(logo) : null;
-        this.images = images.map(image => new Image(image));
+        this.images = images.map(image => { 
+            if (image.source) new Image(image) ;
+        });
         this.hotelPolicies = hotelPolicies ? new LocalText(hotelPolicies) : null;
         this.gdprRules = gdprRules ? new LocalText(gdprRules) : null ;
         this.guestRegistrationForm = guestRegistrationForm ? new LocalText(guestRegistrationForm) : null;
@@ -294,6 +297,7 @@ class EnzoRoomStay  {
 
     static STAY_STATUS = {
         WAITINGFORGUEST: "WaitingForGuest",
+        PRECHECKEDIN: "PreCheckedIn",  
         CHECKINGIN: "CheckingIn",
         CHECKEDIN: "CheckedIn", 
         CHECKINGOUT: "CheckingOut",
@@ -318,8 +322,7 @@ class EnzoRoomStay  {
         this.bookingId = bookingId;
         this.status = status;
         this.expectedArrival = expectedArrival ;
-        //this.estimatedTimeOfArrival = estimatedTimeOfArrival ;
-        this.finalArrival = finalArrival ; 
+         this.finalArrival = finalArrival ; 
         this.numberOfNights = numberOfNights ; 
         this.dayUse = dayUse ; 
         this.expectedDeparture = expectedDeparture; 
@@ -331,8 +334,6 @@ class EnzoRoomStay  {
         this.roomId = roomId;
         this.roomTypeId = roomTypeId; 
         this.ratePlanId = ratePlanId; 
-       
-       // this.payments = payments.map(p => { if (p) return new EnzoPayment(p) }) ;
         this.folios = folios.map(f => new EnzoFolio(f)) ;
         this.guests = guests.map(g => new EnzoGuest(g));
 
@@ -446,10 +447,10 @@ class EnzoRatePlan {
 }
  */
 class EnzoOptionQualifier {
-  constructor({ optionId = null, bookedDatetime = [], numberOfUnits = 0 } = {}) 
+  constructor({ optionId = null, bookedDatetime = null, numberOfUnits = 0 } = {}) 
     {
         this.optionId = optionId;
-        this.bookedDatetime = bookedDatetime.map(d => new Date(d));
+        this.bookedDatetime = bookedDatetime;
         this.numberOfUnits = numberOfUnits;
     }
 }
@@ -737,6 +738,31 @@ class EnzoFolio {
         //this.currency = currency;
         this.includedTaxes = includedTaxes.map(t => new EnzoFolioTax(t)) ;
         this.folioItems =  folioItems.map(i => new EnzoFolioItem(i));
+    }
+
+    addFolioItem(folioItem) {
+
+        if (folioItem instanceof EnzoFolioItem) {
+
+            this.folioItems.push(folioItem);
+            if (folioItem.type === EnzoFolioItem.FOLIO_ITEM_TYPES.PAYMENT){
+                this.alreadyPaid += folioItem.totalAmount;
+            }
+            else if (folioItem.type === EnzoFolioItem.FOLIO_ITEM_TYPES.CHARGE){
+                this.totalCosts += folioItem.totalAmount;
+            }
+            else if (folioItem.type === EnzoFolioItem.FOLIO_ITEM_TYPES.REFUND){
+                this.alreadyRefund += folioItem.totalAmount;
+            }
+            
+            if (this.alreadyPaid > this.totalCosts) {
+                this.remainingToRefund = this.alreadyPaid - this.totalCosts ;    
+            } else {
+                this.remainingToPay = this.totalCosts - this.alreadyPaid;
+            }
+            
+        }
+
     }
 }
 /*

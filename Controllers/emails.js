@@ -1,6 +1,5 @@
 const app = require('../app.js');
 const Models = require('../Models/index.js');
-const Enzo = require('../Models/Enzo.js');
 const { MAILTYPES, sendEmailRequest } = require('../Emails/enzoMails.js');
 const { Database } = require('../Models/database.js');
 const helpers = require('../Helpers/helpers.js');
@@ -31,8 +30,9 @@ const renderAndSendEmail = async (type, hotelId, stayData, hotels, mailTracking 
         });
         //call the express rendering engine for htm files define in app.js
         app.render(template, values, async (err, content) => {
-            let mailTrack,  manager; 
             if (err) throw err ;
+            let mailTrack,  manager; 
+            let noSending = false; 
             try{
                 manager = new Database();
                 const mailTracking = await manager.getEmailInfo(mailTrackingObj.messageId); 
@@ -43,11 +43,14 @@ const renderAndSendEmail = async (type, hotelId, stayData, hotels, mailTracking 
                 mailTrack.attempts = mailTrack.attempts + 1;
                 //set the email attachment file for the image/qrCode from the base64 string or from the image file
                 //TO DO: import the image from the hotel settings 
-                const attach = type === MAILTYPES.QR ? values.base64qrCode : values.base64image ;
-                if (values.email && process.env.NODE_ENV !== 'production' && !values.email.toLowerCase().includes('adrien@enzosystems.com'))  { return; }
+                const attach = type === MAILTYPES.QR ? [values.base64Logo, values.base64qrCode] : [values.base64Logo, values.base64image] ;
+                if (values.email && process.env.NODE_ENV !== 'production' && !values.email.toLowerCase().includes('adrien@enzosystems.com'))  { 
+                    noSending = true;
+                   return; 
+                }
                 const result = await sendEmailRequest(type, content, values.email, mailTrackingObj.messageId, attach);
-                if (result.status === 200) { mailTrack.sentDate = Date.now();}
-                return ;
+                if (result.status === 200) mailTrack.sentDate = Date.now();
+                return mailTrack;
             } catch (e) {
                 mailTrack.sentDate = null ;
                 console.log('renderAndSendEmail error ...', e);
@@ -56,6 +59,7 @@ const renderAndSendEmail = async (type, hotelId, stayData, hotels, mailTracking 
                 //throw e ; //TODO : Test => not sure we need to re-throw the error as it's handled and the response headers should be already sent 
             } finally {
                 //if no db manager anymore, we get a new one. 
+                if (noSending) return ;
                 if (!manager) manager = new Database(); 
                 if (mailTrack.attempts > 1) {
                     console.log('renderAndSendEmail finally ...update emailTrack', mailTrack);
@@ -104,13 +108,16 @@ const getEmailErrors = async () => {
 const startCheckMailErrors = () => {
          if (!intervalCheckId) intervalCheckId = setInterval(getEmailErrors, SETTINGS.EMAIL_RETRY_DELAY_MINUTES * 60 * 1000);
         console.log('check email error  Interval Id ', intervalCheckId);
-};
+        return;
+    };
+
 
 //unset the intervalCheckId to stop the the email error lookup and resend process
 const stopCheckMailErrors = () => {
     if (intervalCheckId) clearInterval(intervalCheckId);
     console.log('no error: clear email error Interval Id ', intervalCheckId);
     intervalCheckId = null;
+    return;
 };
 
 module.exports = {

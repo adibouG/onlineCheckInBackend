@@ -1,8 +1,10 @@
 const jwt = require('jsonwebtoken') ;
 const Errors = require('../Models/errors.js');
+const Models = require('../Models/index.js');
 const Enzo = require('../Models/Enzo.js');
+const { MAILTYPES } = require('../Emails/enzoMails.js');
 const helpers = require('../Helpers/helpers.js');
-const { verifyToken, setCheckBooking, unlimitedTokenSign, startTokenSign } = require('../Utilities/utilities.js');
+const { verifyToken, setCheckBooking, unlimitedTokenSign, startTokenSign, makeQrCode } = require('../Utilities/utilities.js');
 const { winstonLogger } = require('../Logger/loggers.js');
 const { FINAL_STEP } = require('../settings.json');
 //Request a booking route controller (from token contained in email link acyually)
@@ -23,11 +25,24 @@ const getBookingFromToken = async (req, res) => {
         const { hotelId, reservationId } = decoded;
         if (!token || !hotelId || !reservationId) throw new Errors.EnzoError('no valid token');
         booking = await helpers.getReservations(hotelId, reservationId);
-        if (!booking.length) throw new Errors.NotFound() ;        
+        const qrCodeMails = await helpers.getEmailTracking(hotelId, reservationId, MAILTYPES.QR );
+         if (!booking.length) throw new Errors.NotFound() ;        
         const reservation = booking[0];
         const roomStay = reservation.roomStays[0];
+        let isPreChecked = false;
+        if (qrCodeMails.length) isPreChecked = true;
+        else {
+            let hasPaid = await helpers.isPaymentDone(hotelId, reservationId);
+            if (hasPaid) isPreChecked = true;
+        }
         //token was signed using the reservation state in order to make it only 1 time use 
         verifyToken(token, roomStay); 
+
+        if (isPreChecked) {
+            let qrCode = await makeQrCode(hotelId, reservationId)
+            roomStay.qrCode = qrCode;
+            roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
+        } 
         const hotelStay = await helpers.getHotelOffers(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
         
         const availableRoomIds = [];
@@ -56,7 +71,7 @@ const getBookingFromToken = async (req, res) => {
         return res.status(200).send(hotelStay);
     } catch(e) {
         winstonLogger.error(e) ;
-        return res.status(e.code || 401).send(e.message || 'error') ;
+        return res.status(e.code || 500).send(e.message || 'error') ;
     }
 };
 

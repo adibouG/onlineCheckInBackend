@@ -3,7 +3,7 @@ const { AsyncResource, executionAsyncId } = require('async_hooks');
 const axios = require('axios');
 const { addDay } = require('../Utilities/utilities.js');
 const { CHECKIN_REQUEST_START_DAY_OFFSET } = require('../settings.json');
-const { path } = require('../app.js');
+
 
 const PMS_API_BASEURL = process.env.PMS_API_BASEURL; 
 //Reservation time filter
@@ -34,8 +34,7 @@ class PmsModuleApi extends AsyncResource {
                                  pmsUrl = this.pmsUrl, pmsUser = this.pmsUser, pmsPwd = this.pmsPwd, other = null } = {})
         {
             console.log('PmsModuleApi.getReservationData start...  pmsId:' , pmsId )
-            console.log('and resevationId:' , reservationId )
-         
+            console.log('and resevationId:' , reservationId );
             try {
                 const params = new URLSearchParams();
                 const apiUrl = new URL(this.pmsModuleBaseApiUrl);
@@ -61,11 +60,15 @@ class PmsModuleApi extends AsyncResource {
                 if (pmsUser) params.set('pmsUser', pmsUser); 
                 if (pmsPwd) params.set('pmsPwd', pmsPwd);
                 apiUrl.search = params;
-                const request = await axios.get(apiUrl.toString()/*, { validateStatus: s => (s < 500) }*/);
-                console.log('PmsModuleApi.getReservationData end...  pmsId:' , pmsId )
+                const request = await axios.get(apiUrl.toString() ,
+                { validateStatus: s => (s < 500) });
+                console.log('PmsModuleApi.getReservationData end...  pmsId:' , pmsId );
+                console.log('PmsModuleApi.getReservationData end...  pmsId:' , request.data);
                 return request.data;            
             } catch(e) {
+
                 console.error(e.message);
+                //if (e) return
                 throw e;
             }
         }
@@ -131,7 +134,6 @@ class PmsModuleApi extends AsyncResource {
         pmsId = pmsId || this.pmsId ;
         pmsUser = pmsUser || this.pmsUser ;
         pmsPwd = pmsPwd || this.pmsPwd;
-
         try{  
             const params = new URLSearchParams();
             const apiUrl = new URL(this.pmsModuleBaseApiUrl);
