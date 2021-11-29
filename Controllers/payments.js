@@ -3,6 +3,7 @@ const { PaymentLinkRequestBody, PaymentResult } = require('../Models/EnzoPayApi.
 const helpers = require('../Helpers/helpers.js');
 const Models = require('../Models/index.js');
 const Enzo = require('../Models/Enzo.js');
+const Errors = require('../Models/Errors.js');
 const { verifyToken } = require('../Utilities/utilities.js');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
@@ -66,7 +67,6 @@ const getPaymentLinkFromToken = async (req, res) => {
         const applicationId = "onlinecheckin";
         const hotelName = hotelInfo.name;
         const merchant = hotelInfo.merchantId;
-        console.log(hotelInfo)
         const payload = new PaymentLinkRequestBody({ 
             merchantId: merchant || hotelName,
             customerId: reservationId, 
@@ -116,12 +116,12 @@ const getPaymentResultById = async (req, res) => {
         const { uuid, hotelId, reservationId, email, steps } = decoded;
 
         const paySessions = await helpers.getPaymentSession(hotelId, reservationId, transactionId);
-        if (!paySession.length) throw new Errors.EnzoError('no payment session started was found')
+        if (!paySessions.length) throw new Errors.EnzoError('no payment session started was found')
         const paySession = paySessions[0];
         if (paySession.status === Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED) { throw new Errors.EnzoError('payment session  found but finished')}
         if (paySession.status === Models.PaymentSession.PAYMENT_SESSION_STATUS.CREATED) {
             paySession.status = Models.PaymentSession.PAYMENT_SESSION_STATUS.STARTED;
-            payStatus.updatedAt = Date.now() ;
+            paySession.updatedAt = Date.now() ;
         }
         const result = await helpers.getPaymentResult({ transactionId, hotelId });
         let code ;
@@ -142,28 +142,31 @@ const getPaymentResultById = async (req, res) => {
         }
         if (paymentEnded) {
             paySession.status = Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED;
-            payStatus.updatedAt = Date.now() ;
+            paySession.updatedAt = Date.now() ;
             await helpers.updatePaymentSession(paySession);
             if (paymentSuccess) {
                 //get and update the reservation  
                 const bookings = await helpers.getReservations(hotelId, reservationId);
                 const booking = bookings[0];
                 const roomStay = booking.roomStays[0];
-                const payItem = new Enzo.EnzoFolioItem({ 
-                    name: new Enzo.LocalText({ "en": "PayByLink Payment" }), 
-                    type: Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.PAYMENT , 
-                    totalAmount: result.amountPaid, 
-                    unitAmount: result.amountPaid, 
-                    numberOfUnits: 1, 
-                    dateTime: Date.now()
-                });
-
-                for (let f of  roomStay.folios) {
+                let guestFolioIndex = 0;
+                const guestFolio = roomStay.folios.find((f,i) => {
                     if (f.type === Enzo.EnzoFolio.FOLIO_TYPES.GUEST) { 
-                        f.addFolioItem(payItem);
-                        break;
+                        guestFolioIndex = i;
+                        return f;
                     }
-                }
+                });
+                guestFolio.addFolioItem(
+                    new Enzo.EnzoFolioItem({ 
+                        name: new Enzo.LocalText({ "en": "PayByLink Payment" }), 
+                        type: Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.PAYMENT , 
+                        totalAmount: result.amountPaid, 
+                        unitAmount: result.amountPaid, 
+                        numberOfUnits: 1, 
+                        dateTime: Date.now()
+                    })
+                );
+                roomStay.folios.splice(guestFolioIndex, 1, guestFolio);
                 roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
                 booking.roomStays = [roomStay];
                 //trigger the qrCode email

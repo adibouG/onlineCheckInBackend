@@ -296,7 +296,7 @@ const getPaymentResult = async ({ transactionId, hotelId }, db = null ) => {
         } ;
         console.log(payload)
         const payResultRequest = await axios.post(`${payApiUrl}${api}`, payload) ;
-        const payResult = new Models.PaymentResult(payResultRequest.data);
+        const payResult = new PaymentResult(payResultRequest.data);
         return payResult;
     }catch(e){
         console.log(e);
@@ -311,7 +311,15 @@ const getPaymentSession = async (hotelId, reservationId, transactionId = null, d
         db = db || new Database(hotelId);
         //get the hotel data from the pmsAPI
         const sessions = await db.getPaymentSession({ hotelId, reservationId, transactionId });
-        return sessions.map(session => new Models.PaymentSession(session));
+        return sessions.map(session => new Models.PaymentSession({
+            reservationId: session.reservation_id,
+            hotelId: session.hotel_id,
+            transactionId: session.transaction_id,
+            startedAt: new Date(session.started_at).getTime(),
+            updatedAt: session.updated_at ? new Date(session.updated_at).getTime() : null ,
+            status: session.status
+        })
+    );
     } catch (e) {
         console.log(e);
         throw e;
@@ -336,7 +344,7 @@ const updatePaymentSession = async (data, db = null) => {
     console.log("Start helper process: get pay  sessions....");
     try{
         //Call the db to get the list of hotel clients and their pmsData
-        db = db || new Database(hotelId);
+        db = db || new Database(data.hotelId);
         //get the hotel data from the pmsAPI
         await db.updatePaymentSession(data);
         return 
@@ -367,22 +375,27 @@ return dataUrl;
 
 const isPaymentDone = async (hotelId, reservationId) => {
     let isDone = false;
-    const paySessions = await getPaymentSession(hotelId, reservationId);
-    if (paySessions.length) {
-       
-        for (let s of paySessions) {
-            let sess;
-            if (s.status === Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED) {
-                sess = s ;
-            }   
-            const payRes = await getPaymentResult({ transactionId: sess.transactionId, hotelId: sess.hotelId });
-            if (payRes.status === PaymentResult.PAYMENT_RESULTS.PAID) { 
-                isDone = true;
-                break;
-            } 
+    try{
+        const paySessions = await getPaymentSession(hotelId, reservationId);
+        if (paySessions.length) {
+        
+            for (let s of paySessions) {
+                let sess;
+                if (s.status === Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED) {
+                   sess = s ;
+                   const payRes = await getPaymentResult({ transactionId: sess.transactionId, hotelId: sess.hotelId });
+                    if (payRes.status === PaymentResult.PAYMENT_RESULTS.PAID) { 
+                        isDone = true;
+                        break;
+                    } 
+                }
+            }    
         }
+        return isDone;
+    }catch (e) {
+        console.error(e);
+        throw e;
     }
-    return isDone;
 }
 
 module.exports = {
