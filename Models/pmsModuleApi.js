@@ -60,13 +60,15 @@ class PmsModuleApi extends AsyncResource {
                 if (pmsUser) params.set('pmsUser', pmsUser); 
                 if (pmsPwd) params.set('pmsPwd', pmsPwd);
                 apiUrl.search = params;
-                const request = await axios.get(apiUrl.toString() ,
-                { validateStatus: s => (s < 500) });
+                const request = await axios.get(apiUrl.toString(), { validateStatus: s => (s < 500) });
                 console.log('PmsModuleApi.getReservationData end...  pmsId:' , pmsId );
                 console.log('PmsModuleApi.getReservationData end...  pmsId:' , request.data);
                 return request.data;            
             } catch(e) {
-
+                if (e.code === 'ECONNREFUSED') {
+                    console.log('no pms cloud api connection');
+                    return;
+                }
                 console.error(e.message);
                 //if (e) return
                 throw e;
@@ -76,21 +78,25 @@ class PmsModuleApi extends AsyncResource {
     async updateReservationData({ data, hotelId = null, reservationId = null, pmsId = null,
         pmsUrl = null, pmsUser = null, pmsPwd = null } = {}) 
         {
-
-            const body = { pmsUrl, pmsUser, pmsPwd, data };
-            try{
-                console.log(this.pmsModuleBaseApiUrl);
-                const apiUrl = new URL(this.pmsModuleBaseApiUrl);
-                if (!pmsId) throw new Error('missing pmsId');
-                apiUrl.pathname += `/pms/${pmsId}/reservations` ;
-                if (reservationId) apiUrl.pathname += `/${reservationId}`; 
-                await axios.put(apiUrl.toString(), body); 
-                return ;
-            } catch(e) {
-                console.error(e);
-                throw e;
-            }
+        try {    
+            const params = new URLSearchParams();
+            const apiUrl = new URL(this.pmsModuleBaseApiUrl);
+            if (!pmsId) throw new Error('missing pmsId');
+            if (!reservationId) throw new Error('missing reservationId');
+            if (!data) throw new Error('missing reservation');
+            apiUrl.pathname += `/pms/${pmsId}/reservations` ;
+            apiUrl.pathname += `/${reservationId}`; 
+            if (pmsUrl) params.set('pmsUrl', pmsUrl);
+            if (pmsUser) params.set('pmsUser', pmsUser); 
+            if (pmsPwd) params.set('pmsPwd', pmsPwd);
+            console.log(this.pmsModuleBaseApiUrl);
+            await axios.put(apiUrl.toString(), data); 
+            return ;
+        } catch(e) {
+            console.error(e);
+            throw e;
         }
+    }
     async getHotelData({ pmsId = null, startDate = null, endDate = null, pmsUrl = null, pmsUser = null, pmsPwd = null }) 
     {
         pmsUrl = pmsUrl || this.pmsUrl ;
@@ -103,16 +109,16 @@ class PmsModuleApi extends AsyncResource {
             const apiUrl = new URL(this.pmsModuleBaseApiUrl);
             if (!pmsId) throw new Error('missing pmsId');
             apiUrl.pathname += `/pms/${pmsId}/hotel` ;
-            const isDates = (startDate && endDate) || (this.startDate && this.endDate) ;
-            if (isDates) {
-                startDate = new Date(startDate || this.startDate); 
-                endDate = new Date(endDate || this.endDate);
-            } else {
-                startDate = new Date() ;
-                endDate = addDay(startDate, CHECKIN_REQUEST_START_DAY_OFFSET);
-            }
-            params.set('startDate', startDate.toISOString());
-            params.set('endDate', endDate.toISOString());
+            // const isDates = (startDate && endDate) || (this.startDate && this.endDate) ;
+            // if (isDates) {
+            //     startDate = new Date(startDate || this.startDate); 
+            //     endDate = new Date(endDate || this.endDate);
+            // } else {
+            //     startDate = new Date() ;
+            //     endDate = addDay(startDate, CHECKIN_REQUEST_START_DAY_OFFSET);
+            // }
+            // params.set('startDate', startDate.toISOString());
+            // params.set('endDate', endDate.toISOString());
         
             if (pmsUrl) params.set('pmsUrl', pmsUrl);
             if (pmsUser) params.set('pmsUser', pmsUser); 
@@ -194,6 +200,33 @@ class PmsModuleApi extends AsyncResource {
             return requestResult.data ;
         } catch(e) {
             console.error(e);
+            throw e;
+        }
+    }
+
+
+    async getReservationHotelStay({ reservationId = this.reservationId, 
+        pmsId = this.pmsId, startDate = this.startDate, endDate = this.endDate, filter = this.filter,
+         pmsUrl = this.pmsUrl, pmsUser = this.pmsUser, pmsPwd = this.pmsPwd, other = null } = {})
+    {
+        console.log('PmsModuleApi.getReservationData start...  pmsId:' , pmsId )
+        console.log('and resevationId:' , reservationId );
+        try {
+            const params = new URLSearchParams();
+            const apiUrl = new URL(this.pmsModuleBaseApiUrl);
+            if (!pmsId) throw new Error('missing pmsId');
+            apiUrl.pathname += `/pms/${pmsId}/reservations` ;
+            if (reservationId) apiUrl.pathname += `/${reservationId}/hotelstay`; 
+            if (pmsUrl) params.set('pmsUrl', pmsUrl);
+            if (pmsUser) params.set('pmsUser', pmsUser); 
+            if (pmsPwd) params.set('pmsPwd', pmsPwd);
+            apiUrl.search = params;
+            const request = await axios.get(apiUrl.toString(), { validateStatus: s => (s < 500) });
+            console.log('PmsModuleApi.getReservationData end...  pmsId:' , pmsId );
+            console.log('PmsModuleApi.getReservationData end...  pmsId:' , request.data);
+            return request.data;            
+        } catch(e) {    
+            console.error(e.message);
             throw e;
         }
     }

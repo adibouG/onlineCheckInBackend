@@ -42,16 +42,45 @@ const getReservations = async (hotelId = null, reservationId = null, conf = null
                 const er = new Enzo.EnzoReservation(reservationsRequest);
                 er.hotelId = row.hotelId;
                 results.push(er);
-            } else {
+            } else if (Array.isArray(reservationsRequest)) {
                 reservationsRequest.map((r) => {
                     const er = new Enzo.EnzoReservation(r);
-                    er.hotelId = hotelId;
+                    er.hotelId = row.hotelId;;
                     results.push(er);
                 });
             }
         }
         return results;
             
+    } catch(e) {
+        console.error(e);
+        throw e;
+    }
+};
+
+const getReservationsHotelStay = async (hotelId = null, reservationId = null, conf = null, hotelPms = null) => { 
+    console.log(`Start helper process: get hotel ${hotelId} Reservations ${reservationId}`);
+    try{
+                              
+        //Call the db to get the list of hotel clients and their pmsData
+        const pmsApi =  conf && ( conf instanceof PmsModuleApi) ? conf : new PmsModuleApi(); //we use 1 generic manager (no hotelID) that will do request for each hotel 
+        const db = conf && ( conf instanceof Database) ? conf : new Database();
+        let pms = hotelPms && ( hotelPms instanceof Models.HotelPmsSettings) ? hotelPms : await db.getHotelPmsInfo(hotelId); //retrieve all the hotels with their pms info
+        //get the reservations per hotel 
+        if (Array.isArray(pms)) { pms = pms[0]; }
+        //loop through hotel result
+        const reservationsRequest = await pmsApi.getReservationHotelStay({ 
+                    reservationId, //can be null if we look for all the reservations from the hotel pms
+                    pmsId: pms.pmsId, 
+                    pmsUrl: pms.pmsUrl, 
+                    pmsUser: pms.pmsUser, 
+                    pmsPwd: pms.pmsPwd 
+                });
+        
+            //we receive an array of enzoReservations data 
+            //we add the hotelId to the reservation 
+        console.log(reservationsRequest);
+        return  new Enzo.EnzoHotelStay(reservationsRequest);            
     } catch(e) {
         console.error(e);
         throw e;
@@ -400,6 +429,7 @@ const isPaymentDone = async (hotelId, reservationId) => {
 
 module.exports = {
     getReservations,
+    getReservationsHotelStay,
     postReservations,
     resetBookingStatus,
     getBookingFromEmail,

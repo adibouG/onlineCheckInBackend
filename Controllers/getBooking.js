@@ -24,51 +24,58 @@ const getBookingFromToken = async (req, res) => {
         let decoded = jwt.decode(token);
         const { hotelId, reservationId } = decoded;
         if (!token || !hotelId || !reservationId) throw new Errors.EnzoError('no valid token');
-        booking = await helpers.getReservations(hotelId, reservationId);
+        //booking = await helpers.getReservations(hotelId, reservationId);
+        const bookingHotelStay = await helpers.getReservationsHotelStay(hotelId, reservationId);
         const qrCodeMails = await helpers.getEmailTracking(hotelId, reservationId, MAILTYPES.QR );
-         if (!booking.length) throw new Errors.NotFound() ;        
-        const reservation = booking[0];
+        if (!bookingHotelStay) throw new Errors.NotFound() ;        
+        const reservation = bookingHotelStay.reservation;
         const roomStay = reservation.roomStays[0];
-        let isPreChecked = false;
-        if (qrCodeMails.length) isPreChecked = true;
-        else {
-            let hasPaid = await helpers.isPaymentDone(hotelId, reservationId);
-            if (hasPaid) isPreChecked = true;
-        }
-        //token was signed using the reservation state in order to make it only 1 time use 
-        verifyToken(token, roomStay); 
 
-        if (isPreChecked) {
-            let qrCode = await makeQrCode(hotelId, reservationId)
-            roomStay.qrCode = qrCode;
-            roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
-        } 
-        const hotelStay = await helpers.getHotelOffers(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
-        
-        const availableRoomIds = [];
-        const  availableRoomTypeIds = [];
-        const  availableOptionIds = [];
-        hotelStay.rooms.map(r => {
-            if(r.status === Enzo.EnzoRoom.ROOM_STATUS.CLEAN) {
-                availableRoomIds.push(r.pmsId);
-                if (!availableRoomTypeIds.includes(r.roomTypeId)) {
-                    availableRoomTypeIds.push(r.roomTypeId);
-                }
-                return r.pmsId;
+        if (roomStay.status === Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST) {
+            let isPreChecked = false;
+
+            if (qrCodeMails.length) isPreChecked = true;
+            else {
+                let hasPaid = await helpers.isPaymentDone(hotelId, reservationId);
+                if (hasPaid) isPreChecked = true;
             }
-        });
-                    
-        hotelStay.options.map( o => {
-            availableOptionIds.push(o.pmsId);
-        });
-        reservation.roomStays[0].availableOptionIds = availableOptionIds;
-        reservation.roomStays[0].availableRoomTypeIds = availableRoomTypeIds;
-        reservation.roomStays[0].availableRoomIds = availableRoomIds;
-        if (reservation.hotelId) delete reservation.hotelId;
-        hotelStay.reservation = reservation;
+            //token was signed using the reservation state in order to make it only 1 time use 
+            verifyToken(token, roomStay); 
+
+            if (isPreChecked) {
+                let qrCode = await makeQrCode(hotelId, reservationId)
+                roomStay.qrCode = qrCode.toString();
+                roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
+                bookingHotelStay.reservation.roomStays = [roomStay];
+            } 
+        }
+
+        //const hotelStay = await helpers.getHotelOffers(hotelId, roomStay.exp  ectedArrival, roomStay.expectedDeparture);
+        
+        //const availableRoomIds = [];
+        //const  availableRoomTypeIds = [];
+        //const  availableOptionIds = [];
+        //hotelStay.rooms.map(r => {
+        //    if(r.status === Enzo.EnzoRoom.ROOM_STATUS.CLEAN) {
+        //        availableRoomIds.push(r.pmsId);
+        //        if (!availableRoomTypeIds.includes(r.roomTypeId)) {
+        //            availableRoomTypeIds.push(r.roomTypeId);
+        //        }
+        //        return r.pmsId;
+        //    }
+        //});
+        //            
+        //hotelStay.options.map( o => {
+        //    availableOptionIds.push(o.pmsId);
+        //});
+        //reservation.roomStays[0].availableOptionIds = availableOptionIds;
+        //reservation.roomStays[0].availableRoomTypeIds = availableRoomTypeIds;
+        //reservation.roomStays[0].availableRoomIds = availableRoomIds;
+        //if (reservation.hotelId) delete reservation.hotelId;
+        //hotelStay.reservation = reservation;
 
         //get HotelPolicies screens values into the  booking
-        return res.status(200).send(hotelStay);
+        return res.status(200).send(bookingHotelStay);
     } catch(e) {
         winstonLogger.error(e) ;
         return res.status(e.code || 500).send(e.message || 'error') ;
@@ -89,7 +96,7 @@ const postBooking = async (req, res) => {
         const { uuid, hotelId, reservationId, email, steps } = decoded;
         const data = req?.body;
         if (!data) throw new Errors.EnzoError('no booking nor update');
-        const stay = new Enzo.EnzoRoomStay(data);
+        const stay = new Enzo.EnzoReservation(data);
         verifyToken(token, stay)
         await helpers.postReservations(hotelId, reservationId, stay);
         if (step == FINAL_STEP) enzoCheckin = setCheckBooking(enzoCheckin);
