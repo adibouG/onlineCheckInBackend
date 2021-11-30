@@ -34,7 +34,7 @@ const makeQrCode = async (hotelId, booking) => {
         code = booking.bookingId ;
         return await QRCode.toDataURL(code);
     } else {
-        code = { bookingId: booking.bookingId, hotelId, firstName: booking.firstName, lastName: booking.lastName };
+        code = { bookingId: booking.bookingId, hotelId, firstName: booking.guests[0].firstName, lastName: booking.guests[0].lastName };
         return await QRCode.toDataURL(JSON.stringify(code));
     }
 };
