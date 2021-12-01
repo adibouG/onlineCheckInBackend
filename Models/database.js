@@ -813,12 +813,13 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             throw e;
         } 
     }
-    async deletePaymentSession(){
+
+    async deletePaymentSession(reservationId){
         let client, query1, query1result;
         try {
             client = await pgPool.connect();
-            query1 = 'DELETE FROM payment_session WHERE reservation_id = $1 AND transaction_id = $2' ;
-            query1result = await client.query(query1);
+            query1 = 'DELETE FROM payment_session WHERE reservation_id = $1 ' ;
+            query1result = await client.query(query1, [reservationId]);
             client.release();
             return query1result.rows;
         }catch(e) {

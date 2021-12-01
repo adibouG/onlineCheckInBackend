@@ -27,9 +27,7 @@ const getPaymentLinkFromToken = async (req, res) => {
         //TODO make a token verification function security check : algo, sign, iss ...
         const decoded = jwt.decode(token); 
         const { uuid, hotelId, reservationId, email, steps } = decoded;
-        
         const booking = await helpers.getReservations(hotelId, reservationId);
-        
         const hotelInfo = await helpers.getHotelInfo(hotelId) ;
         
         if (!booking.length) throw new Errors.NotFound() ;        

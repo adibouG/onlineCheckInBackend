@@ -230,19 +230,27 @@ const resetBookingState = (book) => {
         book.primaryGuestAllowsEmailMarketing = false;
         book.wifi = null;
         book.qrCode = null;
-        book.folios.remainingToPay =  book.folios.totalCosts;
-        book.folios.alreadyPaid = 0 ;
-         book.folios.folioItems.forEach((item, idx) => {
-         if (item.type === Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.PAYMENT) {
-            book.folios.folioItems.splice(idx, 1);
-         }
-     });
-     
+        book.status = Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST;
+        book.folios.forEach(folio => {
+            
+            folio.alreadyPaid = 0 ;
+            folio.remainingToRefund = 0 ;
+            const fi = folio.folioItems;
+            folio.folioItems.forEach((item, idx) => {
+                if (item.type === Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.PAYMENT) {
+                    fi.splice(idx, 1);
+                }
+                if (item.type === Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.CHARGE) {
+                    
+                    //new Enzo.EnzoFolioItem().folioItemGroupId.totalAmoun
+                    book.folio.totalCosts += item.totalAmount
+                }
+            });
+            folio.remainingToPay = folio.totalCosts;
+        });
+        book.addedOptionIds = [];
+        book.guests = book.guests.map(g => resetGuest(g));
     }
-    let guest = resetGuest(book.guests[0]);
-
-    book.guests = [guest];
-
     return book ;
 };
 
@@ -282,7 +290,6 @@ const resetBookingDate = (reservation) => {
             newDates = makeCheckDates(false) ; 
             book.expectedArrival = newDates.today ;
             book.expectedDeparture = newDates.otherDate ;
-            book.status = Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST;
             book = resetBookingState(book);
         }
         updated.push(book);
@@ -392,6 +399,6 @@ module.exports = {
     makeToken,
     makeEmailValues,
     newReservationFilter,    
-unlimitedTokenSign,
+    unlimitedTokenSign,
  startTokenSign
 }

@@ -94,10 +94,8 @@ const postReservations = async (hotelId, reservationId, data, db = null, pms = n
        
         db = db || new Database(hotelId);
         pms =  pms || await db.getHotelPmsInfo(hotelId); 
-  
        //retrieve the hotel  pms info 
         const pmsApi = new PmsModuleApi(hotelId); //we make a hotel specific
-        
         await pmsApi.updateReservationData({ 
             data,
             reservationId,  
@@ -107,7 +105,6 @@ const postReservations = async (hotelId, reservationId, data, db = null, pms = n
             pmsPwd: pms.pmsPwd
         });
         console.log("End helper process: postReservations....");
- 
         return ;
     } catch(e) {
         console.error(e);
@@ -152,7 +149,8 @@ const resetBookingStatus = async (email = null, reservationId = null, db = null)
                 newBook = resetBookingDate(booking);
             }
             await postReservations(hotelId, newBook.pmsId, newBook); 
-            await db.deleteEmailTrackingInfo(newBook.reservationId, hotelId);
+            await db.deleteEmailTrackingInfo(newBook.pmsId, hotelId);
+            await db.deletePaymentSession(newBook.pmsId);
         } else {
             let bookings = await getReservations(hotelId, null, db, pms);
             console.log('Reset : bookings => ', bookings);
@@ -163,6 +161,7 @@ const resetBookingStatus = async (email = null, reservationId = null, db = null)
                 console.log('Reset ', b.pmsId, newBook);
                 await postReservations(hotelId, b.pmsId, newBook, db, pms) 
                 await db.deleteEmailTrackingInfo(b.pmsId, hotelId)
+                await db.deletePaymentSession(b.pmsId);
             }
             console.log('Reset : %s bookings ', bookings.length);
         }
@@ -382,6 +381,19 @@ const updatePaymentSession = async (data, db = null) => {
         throw e;
     } 
 }
+const deletePaymentSession = async (data, db = null) => { 
+    console.log("Start helper process: get pay  sessions....");
+    try{
+        //Call the db to get the list of hotel clients and their pmsData
+        db = db || new Database(data.hotelId);
+        //get the hotel data from the pmsAPI
+        await db.deletePaymentSession(data.reservationId);
+        return 
+    } catch (e) {
+        console.log(e);
+        throw e;
+    } 
+}
 
 const makeQrCodeEmail = async (hotelId, booking) =>{
 
@@ -427,6 +439,7 @@ const isPaymentDone = async (hotelId, reservationId) => {
     }
 }
 
+
 module.exports = {
     getReservations,
     getReservationsHotelStay,
@@ -447,5 +460,6 @@ module.exports = {
     getPaymentSession,
     addPaymentSession,
     updatePaymentSession,
+    deletePaymentSession,
     makeQrCodeEmail
 }

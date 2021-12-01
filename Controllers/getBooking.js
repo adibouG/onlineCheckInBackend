@@ -100,7 +100,7 @@ const postBooking = async (req, res) => {
         const stay = new Enzo.EnzoReservation(data);
         verifyToken(token, stay)
         await helpers.postReservations(hotelId, reservationId, stay);
-        if (step == FINAL_STEP) enzoCheckin = setCheckBooking(enzoCheckin);
+        //if (step == FINAL_STEP) enzoCheckin = setCheckBooking(enzoCheckin);
        /*
         const updtBookingData = await helpers.getReservations(hotelId, reservationId);
         if (!updtBookingData) throw new Errors.NotFound() ;
