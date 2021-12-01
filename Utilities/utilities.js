@@ -166,7 +166,7 @@ const setCheckBooking = (bookingUpdt) => {
 
 const isBookingValid = (book) =>  !book.finalArrival && VALID_ENZO_STATUS.includes(book.status.toUpperCase()) ;
 
-const isPreCheckedBooking = (book) => ("status" in book && book.status.toUpperCase() === 'PRECHECKEDIN') ;
+const isPreCheckedBooking = (book) => (book.status === Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN ||book.status === Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST) ;
 
 //make a specific checkin app Response Body, handle the conversion to check in app format, verify the status and build response accordingly
 //take a EnzoStay as booking, the hotelId, and the hotel app Settings object ... 
@@ -220,7 +220,8 @@ const makeDate = () => {
 
 const getDay = (d , loc = false) => new Date(d).toLocaleDateString(loc, { weekday: 'long' });
 
-const resetBookingState = (book) => {
+const resetBookingState = 
+(book) => {
 
     if (isPreCheckedBooking(book)) {
         
@@ -231,33 +232,19 @@ const resetBookingState = (book) => {
         book.wifi = null;
         book.qrCode = null;
         book.status = Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST;
-        book.folios.forEach(folio => {
-            
-            folio.alreadyPaid = 0 ;
-            folio.remainingToRefund = 0 ;
-            const fi = folio.folioItems;
-            folio.folioItems.forEach((item, idx) => {
-                if (item.type === Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.PAYMENT) {
-                    fi.splice(idx, 1);
-                }
-                if (item.type === Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.CHARGE) {
-                    
-                    //new Enzo.EnzoFolioItem().folioItemGroupId.totalAmoun
-                    book.folio.totalCosts += item.totalAmount
-                }
-            });
-            folio.remainingToPay = folio.totalCosts;
-        });
+        book.folios = [] ;
         book.addedOptionIds = [];
-        book.guests = book.guests.map(g => resetGuest(g));
+        book.preBookedOptionIds = [];
+        book.guests = [resetGuest(book.guests[0])];
     }
     return book ;
 };
 
 const resetGuest = (guest) => {
-    if (guest.phone) guest.phone = null;
-    if (guest.note) guest.note = null;
-    if (guest.address) guest.address = null;
+    guest.phone = null;
+    guest.note = null;
+    guest.signature = null;
+    guest.address = null;
     return guest ;
 };
 

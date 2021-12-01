@@ -37,6 +37,7 @@ const getReservations = async (hotelId = null, reservationId = null, conf = null
         
             //we receive an array of enzoReservations data 
             //we add the hotelId to the reservation 
+            
             console.log(reservationsRequest);
             if  (reservationId && reservationsRequest.pmsId) {
                 const er = new Enzo.EnzoReservation(reservationsRequest);
