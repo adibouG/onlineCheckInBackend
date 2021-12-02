@@ -47,12 +47,10 @@ class Pms {
 }
 
 class HotelStylesSettings { 
-    constructor({ fontFamily = null, backgroundImage = null,  cssFileUrl = null, logo = null } = {} ) { 
+    constructor({ fonts = null, colors = null } = {} ) { 
         
-        this.fontFamily = fontFamily; 
-        this.backgroundImage = backgroundImage ;
-        this.logo = logo
-        this.cssFileUrl = cssFileUrl ;
+        this.fonts = fonts; 
+        this.colors = colors ;
     }
 }
 

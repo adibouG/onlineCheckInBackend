@@ -39,14 +39,14 @@ api.post(`/admin/hotels/:hotelId/pms`,isAdmin, hotel.addHotelPms) ;
 api.delete(`/admin/hotels/:hotelId/pms`,isAdmin, hotel.deleteHotelPms) ;
 api.get(`/admin/hotels/:hotelId/pms`,isAdmin, hotel.getHotelPms) ;
 
-api.put(`/admin/hotels/:hotelId/screens`,isAdmin, hotel.updateHotelScreenSetting) ;
-api.post(`/admin/hotels/:hotelId/screens`,isAdmin, hotel.addHotelScreenSetting) ;
-api.delete(`/admin/hotels/:hotelId/screens`,isAdmin, hotel.deleteHotelScreenSetting) ;
+api.put(`/admin/hotels/:hotelId/appsettings`,isAdmin, hotel.updateHotelScreenSetting) ;
+api.post(`/admin/hotels/:hotelId/appsettings`,isAdmin, hotel.addHotelScreenSetting) ;
+api.delete(`/admin/hotels/:hotelId/appsettings`,isAdmin, hotel.deleteHotelScreenSetting) ;
 
 api.post(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.addHotelStylesSetting) ;
 api.put(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.updateHotelStylesSetting) ;
 api.delete(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.deleteHotelStylesSetting) ;
-api.get(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.getHotelStylesSetting) ;
+api.get(`/hotels/:hotelId/styles`, hotel.getHotelStylesSetting) ;
 
 
 
