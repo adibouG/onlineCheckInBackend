@@ -326,7 +326,7 @@ const getHotelStylesSetting = async (req, res, next) => {
         const { hotelId } = req?.params ;
         const dbManager = new Database();
         const styles = await dbManager.getHotelStyleSettings(hotelId);
-        const hotelStyle = new Models.HotelStylesSettings({ colors: styles.colors, fonts: styles.colors  });
+        const hotelStyle = new Models.HotelStylesSettings({ colors: styles.colors, fonts: styles.fonts  });
         return res.status(200).send(hotelStyle);
     } catch(e) {
         let error = e;

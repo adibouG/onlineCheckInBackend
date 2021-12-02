@@ -33,6 +33,7 @@ api.get(`/admin/pms/:pmsId`, pms.getPms);
 api.get(`/admin/pms`, pms.getPms);
 
 api.get(`/hotels/:hotelId/appsettings`, hotel.getHotelScreenSetting) ;
+api.get(`/hotels/:hotelId/styles`, hotel.getHotelStylesSetting) ;
 
 api.put(`/admin/hotels/:hotelId/pms`, isAdmin,  hotel.updateHotelPms) ;
 api.post(`/admin/hotels/:hotelId/pms`,isAdmin, hotel.addHotelPms) ;
@@ -46,7 +47,6 @@ api.delete(`/admin/hotels/:hotelId/appsettings`,isAdmin, hotel.deleteHotelScreen
 api.post(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.addHotelStylesSetting) ;
 api.put(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.updateHotelStylesSetting) ;
 api.delete(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.deleteHotelStylesSetting) ;
-api.get(`/hotels/:hotelId/styles`, hotel.getHotelStylesSetting) ;
 
 
 
@@ -76,7 +76,6 @@ api.get(`/hotels/:hotelId/reservations/:reservationId/getPaymentResultById`, pay
 api.post(`/hotels/:hotelId/reservations/:reservationId/getPaymentUrl`, payment.getPaymentLink);
 //endpoint to get hotel stay offers data   
 api.get(`/hotels/:hotelId/stays`, hotel.getHotelStays) ;
-api.get(`/hotels/:hotelId/appsettings`, hotel.getHotelStays) ;
 
 //endpoint to trigger a QRCode email request 
 api.post(`/hotels/:hotelId/qrcode`, email.renderAndSendQrCode);
