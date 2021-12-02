@@ -24,7 +24,7 @@ const newReservationFinder = async () => {
                 }    
             }
         }
-        if (!startNew) { 
+        if (!startNew) {
             winstonLogger.log('info',"end process: newReservationFinder .... jobs offset not passed : stop process ");
             return ;
         }

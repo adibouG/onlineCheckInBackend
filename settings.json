@@ -10,7 +10,7 @@
         "PATH" : "./Data/text.json"
     } ,
     "TOKEN" : {
-        "VALIDITY" : "3d"
+        "VALIDITY" : "3days"
     },
     "EMAIL_TEMPLATE_FILE": { 
         "START_PRECHECK_INVITE": "startCheckInMail" ,
