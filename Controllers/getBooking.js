@@ -33,7 +33,6 @@ const getBookingFromToken = async (req, res) => {
 
         if (roomStay.status === Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST) {
             let isPreChecked = false;
-
             if (qrCodeMails.length) isPreChecked = true;
             else {
                 let hasPaid = await helpers.isPaymentDone(hotelId, reservationId);
@@ -43,11 +42,11 @@ const getBookingFromToken = async (req, res) => {
             verifyToken(token, roomStay); 
 
             if (isPreChecked) {
-                let qrCode = await makeQrCode(hotelId, roomStay)
+                let qrCode = await makeQrCode(hotelId, roomStay);
                 roomStay.qrCode = qrCode.toString();
                 roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
                 reservation.roomStays = [roomStay];
-                //bookingHotelStay.reservation.roomStays = [roomStay];
+               
             } 
         }
 

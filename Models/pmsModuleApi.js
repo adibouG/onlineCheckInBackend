@@ -65,9 +65,9 @@ class PmsModuleApi extends AsyncResource {
                 console.log('PmsModuleApi.getReservationData end...  pmsId:' , request.data);
                 return request.data;            
             } catch(e) {
-                if (e.code === 'ECONNREFUSED') {
+                if (e.code === 'ECONNREFUSED' ||e.code === 'ECONNRESET') {
                     console.log('no pms cloud api connection');
-                    return;
+                    return [];
                 }
                 console.error(e.message);
                 //if (e) return

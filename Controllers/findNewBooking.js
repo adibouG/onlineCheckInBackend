@@ -29,6 +29,7 @@ const newReservationFinder = async () => {
             return ;
         }
         const results = await helpers.getReservations(null, null, db); 
+        if (!results.length) return ;
         //Call the db to get the list of hotel clients and their pmsData
         const emailTrackingList = await helpers.getEmailTracking(null, null, null, db);
           //compare the date if checkIn can be offer take a booking and the param name to check
