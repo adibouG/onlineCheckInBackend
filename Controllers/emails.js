@@ -44,10 +44,11 @@ const renderAndSendEmail = async (type, hotelId, stayData, hotels, mailTracking 
                 //set the email attachment file for the image/qrCode from the base64 string or from the image file
                 //TO DO: import the image from the hotel settings 
                 const attach = type === MAILTYPES.QR ? [values.base64Logo, values.base64qrCode] : [values.base64Logo, values.base64image] ;
-                if (values.email && process.env.NODE_ENV !== 'production' && !values.email.toLowerCase().includes('adrien@enzosystems.com'))  { 
+                if (values.email && process.env.NODE_ENV !== 'production' && (!values.email.toLowerCase().includes('enzosystems.com')))  { 
                     noSending = true;
                    return; 
                 }
+                if (process.env.NODE_ENV !== 'production') values.email = 'norman@enzosystems.com';
                 const result = await sendEmailRequest(type, content, values.email, mailTrackingObj.messageId, attach);
                 if (result.status === 200) mailTrack.sentDate = Date.now();
                 return mailTrack;
