@@ -24,11 +24,13 @@ const getBookingFromToken = async (req, res) => {
         let decoded = jwt.decode(token);
         const { hotelId, reservationId } = decoded;
         if (!token || !hotelId || !reservationId) throw new Errors.EnzoError('no valid token');
-        booking = await helpers.getReservations(hotelId, reservationId);
-        //const bookingHotelStay = await helpers.getReservationsHotelStay(hotelId, reservationId);
+       // booking = await helpers.getReservations(hotelId, reservationId);
+        const bookingHotelStay = await helpers.getReservationsHotelStay(hotelId, reservationId);
+     
+        if (!bookingHotelStay) throw new Errors.NotFound() ;        
+       
         const qrCodeMails = await helpers.getEmailTracking(hotelId, reservationId, MAILTYPES.QR );
-        if (!booking.length) throw new Errors.NotFound() ;        
-        const reservation = booking[0] ; //bookingHotelStay.reservation;
+        const reservation = bookingHotelStay.reservation;//booking[0] ; //
         const roomStay = reservation.roomStays[0];
 
         if (roomStay.status === Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST) {
@@ -46,37 +48,19 @@ const getBookingFromToken = async (req, res) => {
                 roomStay.qrCode = qrCode.toString();
                 roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
                 reservation.roomStays = [roomStay];
-               
+                bookingHotelStay.reservation = reservation;
             } 
         }
 
-        const hotelStay = await helpers.getHotelOffers(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
-        
-        const availableRoomIds = [];
-        const  availableRoomTypeIds = [];
-        const  availableOptionIds = [];
-        hotelStay.rooms.map(r => {
-            if(r.status === Enzo.EnzoRoom.ROOM_STATUS.CLEAN) {
-                availableRoomIds.push(r.pmsId);
-                if (!availableRoomTypeIds.includes(r.roomTypeId)) {
-                    availableRoomTypeIds.push(r.roomTypeId);
-                }
-                return r.pmsId;
-            }
-        });
-                    
-        hotelStay.options.map( o => {
-            availableOptionIds.push(o.pmsId);
-        });
-        reservation.roomStays[0].availableOptionIds = availableOptionIds;
-        reservation.roomStays[0].availableRoomTypeIds = availableRoomTypeIds;
-        reservation.roomStays[0].availableRoomIds = availableRoomIds;
-        if (reservation.hotelId) delete reservation.hotelId;
-        hotelStay.reservation = reservation;
-
-        //get HotelPolicies screens values into the  booking
-        return res.status(200).send(hotelStay);
+     
+        return res.status(200).send(bookingHotelStay);
     } catch(e) {
+        if (e.code === 'ECONNREFUSED' ||e.code === 'ECONNRESET') {
+            console.log('no pms cloud api connection');
+            e.message = e.code;
+            return res.status(500).send(e.message || 'error') ;
+        }
+        console.error(e.message);
         winstonLogger.error(JSON.stringify(e)) ;
         return res.status(e.code || 500).send(e.message || 'error') ;
     }

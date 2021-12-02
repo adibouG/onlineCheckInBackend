@@ -127,6 +127,11 @@ class PmsModuleApi extends AsyncResource {
             const requestResult =  await axios.get(apiUrl.toString(), { validateStatus: (s) => (s < 500) }); 
             return requestResult.data ;
         } catch(e) {
+            if (e.code === 'ECONNREFUSED' ||e.code === 'ECONNRESET') {
+                console.log('no pms cloud api connection');
+                return [];
+            }
+            console.error(e.message);
             console.error(e);
             throw e;
         }

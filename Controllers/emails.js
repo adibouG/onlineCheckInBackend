@@ -90,12 +90,14 @@ const getEmailErrors = async () => {
         for (let i = 0 ; i < results.length; i++) {
             let emailSentObject = results[i] ;
              //get the reservation  
-             const result = await helpers.getReservations(emailSentObject.hotelId, emailSentObject.reservationId);
+             const reservation = await helpers.getReservations(emailSentObject.hotelId, emailSentObject.reservationId);
              //get the hotel details  
-             const enzoHotel = await manager.getHotelDetails(emailSentObject.hotelId);
-            //render and send the email 
-             await renderAndSendEmail(emailSentObject.emailType, emailSentObject.hotelId, result[0], enzoHotel, emailSentObject);
-        } 
+             if (reservation.length){
+                const enzoHotel = await manager.getHotelDetails(emailSentObject.hotelId);
+                //render and send the email 
+                await renderAndSendEmail(emailSentObject.emailType, emailSentObject.hotelId, reservation[0], enzoHotel, emailSentObject);
+            } 
+        }
         return ;
     } catch (e) {
         console.log(e);

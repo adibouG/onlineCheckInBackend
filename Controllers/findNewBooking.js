@@ -56,6 +56,7 @@ const newReservationFinder = async () => {
 //get the new reservations,
 const newReservationsProcess = async (newValidStays, db = null) => {
     console.log("Start process: newValidStays ....");
+    if (!newValidStays.length) return ;
     const jobStatusId = await db.addJobStartLogs(Database.JOBTYPES.NEW_RESERVATION_FINDER);
     let count = 0;
     try {   
