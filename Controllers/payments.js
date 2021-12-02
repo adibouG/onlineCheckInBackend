@@ -13,6 +13,20 @@ const {winstonLogger} = require('../Logger/loggers.js');
 var paymentSessions = null ;
 var paymentResultCheckIntervalId = null ;
 
+const IDEALBANKCODES = {
+            "ABN Amro": "ABNANL2A",
+            "ASN Bank": "ASNBNL21",
+            "Bunq": "BUNQNL2A",
+            "ING": "INGBNL2A",
+            "Knab": "KNABNL2H",
+            "Rabobank": "RABONL2U",
+            "RegioBank": "RBRBNL21",
+            "SNS": "SNSBNL2A",
+            "Triodos Bank": "TRIONL2U",
+            "Van Lanschot": "FVLBNL22"
+        }
+    
+
 const getPaymentLinkFromToken = async (req, res) => {
   
     const { authorization } = req?.headers ;
@@ -65,6 +79,11 @@ const getPaymentLinkFromToken = async (req, res) => {
         const applicationId = "onlinecheckin";
         const hotelName = hotelInfo.name;
         const merchant = hotelInfo.merchantId;
+
+        if (method && method.toUpperCase() === "IDEAL") {
+            bank = IDEALBANKCODES[issuerId];
+        }
+        
         const payload = new PaymentLinkRequestBody({ 
             merchantId: merchant || hotelName,
             customerId: reservationId, 

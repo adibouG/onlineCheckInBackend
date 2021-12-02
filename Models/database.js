@@ -318,7 +318,7 @@ class Database extends AsyncResource {
         try {
             const client = await pgPool.connect();
             //get hotel details
-            const query1 = 'SELECT * FROM hotel_application_settings WHERE hotel_id = $1'  ;
+            const query1 = 'SELECT hotel_screen_settings FROM hotel_application_settings WHERE hotel_id = $1'  ;
             const query1result = await client.query(query1, [hotelId]) ;
             client.release();
             return query1result.rows[0].hotel_screen_settings;
