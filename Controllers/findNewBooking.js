@@ -43,15 +43,13 @@ const newReservationFinder = async () => {
         });
         //but only if there are actual tracked reservations
         if (filteredResults.length > 0) return await newReservationsProcess(filteredResults, db);
-        else {
-            winstonLogger.log('info',"end process: newReservationFinder .... no reservations ");
-            return ;
-        }
+        winstonLogger.log('info',"end process: newReservationFinder .... no reservations ");
+        return ;
     } catch (e) {
         console.log(e);
-        throw e;
+    return;
     }
-}
+};
 
 //get the new reservations,
 const newReservationsProcess = async (newValidStays, db = null) => {
@@ -98,7 +96,7 @@ const newReservationsProcess = async (newValidStays, db = null) => {
         return ;
     } catch (e) {
          console.log(e);
-        throw e;
+throw e;
     }
 }
 

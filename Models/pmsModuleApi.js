@@ -62,7 +62,6 @@ class PmsModuleApi extends AsyncResource {
                 apiUrl.search = params;
                 const request = await axios.get(apiUrl.toString(), { validateStatus: s => (s < 500) });
                 console.log('PmsModuleApi.getReservationData end...  pmsId:' , pmsId );
-                console.log('PmsModuleApi.getReservationData end...  pmsId:' , request.data);
                 return request.data;            
             } catch(e) {
                 if (e.code === 'ECONNREFUSED' ||e.code === 'ECONNRESET') {
@@ -70,8 +69,8 @@ class PmsModuleApi extends AsyncResource {
                     return [];
                 }
                 console.error(e.message);
-                //if (e) return
-                throw e;
+               return;
+           
             }
         }
 
@@ -228,7 +227,6 @@ class PmsModuleApi extends AsyncResource {
             apiUrl.search = params;
             const request = await axios.get(apiUrl.toString(), { validateStatus: s => (s < 500) });
             console.log('PmsModuleApi.getReservationData end...  pmsId:' , pmsId );
-            console.log('PmsModuleApi.getReservationData end...  pmsId:' , request.data);
             return request.data;            
         } catch(e) {    
             console.error(e.message);
