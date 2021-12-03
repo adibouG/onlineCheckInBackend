@@ -1,5 +1,4 @@
 const Errors = require('../Models/errors.js');
-const Enzo = require('../Models/Enzo.js');
 const helpers = require('../Helpers/helpers.js');
 const { verifyToken } = require('../Utilities/utilities.js');
 const { winstonLogger } = require('../Logger/loggers.js');
@@ -25,7 +24,7 @@ const getAndCheckToken = async (req, res, next) => {
     try {
         //get the token
         const { authorization } = req?.headers ;
-        const b64token = authorization ? authorization.split(' ')[1] : req?.query?.token;
+        const b64token = authorization ? authorization.split(' ')[1] : req?.query.token;
         token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
         winstonLogger.info('received token :' + token);
         //get data and verify the token
@@ -39,14 +38,8 @@ const getAndCheckToken = async (req, res, next) => {
         const roomStay = reservation.roomStays[0];
         //token was signed using the reservation state in order to make it only 1 time use 
         verifyToken(token, roomStay);
-
-        hotelStay = await helpers.getHotelOffers(hotelId, roomStay.expectedArrival, roomStay.expectedDeparture);
-        hotelStay.reservation = reservation;
-        //get HotelPolicies screens values into the  booking
-       // res = makeCheckInAppResponseBody(res, roomStay, hotelStay, token); 
-        res.cookie( 'token', token, { maxAge: 3000, httpOnly: true });
-      //  const response =  hotelStay ;
-        return res.status(200).send(hotelStay);
+        res.local.reservation = reservation;
+        return next()
     } catch(e) {
         let error ;
         if (e instanceof jwt.TokenExpiredError) error = new Errors.ExpiredLink() ;

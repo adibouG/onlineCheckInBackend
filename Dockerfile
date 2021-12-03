@@ -12,12 +12,12 @@ ENV NODE_ENV $NODE_ENV
 
 ENV HOST https://dev.cloud.enzosystems.com:3003
 ENV EMAIL_ SERVICE https://dev.cloud.enzosystems.com:6000/messaging/email/sendmessage
-ENV LINK_URL https://dev.cloud.enzosystems.com:3000/MyPreCheckin
+ENV LINK_URL https://dev.cloud.enzosystems.com:3000/
 
 ENV SCHEME http
 
 
-WORKDIR /home/ec2-user/gitTest/checkin_backenddocker
+WORKDIR /home/ec2-user/Enzo/docker/checkin_backend
 COPY package.json .
 RUN npm install
 COPY . .
