@@ -60,8 +60,8 @@ api.get(`/admin/hotels/:hotelId/details`,isAdmin, hotel.getHotelDetails) ;
 api.delete(`/admin/hotels/:hotelId`, isAdmin, hotel.deleteHotelFullData) ;
 api.put(`/admin/hotels/:hotelId`,isAdmin,  hotel.updateHotel) ;
 api.post(`/admin/hotels`,isAdmin, hotel.addHotel) ;
-api.get(`/admin/hotels/:hotelId`, isAdmin, hotel.getHotels) ;
-api.get(`/admin/hotels`,isAdmin, hotel.getHotels) ;
+
+
 
 api.get(`/hotels/:hotelId`, hotel.getHotelObject) ;
 api.get(`/hotels`, hotel.getHotels) ;
