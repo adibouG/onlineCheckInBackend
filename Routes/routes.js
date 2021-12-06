@@ -49,7 +49,6 @@ api.put(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.updateHotelStylesSetting)
 api.delete(`/admin/hotels/:hotelId/styles`,isAdmin, hotel.deleteHotelStylesSetting) ;
 
 
-
 api.post(`/admin/hotels/:hotelId/details`,isAdmin, hotel.addHotelDetails) ;
 api.put(`/admin/hotels/:hotelId/details`,isAdmin, hotel.updateHotelDetails) ;
 api.delete(`/admin/hotels/:hotelId/details`,isAdmin, hotel.deleteHotelDetails) ;

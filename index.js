@@ -18,23 +18,10 @@ function handle(signal) {
     winstonLogger.info(`*^!@4!!!!! => Received event: ${signal}`)
     process.exit();
 }
-/*
-process.on('exit', handle) ;
-process.on('beforeExit', handle);
-process.on('uncaughtException', handle);
-*/// process.on('SIGTERM', handle);
-// process.on('SIGINT', handle);
-// process.on('SIGPIPE', handle);
-// process.on('SIGHUP', handle);
-// process.on('SIGTERM', handle);
-// process.on('SIGBREAK', handle);
-// process.on('SIGWINCH', handle);
-// process.on('SIGKILL', handle);
-// process.on('SIGSTOP', handle);
 
 
 //check at start if the tracking contains error from previous runtime that might have crashed unexpectedly
-getEmailErrors();
+(async () => await getEmailErrors())();
 //start the reservation lookup interval
 //set the lookup process interval no need to save it as this is the app purpose to run it
 console.log('start setInterval :' + ((RESERVATION_LOOKUP_INTERVAL_MINUTES * 60 * 1000)));
