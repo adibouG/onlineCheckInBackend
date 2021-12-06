@@ -220,8 +220,7 @@ const makeDate = () => {
 
 const getDay = (d , loc = false) => new Date(d).toLocaleDateString(loc, { weekday: 'long' });
 
-const resetBookingState = 
-(book) => {
+const resetBookingState = (book) => {
 
     if (isPreCheckedBooking(book)) {
         
@@ -243,7 +242,14 @@ const resetBookingState =
 const resetGuest = (guest) => {
     guest.phone = null;
     guest.note = null;
-    guest.signature = null;
+    if (guest.signature) { 
+        guest.signature = null;
+        delete guest.signature;
+    }
+    if (guest.identification){
+        guest.identification = null;
+        delete guest.identification;
+    }
     guest.address = null;
     return guest ;
 };

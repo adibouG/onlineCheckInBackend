@@ -36,7 +36,7 @@ const getPaymentLinkFromToken = async (req, res) => {
     try{
 
         if (!token) throw new Errors.EnzoError('no token');
-        const { bank, method, language, currency  } = req?.body
+        const { issuerId, method, language, currency } = req?.body
         //get data and verify the token
         //TODO make a token verification function security check : algo, sign, iss ...
         const decoded = jwt.decode(token); 
@@ -80,9 +80,9 @@ const getPaymentLinkFromToken = async (req, res) => {
         const hotelName = hotelInfo.name;
         const merchant = hotelInfo.merchantId;
 
-        if (method && method.toUpperCase() === "IDEAL") {
-            bank = IDEALBANKCODES[issuerId];
-        }
+       //if (method && method.toUpperCase() === "IDEAL") {
+       //    bank = IDEALBANKCODES[issuerId];
+       //}
         
         const payload = new PaymentLinkRequestBody({ 
             merchantId: merchant || hotelName,
@@ -93,8 +93,8 @@ const getPaymentLinkFromToken = async (req, res) => {
             amountTotal: String(amount),  
             languageCode: lang || "en-US",
             currency: cur || "EUR",
-            method: method || "VISA" ,
-            issuerId: bank || "RABOBANK"  
+            method: method , 
+            issuerId: issuerId 
         }) ;
         console.log(payload)
         const payrequest = await axios.post(`${PAYAPIURL}${GETPAYMENTLINK}`, payload) ;

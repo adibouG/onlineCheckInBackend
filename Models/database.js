@@ -2,6 +2,7 @@ const { AsyncResource, executionAsyncId } = require('async_hooks');
 const { pgClient, pgPool } = require('../DB/dbConfig.js');
 const Enzo = require('../Models/Enzo.js');
 const Models = require('../Models/index.js');
+const { winstonLogger } = require('../Logger/loggers.js');
 
 /**
  * Database class is the main interface to the checkin app database 
@@ -827,6 +828,61 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
             throw e;
         } 
     }
+
+     async getGuestDocuments(hotelId, reservationId, guestId, dataType= null, dataName= null, client = null)  {
+        let query = 'SELECT * FROM customer_data WHERE hotel_id = $1 AND reservation_id = $2 AND guest_id = $3';
+        let args = [hotelId, reservationId, guestId];
+        client = client || await pgPool.connect();
+        try {
+            if (dataType) { 
+                query += ' AND data_type = $4 ';
+                args.push(dataType);
+            }
+            if (dataName) { 
+                query += ' AND data_name = $5 ';
+                args.push(dataName);
+            }
+            let data = await client.query(query, args);
+            return data.rows;
+        } catch (e) {
+            winstonLogger.error("Error", JSON.stringify(e));
+            throw e;
+        } 
+    } 
+    
+  async saveGuestDocuments(hotelId, reservationId, guestId, data, client = null)  {
+    let insertQuery = `INSERT INTO customer_data 
+    (hotel_id, reservation_id, guest_id, data_name, data_type, data_value, data_value_type ) 
+    VALUES( $1, $2, $3, $4, $5, $6, $7)`;
+    let updateQuery = 'UPDATE customer_data SET data_value = $1 , data_value_type = $2 WHERE hotel_id = $3 AND reservation_id = $4 AND guest_id = $5 AND data_name = $6';
+
+    client = client || await pgPool.connect();
+    try {
+        let check = await this.getGuestDocuments(hotelId, reservationId, guestId, data.dataType, data.dataName, client);
+        if (check.length)  await client.query(updateQuery, [data.dataValue, data.dataValueType, hotelId, reservationId, guestId, data.dataName])
+        else await client.query(insertQuery, [hotelId, reservationId, guestId, data.dataName, data.dataType, data.dataValue, data.valueType]);
+        return ;
+    } catch (e) {
+        winstonLogger.error("Error", JSON.stringify(e));
+        throw e;
+    } 
+} 
+
+
+  async deleteGuestDocuments(hotelId, reservationId, guestId, client = null)  {
+    let query = 'DELETE FROM customer_data  WHERE hotel_id = $1 AND reservation_id = $2 AND guest_id = $3';
+
+    client = client || await pgPool.connect();
+    try {
+        let check = await this.getGuestDocuments(hotelId, reservationId, guestId, null, null, client);
+        if (check.length)  await client.query(query, [hotelId, reservationId, guestId], client )
+        return ;
+    } catch (e) {
+        winstonLogger.error("Error", JSON.stringify(e));
+        throw e;
+    } 
+} 
+
 } 
 
 module.exports = {

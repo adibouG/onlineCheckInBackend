@@ -6,8 +6,8 @@ class PaymentLinkRequestBody{
     merchantId = null, customerId = null, customerName = null,
     customerEmail = null,description = null,
      amountTotal = null,  languageCode = null, currency = null,
-      method = null, issuerId = null } = {}) {
-    
+      method = null, issuerId = null } = {}) 
+    {
     this.merchantId = merchantId ;
     this.customerId = customerId;
     this.customerName = customerName;
@@ -19,8 +19,6 @@ class PaymentLinkRequestBody{
     this.method = method;
     this.issuerId = issuerId;
     }
-
-
 }
 
 class PaymentResult {

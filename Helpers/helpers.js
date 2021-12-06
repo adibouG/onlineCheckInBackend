@@ -156,6 +156,11 @@ const resetBookingStatus = async (email = null, reservationId = null, db = null)
             //const toUpdate = [];
             for (let b of bookings) {
                 let r = await getReservations(hotelId, b.pmsId, db, pms);
+                for (let s of r[0].roomStays) {
+                    for (let g of s.guests){
+                        if (g.signature || g.identification) await  db.deleteGuestDocuments(hotelId, s.pmsId, g.pmsId);
+                    }
+                } 
                 let newBook = resetBookingDate(r[0]) ;
                 console.log('Reset ', b.pmsId, newBook);
                 await postReservations(hotelId, b.pmsId, newBook, db, pms) 
