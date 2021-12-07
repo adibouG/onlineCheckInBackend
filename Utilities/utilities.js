@@ -240,7 +240,7 @@ const resetBookingState = (book) => {
 };
 
 const resetGuest = (guest) => {
-    guest.phone = null;
+    g vst.phone = null;
     guest.note = null;
     if (guest.signature) { 
         guest.signature = null;
