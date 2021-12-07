@@ -251,7 +251,9 @@ class Database extends AsyncResource {
                 website: hd.hotel_website,
                 images:  [],
                 checkInTime: hd.hotel_checkin_time, 
-                checkOutTime: hd.hotel_checkout_time  
+                checkInTimeAllowed: hd.hotel_checkin_time_allowed, 
+                checkOutTime: hd.hotel_checkout_time,  
+                checkOutTimeAllowed: hd.hotel_checkout_time_allowed  
             }));
             return hotelId ? hd[0] : hd; 
         }catch(e) {
