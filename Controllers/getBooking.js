@@ -30,7 +30,7 @@ const getBookingFromToken = async (req, res) => {
         if (!bookingHotelStay) throw new Errors.NotFound() ;        
        
         const qrCodeMails = await helpers.getEmailTracking(hotelId, reservationId, MAILTYPES.QR );
-        const reservation = bookingHotelStay.reservation;//booking[0] ; //
+        const reservation = bookingHotelStay.reservation;
         const roomStay = reservation.roomStays[0];
 
         if (roomStay.status === Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST) {

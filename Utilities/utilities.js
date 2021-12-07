@@ -86,7 +86,10 @@ const verifyToken = (token, booking = null, cb = null  ) => {
     const decoded = jwt.decode(token)
     let test = String((decoded.aud).split('/')[1]).startsWith('TEST') ;
     try {
-        let sec = !test &&  booking ? secretKey + booking.pmsId + booking.status : secretKey;
+        let stay;
+        if (booking.roomStays) stay = booking.roomStays[0];
+        else stay = booking;
+        let sec = !test &&  booking ? secretKey + stay.pmsId + stay.status : secretKey;
         let sign =  test ? unlimitedTokenSign : startTokenSign ;
         return jwt.verify(token, sec, sign, cb);
     } catch (e) {
