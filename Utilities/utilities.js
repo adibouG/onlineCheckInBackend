@@ -67,6 +67,7 @@ const verifySecureToken = (token, enzoBooking) => {
         throw e;
     } 
 };
+
 const startTokenSign = { 
     expiresIn: SETTINGS.TOKEN.VALIDITY,
     issuer: 'ENZOSYSTEMS ONLINE PRECHECKIN API',

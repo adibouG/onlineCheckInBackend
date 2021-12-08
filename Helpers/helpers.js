@@ -37,16 +37,18 @@ const getReservations = async (hotelId = null, reservationId = null, conf = null
         
             //we receive an array of enzoReservations data 
             //we add the hotelId to the reservation 
-            if  (reservationId && reservationsRequest.pmsId) {
-                const er = new Enzo.EnzoReservation(reservationsRequest);
-                er.hotelId = row.hotelId;
-                results.push(er);
-            } else if (Array.isArray(reservationsRequest)) {
-                reservationsRequest.map((r) => {
-                    const er = new Enzo.EnzoReservation(r);
-                    er.hotelId = row.hotelId;;
+            if (reservationsRequest) {
+                if  (reservationId && reservationsRequest.pmsId) {
+                    const er = new Enzo.EnzoReservation(reservationsRequest);
+                    er.hotelId = row.hotelId;
                     results.push(er);
-                });
+                } else if (Array.isArray(reservationsRequest)) {
+                    reservationsRequest.map((r) => {
+                        const er = new Enzo.EnzoReservation(r);
+                        er.hotelId = row.hotelId;;
+                        results.push(er);
+                    });
+                }
             }
         }
         return results;

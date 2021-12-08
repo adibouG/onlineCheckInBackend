@@ -94,7 +94,7 @@ const getPaymentLinkFromToken = async (req, res) => {
             languageCode: lang || "en-US",
             currency: cur || "EUR",
             method: method , 
-            issuerId: issuerId 
+            issuerId: method.toUpperCase()  === "IDEAL" ? issuerId : null 
         }) ;
         console.log(payload)
         const payrequest = await axios.post(`${PAYAPIURL}${GETPAYMENTLINK}`, payload) ;
