@@ -96,6 +96,7 @@ const postReservations = async (hotelId, reservationId, data, db = null, pms = n
         db = db || new Database(hotelId);
         pms =  pms || await db.getHotelPmsInfo(hotelId); 
        //retrieve the hotel  pms info 
+       console.log(pms)
         const pmsApi = new PmsModuleApi(hotelId); //we make a hotel specific
         await pmsApi.updateReservationData({ 
             data,
