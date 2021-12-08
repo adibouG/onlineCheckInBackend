@@ -238,12 +238,21 @@ const resetBookingState = (book) => {
         book.folios = [] ;
         book.addedOptionIds = [];
         book.preBookedOptionIds = [];
-        book.guests = [resetGuest(book.guests[0])];
+        let guest ;
+        if (book.guests && book.guests.length) { 
+            guest = [resetGuest(book.guests[0])]
+        } else {
+            guest = [];
+        }
+        book.guests = guest;
     }
     return book ;
 };
 
 const resetGuest = (guest) => {
+    
+    if (!guest) return ;
+    guest.pmsId = null;
     guest.phone = null;
     guest.note = null;
     if (guest.signature) { 
@@ -274,10 +283,10 @@ const makeCheckDates = (past = false) => {
 const resetBookingDate = (reservation) => {
     let newDates ;
     let bookings = reservation.roomStays;
-    let updated = [] ;
+    let updatedBookings = [] ;
     if (!bookings.length) return;
     for (let book of bookings) {
-        if ("finalArrival" in book && book.finalArrival) {
+        if (book.finalArrival || book.status  === Enzo.EnzoRoomStay.STAY_STATUS.CHECKEDIN) {
             newDates = makeCheckDates(true) ; 
             book.finalArrival = newDates.otherDate ;
             book.expectedArrival = newDates.otherDate ;
@@ -287,18 +296,24 @@ const resetBookingDate = (reservation) => {
             newDates = makeCheckDates(false) ; 
             book.expectedArrival = newDates.today ;
             book.expectedDeparture = newDates.otherDate ;
+            book.status = Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST;
             book = resetBookingState(book);
+            
+            if (book.guests.length === 0 || !book.guests[0]) {
+                book.guests[0] = resetGuest(reservation.booker);
+            }
         }
-        updated.push(book);
+        updatedBookings.push(book);
     }
-    reservation.roomStays = updated; 
+    reservation.roomStays = updatedBookings; 
     reservation.booker = resetGuest(reservation.booker); 
     return reservation ;
 };
 
 const resetReservation = (reservation) => {
+    
     reservation.booker = resetGuest(reservation.booker);
-    reservation.roomStays = reservation.roomStays.map(r => resetBookingDate(r)); 
+    reservation.roomStays = reservation.roomStays.map(  r =>   resetBookingDate(r)); 
     return reservation ;
 };
 

@@ -152,7 +152,8 @@ class EnzoHotel {
         phone = null, website = null, address = null, 
         logo = null, images = [], 
         hotelPolicies = null, gdprRules = null, guestRegistrationForm = null,
-        checkOutTime = null, checkInTime = null, checkOutTimeAllowed = null, checkInTimeAllowed = null } = {}) 
+        checkOutTime = null, checkInTime = null, checkOutTimeAllowed = null, checkInTimeAllowed = null 
+    } = {}) 
     {
         this.pmsId = pmsId  ;
         this.chainName = chainName ;
@@ -161,9 +162,9 @@ class EnzoHotel {
         this.phone = phone;
         this.website = website;
         this.address = address ? new Address(address) : null;
-        this.logo = logo ? new Image(logo) : null;
+        this.logo = logo ? logo.source ? new Image(logo) : new Image({ source: logo }) : null;
         this.images = images.map(image => { 
-            if (image.source) new Image(image) ;
+            if (image && image.source) new Image(image) ;
         });
         this.hotelPolicies = hotelPolicies ? new LocalText(hotelPolicies) : null;
         this.gdprRules = gdprRules ? new LocalText(gdprRules) : null ;
@@ -257,12 +258,12 @@ class EnzoReservation  {
         HOTELBEDS: "Hotelbeds",
         OTHER: "Other"
     };
-    constructor({ pmsId = null, booker = {}, bookerCompany = null,
+    constructor({ pmsId = null, booker = null, bookerCompany = null,
         bookingChannel = EnzoReservation.BOOKING_CHANNELS.OTHER,
         roomStays = [] } = {}) 
     {
         this.pmsId = pmsId;
-        this.booker = new EnzoBooker(booker);
+        this.booker =  booker && (booker.lastName || booker.email) ? new EnzoBooker(booker) : null; 
         this.bookerCompany = bookerCompany ? new Company(bookerCompany) : null;
         this.bookingChannel = EnzoReservation.BOOKING_CHANNELS_LIST.includes(bookingChannel) ? bookingChannel : null;
         this.roomStays = roomStays.map(r => new EnzoRoomStay(r));
@@ -335,7 +336,10 @@ class EnzoRoomStay  {
         this.roomTypeId = roomTypeId; 
         this.ratePlanId = ratePlanId; 
         this.folios = folios.map(f => new EnzoFolio(f)) ;
-        this.guests = guests.map(g => new EnzoGuest(g));
+        this.guests = [] ;
+        guests.forEach(g => { 
+            if (g && (g.email || g.lastName)) this.guests.push(new EnzoGuest(g));
+        });
 
         this.availableRoomIds = availableRoomIds;
         this.availableRoomTypeIds = availableRoomTypeIds;
@@ -662,14 +666,14 @@ class EnzoGuest  {
         this.firstName = firstName;
         this.lastName = lastName;
         this.fullName = fullName;
-        this.address = address ? new Address(address) : null;
+        this.address = address && Object.values(address).length ? new Address(address) : null;
         this.gender = gender ;
         this.dateOfBirth = dateOfBirth;
         this.ageCategory = ageCategory;
         this.language = language;        
         this.nationality = nationality;        
         this.signature = signature;
-        this.identification = identification ? new EnzoGuestIdentification(identification) : null;
+        this.identification = identification && Object.values(identification).length ? new EnzoGuestIdentification(identification) : null;
         this.email = email;
         this.phone = phone;
         this.folios = folios.map(f => new EnzoFolio(f));
