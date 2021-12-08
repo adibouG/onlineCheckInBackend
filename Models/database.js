@@ -877,7 +877,7 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
     client = client || await pgPool.connect();
     try {
         let check = await this.getGuestDocuments(hotelId, reservationId, guestId, null, null, client);
-        if (check.length)  await client.query(query, [hotelId, reservationId, guestId], client )
+        if (check.length)  await client.query(query, [hotelId, reservationId, guestId])
         return ;
     } catch (e) {
         winstonLogger.error("Error", JSON.stringify(e));
