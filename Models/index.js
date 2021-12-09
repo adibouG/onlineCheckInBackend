@@ -107,6 +107,7 @@ class PaymentSession {
     static PAYMENT_SESSION_STATUS = {
         CREATED: 'CREATED',
         STARTED: 'STARTED',
+        PAID: 'PAID',
         FINISHED: 'FINISHED'
     };
     constructor({ reservationId, hotelId, transactionId, startedAt = null, updatedAt = null, status = null} = {}) {

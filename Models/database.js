@@ -871,9 +871,8 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
 } 
 
 
-  async deleteGuestDocuments(hotelId, reservationId, guestId, client = null)  {
+  async deleteGuestDocuments(hotelId, reservationId, guestId, client = null) {
     let query = 'DELETE FROM customer_data  WHERE hotel_id = $1 AND reservation_id = $2 AND guest_id = $3';
-
     client = client || await pgPool.connect();
     try {
         let check = await this.getGuestDocuments(hotelId, reservationId, guestId, null, null, client);
@@ -883,7 +882,7 @@ async addHotelFullData({ hotelName, pmsSettings, hotelDetails, hotelAppSettings 
         winstonLogger.error("Error", JSON.stringify(e));
         throw e;
     } 
-} 
+  } 
 
 } 
 

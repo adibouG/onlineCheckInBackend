@@ -133,7 +133,7 @@ const getPaymentResultById = async (req, res) => {
         const { uuid, hotelId, reservationId, email, steps } = decoded;
 
         const paySessions = await helpers.getPaymentSession(hotelId, reservationId, transactionId);
-        if (!paySessions.length) throw new Errors.EnzoError('no payment session started was found')
+        if (!paySessions.length) throw new Errors.EnzoError('no started payment session found')
         const paySession = paySessions[0];
         if (paySession.status === Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED) { throw new Errors.EnzoError('payment session  found but finished')}
         if (paySession.status === Models.PaymentSession.PAYMENT_SESSION_STATUS.CREATED) {
@@ -160,7 +160,6 @@ const getPaymentResultById = async (req, res) => {
         if (paymentEnded) {
             paySession.status = Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED;
             paySession.updatedAt = Date.now() ;
-            await helpers.updatePaymentSession(paySession);
             if (paymentSuccess) {
                 //get and update the reservation  
                 const bookings = await helpers.getReservations(hotelId, reservationId);
@@ -177,25 +176,26 @@ const getPaymentResultById = async (req, res) => {
                     new Enzo.EnzoFolioItem({ 
                         name: new Enzo.LocalText({ "en": "PayByLink Payment" }), 
                         type: Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.PAYMENT , 
-                        totalAmount: result.amountPaid, 
-                        unitAmount: result.amountPaid, 
+                        totalAmount: Number(result.amountPaid), 
+                        unitAmount: Number(result.amountPaid), 
                         numberOfUnits: 1, 
                         dateTime: Date.now()
                     })
-                );
-                roomStay.folios.splice(guestFolioIndex, 1, guestFolio);
-                roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
-                booking.roomStays = [roomStay];
-                //trigger the qrCode email
-                let base64qrcode = await helpers.makeQrCodeEmail(hotelId, booking);
-                //save update roomstay to the pms
-                await helpers.postReservations(hotelId, reservationId, roomStay);
-            }
-        } 
+                    );
+                    roomStay.folios.splice(guestFolioIndex, 1, guestFolio);
+                    roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
+                    booking.roomStays = [roomStay];
+                    await helpers.makeQrCodeEmail(hotelId, booking);
+                    //trigger the qrCode email
+                    //save update roomstay to the pms
+                    await helpers.postReservations(hotelId, reservationId, roomStay);
+                }
+                await helpers.updatePaymentSession(paySession);
+            } 
         return res.status(code).send(result);
     } catch (e){
         console.log(e);
-       return  res.send(e.message)
+       return  res.status(parseInt(e.code) || 500).send(e.message)
     }
 }
 const getPaymentLink = async (req, res) => {

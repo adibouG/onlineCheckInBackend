@@ -404,20 +404,20 @@ const deletePaymentSession = async (data, db = null) => {
 
 const makeQrCodeEmail = async (hotelId, booking) =>{
 
-if (!booking.length) throw new Models.NotFound() ;
+    if (!booking.length) throw new Models.NotFound() ;  
 
-roomStay = booking.roomStays[0];
+    roomStay = booking.roomStays[0];    
 
-if (roomStay) booking =  new Enzo.EnzoRoomStay(roomStay);
-if (!booking) throw new Models.NotFound() ;
-if (!token) throw new Error('no token') ; 
-//TO DO  verification on token  
-let firstName = roomStay.guests.length && roomStay.guests[0].firstName ? roomStays.guests[0].firstName : reservation.booker.firstName;
-let lastName = roomStay.guests.length && roomStay.guests[0].lastName ? roomStays.guests[0].lastName : reservation.booker.lastName;
+    if (roomStay) booking =  new Enzo.EnzoRoomStay(roomStay);
+    if (!booking) throw new Errors.NotFound() ;
+    if (!token) throw new Error('no token') ; 
+    //TO DO  verification on token  
+    let firstName = roomStay.guests.length && roomStay.guests[0].firstName ? roomStays.guests[0].firstName : reservation.booker.firstName;
+    let lastName = roomStay.guests.length && roomStay.guests[0].lastName ? roomStays.guests[0].lastName : reservation.booker.lastName;  
 
-await sendEmail(MAILTYPES.QR, booking, hotelId);
-const dataUrl = await makeQrCode(hotelId, booking.pmsId, firstName, lastName);
-return dataUrl;
+    await sendEmail(MAILTYPES.QR, booking, hotelId);
+    const dataUrl = await makeQrCode(hotelId, booking.pmsId, firstName, lastName);
+    return dataUrl;
 }
 
 

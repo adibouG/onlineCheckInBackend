@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken') ;
 const Errors = require('../Models/errors.js');
-const Models = require('../Models/index.js');
 const Enzo = require('../Models/Enzo.js');
 const { MAILTYPES } = require('../Emails/enzoMails.js');
 const helpers = require('../Helpers/helpers.js');
@@ -26,10 +25,8 @@ const getBookingFromToken = async (req, res) => {
         if (!token || !hotelId || !reservationId) throw new Errors.EnzoError('no valid token');
        // booking = await helpers.getReservations(hotelId, reservationId);
         const bookingHotelStay = await helpers.getReservationsHotelStay(hotelId, reservationId);
-     
         if (!bookingHotelStay) throw new Errors.NotFound() ;        
-       
-        const qrCodeMails = await helpers.getEmailTracking(hotelId, reservationId, MAILTYPES.QR );
+        const qrCodeMails = await helpers.getEmailTracking(hotelId, reservationId, MAILTYPES.QR);
         const reservation = bookingHotelStay.reservation;
         const roomStay = reservation.roomStays[0];
 
@@ -41,8 +38,7 @@ const getBookingFromToken = async (req, res) => {
                 if (hasPaid) isPreChecked = true;
             }
             //token was signed using the reservation state in order to make it only 1 time use 
-            verifyToken(token, roomStay); 
-
+            
             if (isPreChecked) {
                 let qrCode = await makeQrCode(hotelId, roomStay);
                 roomStay.qrCode = qrCode.toString();
@@ -51,6 +47,7 @@ const getBookingFromToken = async (req, res) => {
                 bookingHotelStay.reservation = reservation;
             } 
         }
+        verifyToken(token, roomStay); 
 
      
         return res.status(200).send(bookingHotelStay);
