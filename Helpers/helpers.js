@@ -7,8 +7,6 @@ const Errors = require('../Models/errors.js');
 const Models = require('../Models/index.js');
 const {PaymentResult} = require('../Models/EnzoPayApi.js');
 const Enzo = require('../Models/Enzo.js');
-
-const { MAILTYPES } = require('../Emails/enzoMails.js') ;
 const axios = require('axios');
 const SETTINGS = require('../settings.json');
 
@@ -403,21 +401,6 @@ const deletePaymentSession = async (data, db = null) => {
     } 
 }
 
-const makeQrCodeEmail = async (hotelId, reservation) =>{
-
-     let roomStay = reservation.roomStays[0];    
-
-    if (roomStay) booking =  new Enzo.EnzoRoomStay(roomStay);
-  
-    let firstName = roomStay.guests.length && roomStay.guests[0].firstName ? roomStay.guests[0].firstName : reservation.booker.firstName;
-    let lastName = roomStay.guests.length && roomStay.guests[0].lastName ? roomStay.guests[0].lastName : reservation.booker.lastName;  
-
-    await sendEmail(MAILTYPES.QR, reservation, hotelId);
-    const dataUrl = await makeQrCode(hotelId, roomStay.pmsId, firstName, lastName);
-    return dataUrl;
-}
-
-
 const isPaymentDone = async (hotelId, reservationId) => {
     let isDone = false;
     try{
@@ -465,5 +448,4 @@ module.exports = {
     addPaymentSession,
     updatePaymentSession,
     deletePaymentSession,
-    makeQrCodeEmail
 }

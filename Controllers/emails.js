@@ -124,6 +124,7 @@ const stopCheckMailErrors = () => {
     return;
 };
 
+
 const sendEmail = async (type, booking, hotelId) => {
     try {
         const eh = await helpers.getHotelDetails(hotelId);
@@ -136,6 +137,7 @@ const sendEmail = async (type, booking, hotelId) => {
         throw err;
     }
 }
+
 
 module.exports = {
     sendEmail,
