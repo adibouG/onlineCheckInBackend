@@ -187,10 +187,10 @@ const getPaymentResultById = async (req, res) => {
                     roomStay.folios.splice(guestFolioIndex, 1, guestFolio);
                     roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
                     booking.roomStays = [roomStay];
-               //     await helpers.makeQrCodeEmail(hotelId, booking);
+                    await helpers.makeQrCodeEmail(hotelId, booking);
                     //trigger the qrCode email
                     //save update roomstay to the pms
-                    await helpers.postReservations(hotelId, reservationId, roomStay);
+                    await helpers.postReservations(hotelId, reservationId, booking);
                 }
                 await helpers.updatePaymentSession(paySession);
             } 
