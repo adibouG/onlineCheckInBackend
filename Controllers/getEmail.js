@@ -99,24 +99,10 @@ const getQrFromToken = async (req, res, next) => {
 }
 
 
-const makeQrCodeEmail = async (hotelId, reservation) =>{
-
-     let roomStay = reservation.roomStays[0];    
-
-    if (roomStay) booking =  new Enzo.EnzoRoomStay(roomStay);
-  
-    let firstName = roomStay.guests.length && roomStay.guests[0].firstName ? roomStay.guests[0].firstName : reservation.booker.firstName;
-    let lastName = roomStay.guests.length && roomStay.guests[0].lastName ? roomStay.guests[0].lastName : reservation.booker.lastName;  
-
-    await sendEmail(MAILTYPES.QR, reservation, hotelId);
-    const dataUrl = await makeQrCode(hotelId, roomStay.pmsId, firstName, lastName);
-    return dataUrl;
-}
-
 module.exports = {
     renderAndSendQrCode,
     getEmailType,
     getToken,
     getQrFromToken,
-    makeQrCodeEmail
+
 }

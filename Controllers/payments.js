@@ -1,5 +1,7 @@
 require('dotenv').config();
 const { PaymentLinkRequestBody, PaymentResult } = require('../Models/EnzoPayApi.js');
+const { makeQrCodeEmail } = require('./emails.js');
+
 const helpers = require('../Helpers/helpers.js');
 const Models = require('../Models/index.js');
 const Enzo = require('../Models/Enzo.js');
@@ -8,7 +10,7 @@ const { verifyToken } = require('../Utilities/utilities.js');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const SETTINGS = require('../settings.json');
-const {winstonLogger} = require('../Logger/loggers.js');
+const { winstonLogger } = require('../Logger/loggers.js');
 
 
 
@@ -187,7 +189,7 @@ const getPaymentResultById = async (req, res) => {
                     roomStay.folios.splice(guestFolioIndex, 1, guestFolio);
                     roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
                     booking.roomStays = [roomStay];
-                    await helpers.makeQrCodeEmail(hotelId, booking);
+                    await makeQrCodeEmail(hotelId, booking);
                     //trigger the qrCode email
                     //save update roomstay to the pms
                     await helpers.postReservations(hotelId, reservationId, booking);

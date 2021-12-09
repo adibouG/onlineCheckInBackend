@@ -1,9 +1,11 @@
 const app = require('../app.js');
 const Models = require('../Models/index.js');
+
+const Enzo = require('../Models/Enzo.js');
 const { MAILTYPES, sendEmailRequest } = require('../Emails/enzoMails.js');
 const { Database } = require('../Models/database.js');
 const helpers = require('../Helpers/helpers.js');
-const { makeEmailValues } = require('../Utilities/utilities.js');
+const { makeEmailValues, makeQrCode } = require('../Utilities/utilities.js');
 const SETTINGS = require('../settings.json') ;
 const { START_PRECHECK_INVITE, QRCODE_PRECHECK_COMPLETED } = SETTINGS.EMAIL_TEMPLATE_FILE;
 
@@ -130,6 +132,7 @@ const sendEmail = async (type, booking, hotelId) => {
         const eh = await helpers.getHotelDetails(hotelId);
         const values = await makeEmailValues(type, hotelId, booking, eh);
         const emailTrack = await helpers.getEmailTracking(hotelId, booking.pmsId, type);
+        console.log(emailTrack);
         let mailObject = emailTrack.length ? emailTrack[0] : null;
         return await renderAndSendEmail(type, hotelId, values, null, mailObject, true);
     }catch (err) {
@@ -139,8 +142,22 @@ const sendEmail = async (type, booking, hotelId) => {
 }
 
 
+
+const makeQrCodeEmail = async (hotelId, reservation) =>{
+
+    let roomStay = reservation.roomStays.length ? reservation.roomStays[0] : null;    
+ 
+   let firstName = roomStay && roomStay.guests.length && roomStay.guests[0].firstName ? roomStay.guests[0].firstName : reservation.booker.firstName;
+   let lastName = roomStay && roomStay.guests.length && roomStay.guests[0].lastName ? roomStay.guests[0].lastName : reservation.booker.lastName;  
+
+   await sendEmail(MAILTYPES.QR, reservation, hotelId);
+   const dataUrl = await makeQrCode(hotelId, roomStay, firstName, lastName);
+   return dataUrl;
+}
+
 module.exports = {
     sendEmail,
+    makeQrCodeEmail,
     renderAndSendEmail, 
     getEmailErrors,
     startCheckMailErrors,

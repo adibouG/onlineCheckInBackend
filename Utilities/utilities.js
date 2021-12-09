@@ -30,8 +30,9 @@ const newReservationFilter = (reservationId, hotelId, emailTrackList = null) => 
 
 const makeQrCode = async (hotelId, booking) => {
     let code;
+    booking = booking.roomStays ? booking.roomStays[0] : booking;
     if (hotelId === 1 && (booking.bookingId === "KDKTest-04" || booking.bookingId === "KDKTest-03" )) {
-        code = booking.bookingId ;
+        code = booking.bookingId || booking.roomStays[0].booking;
         return await QRCode.toDataURL(code);
     } else {
         code = { bookingId: booking.bookingId, hotelId, firstName: booking.guests[0].firstName, lastName: booking.guests[0].lastName };
@@ -352,7 +353,7 @@ const makeEmailValues = async (type, hotelId, reservation, hotelValues) => {
             };
         } else if (type === MAILTYPES.QR) {
             let url = await makeQrCode(hotelId, reservation);
-            const numNights = dateDiffInDays(reservation.roomStays[0].expectedArrival, reservation.roomStays[0].expectedArrival);
+            const numNights = reservation.roomStays[0].numberOfNights;//ateDiffInDays(reservation.roomStays[0].expectedArrival, reservation.roomStays[0].expectedArrival);
             const roomType =  reservation.roomStays[0].roomTypeId;
             const numGuests = reservation.roomStays[0].numberOfGuests ;
             const checkInTime = hotelValues.checkInTime ;

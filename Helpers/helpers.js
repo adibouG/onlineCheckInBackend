@@ -1,7 +1,7 @@
 require('dotenv').config();
 const { Database } = require('../Models/database.js');
 const { PmsModuleApi } = require('../Models/pmsModuleApi.js');
-const { findValidBooking, resetBookingDate , makeQrCode } = require('../Utilities/utilities.js');
+const { findValidBooking, resetBookingDate } = require('../Utilities/utilities.js');
 
 const Errors = require('../Models/errors.js');
 const Models = require('../Models/index.js');
