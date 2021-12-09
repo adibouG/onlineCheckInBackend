@@ -4,21 +4,10 @@ const Models = require('../Models/index.js');
 const Enzo = require('../Models/Enzo.js');
 const { getEmailTracking, getHotelDetails, getReservations } = require('../Helpers/helpers.js');
 const { MAILTYPES } = require('../Emails/enzoMails.js');
-const { renderAndSendEmail } = require('./emails.js')
+const { sendEmail } = require('./emails.js')
 const { makeEmailValues, makeQrCode, makeUnlimitedToken } = require('../Utilities/utilities.js');
 
-const sendEmail = async (type, booking, hotelId) => {
-    try {
-        const eh = await getHotelDetails(hotelId);
-        const values = await makeEmailValues(type, hotelId, booking, eh);
-        const emailTrack = await getEmailTracking(hotelId, booking.pmsId, type);
-        let mailObject = emailTrack.length ? emailTrack[0] : null;
-        return await renderAndSendEmail(type, hotelId, values, null, mailObject, true);
-    }catch (err) {
-        console.log(err);
-        throw err;
-    }
-}
+
 const getEmailType = async (req, res, next) => {
     
     const {type, bookingId, hotelId} = req?.query;
@@ -110,7 +99,6 @@ const getQrFromToken = async (req, res, next) => {
 }
 
 module.exports = {
-    sendEmail,
     renderAndSendQrCode,
     getEmailType,
     getToken,

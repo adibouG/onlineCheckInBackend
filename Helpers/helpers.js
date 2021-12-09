@@ -1,15 +1,16 @@
 require('dotenv').config();
 const { Database } = require('../Models/database.js');
 const { PmsModuleApi } = require('../Models/pmsModuleApi.js');
-const { findValidBooking, resetBookingDate } = require('../Utilities/utilities.js');
+const { findValidBooking, resetBookingDate , makeQrCode } = require('../Utilities/utilities.js');
+
 const Errors = require('../Models/errors.js');
 const Models = require('../Models/index.js');
 const {PaymentResult} = require('../Models/EnzoPayApi.js');
 const Enzo = require('../Models/Enzo.js');
 
+const { MAILTYPES } = require('../Emails/enzoMails.js') ;
 const axios = require('axios');
 const SETTINGS = require('../settings.json');
-
 
 //get new reservation, return an array of enzoCheckIn, run at specified interval 
 const getReservations = async (hotelId = null, reservationId = null, conf = null, hotelPms = null) => { 
@@ -402,21 +403,17 @@ const deletePaymentSession = async (data, db = null) => {
     } 
 }
 
-const makeQrCodeEmail = async (hotelId, booking) =>{
+const makeQrCodeEmail = async (hotelId, reservation) =>{
 
-    if (!booking.length) throw new Models.NotFound() ;  
-
-    roomStay = booking.roomStays[0];    
+     let roomStay = reservation.roomStays[0];    
 
     if (roomStay) booking =  new Enzo.EnzoRoomStay(roomStay);
-    if (!booking) throw new Errors.NotFound() ;
-    if (!token) throw new Error('no token') ; 
-    //TO DO  verification on token  
-    let firstName = roomStay.guests.length && roomStay.guests[0].firstName ? roomStays.guests[0].firstName : reservation.booker.firstName;
-    let lastName = roomStay.guests.length && roomStay.guests[0].lastName ? roomStays.guests[0].lastName : reservation.booker.lastName;  
+  
+    let firstName = roomStay.guests.length && roomStay.guests[0].firstName ? roomStay.guests[0].firstName : reservation.booker.firstName;
+    let lastName = roomStay.guests.length && roomStay.guests[0].lastName ? roomStay.guests[0].lastName : reservation.booker.lastName;  
 
-    await sendEmail(MAILTYPES.QR, booking, hotelId);
-    const dataUrl = await makeQrCode(hotelId, booking.pmsId, firstName, lastName);
+    await sendEmail(MAILTYPES.QR, reservation, hotelId);
+    const dataUrl = await makeQrCode(hotelId, roomStay.pmsId, firstName, lastName);
     return dataUrl;
 }
 
@@ -429,10 +426,10 @@ const isPaymentDone = async (hotelId, reservationId) => {
         
             for (let s of paySessions) {
                 let sess;
-                if (s.status === Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED) {
+                if (s.status.toUpperCase() === Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED) {
                    sess = s ;
                    const payRes = await getPaymentResult({ transactionId: sess.transactionId, hotelId: sess.hotelId });
-                    if (payRes.status === PaymentResult.PAYMENT_RESULTS.PAID) { 
+                    if (payRes.status.toUpperCase() === PaymentResult.PAYMENT_RESULTS.PAID) { 
                         isDone = true;
                         break;
                     } 

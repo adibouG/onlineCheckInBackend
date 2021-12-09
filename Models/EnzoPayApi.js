@@ -6,7 +6,7 @@ class PaymentLinkRequestBody{
     merchantId = null, customerId = null, customerName = null,
     customerEmail = null,description = null,
      amountTotal = null,  languageCode = null, currency = null,
-      method = null, issuerId = null } = {}) 
+      method = null, issuerId = null} = {}) 
     {
     this.merchantId = merchantId ;
     this.customerId = customerId;
@@ -40,8 +40,10 @@ class PaymentResult {
           method = null, 
           issuerId = null, 
           providerId = null, 
-          cardNumber = null 
-    } = {}) 
+          cardNumber = null ,
+          created = null,
+          updated = null
+        } = {}) 
   {
       this.transactionId = transactionId;
       this.merchantId = merchantId;
@@ -51,9 +53,11 @@ class PaymentResult {
       this.method = method;
       this.issuerId = issuerId;
       this.providerId = providerId;
-      this.cardNumber = cardNumber;
+      this.cardNumber = cardNumber;    
+    this.created = created ? new Date(created) : null;
+    this.updated = updated ? new Date(updated) : null;
+    
   }
-  //get status() { return this.status.toUpperCase(); }
   
 }
 

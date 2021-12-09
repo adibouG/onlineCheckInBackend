@@ -27,6 +27,7 @@
         "GET_PAYMENT_LINK" : "/create",
         "GET_PAYMENT_RESULT" : "/query"
     },
+    "PAID_TRANSACTION_EXPIR": 120 ,
     "PAYMENT_RESULT_LOOKUP_INTERVAL": 2
 }
 

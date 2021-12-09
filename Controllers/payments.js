@@ -10,8 +10,7 @@ const axios = require('axios');
 const SETTINGS = require('../settings.json');
 const {winstonLogger} = require('../Logger/loggers.js');
 
-var paymentSessions = null ;
-var paymentResultCheckIntervalId = null ;
+
 
 const IDEALBANKCODES = {
             "ABN Amro": "ABNANL2A",
@@ -144,13 +143,15 @@ const getPaymentResultById = async (req, res) => {
         let code ;
         let paymentEnded = false ;
         let paymentSuccess = false ;
-        if (result.status.toUpperCase() === 'PAID') {
-            code = 200;
+        if (result.status.toUpperCase() === PaymentResult.PAYMENT_RESULTS.PAID) {
+            if ((Date.now() - result.updated.getTime()) <= (SETTINGS.PAID_TRANSACTION_EXPIR * 60 * 1000)) paymentSuccess = true;
+            
             paymentEnded = true ;
-            paymentSuccess = true;
-        } else if (result.status.toUpperCase() === 'CREATED') {
             code = 200;
-        } else if (result.status.toUpperCase() === 'DECLINED' || result.status.toUpperCase() === 'ABORTED' || result.status.toUpperCase() === 'EXPIRED' || result.status.toUpperCase() === 'FAILED') {
+            
+        } else if (result.status.toUpperCase() ===  PaymentResult.PAYMENT_RESULTS.CREATED) {
+            code = 200;
+        } else if (result.status.toUpperCase() ===  PaymentResult.PAYMENT_RESULTS.DECLINED || result.status.toUpperCase() ===  PaymentResult.PAYMENT_RESULTS.ABORTED || result.status.toUpperCase() ===  PaymentResult.PAYMENT_RESULTS.EXPIRED || result.status.toUpperCase() ===  PaymentResult.PAYMENT_RESULTS.FAILED) {
             code = 400; 
             paymentEnded = true ;
         } else {
@@ -161,6 +162,7 @@ const getPaymentResultById = async (req, res) => {
             paySession.status = Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED;
             paySession.updatedAt = Date.now() ;
             if (paymentSuccess) {
+           
                 //get and update the reservation  
                 const bookings = await helpers.getReservations(hotelId, reservationId);
                 const booking = bookings[0];
@@ -185,7 +187,7 @@ const getPaymentResultById = async (req, res) => {
                     roomStay.folios.splice(guestFolioIndex, 1, guestFolio);
                     roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
                     booking.roomStays = [roomStay];
-                    await helpers.makeQrCodeEmail(hotelId, booking);
+               //     await helpers.makeQrCodeEmail(hotelId, booking);
                     //trigger the qrCode email
                     //save update roomstay to the pms
                     await helpers.postReservations(hotelId, reservationId, roomStay);
