@@ -12,6 +12,8 @@ const axios = require('axios');
 const SETTINGS = require('../settings.json');
 const { winstonLogger } = require('../Logger/loggers.js');
 
+//long-polling setup
+const subscribers = Object.create(null);
 
 
 const IDEALBANKCODES = {
@@ -55,9 +57,10 @@ const getPaymentLinkFromToken = async (req, res) => {
             { 
                 return f.remainingToPay + t;
             }
+            return 0;
         } , 0 );   
         //check amuount match against folio account
-        /// if (folioToPay != amount) throw new Error('amount not correct with the folio total')   
+        if (folioToPay === 0)    return res.send('nothing to pay')   
         
         //check if a session already exist and in process 
         let hasSession = false;
@@ -202,6 +205,131 @@ const getPaymentResultById = async (req, res) => {
        return  res.status(parseInt(e.code) || 500).send(e.message)
     }
 }
+
+
+
+
+const onSubscribe =  (req, res) => {
+    let id = req.query.transactionId;
+    res.setHeader('Content-Type', 'text/plain;charset=utf-8');
+    res.setHeader("Cache-Control", "no-cache, must-revalidate");
+    req.on('close', () => subscribers[id] ? delete subscribers[id] : null);
+    subscribers[id] = res;
+    checkSubscribers();
+    return;
+}
+
+
+const checkSubscribers = async () => {
+
+    if (subscribers && Object.keys(subscribers).length) {
+        for (let i in subscribers) {
+            let result = await getTransactionResult(subscribers[i].req.query.transactionId);
+            if (result.status !== 'CREATED') publish(i, result);
+        }
+        checkSubscribers();
+    }
+}
+
+const publish = (id, message) => {
+
+    if (subscribers[id]) {
+      let res = subscribers[id];
+      delete subscribers[id];
+      return res.send(message);
+    }  
+    return res.end() ;
+}
+  
+
+
+const close = () => {
+    for (let id in subscribers) {
+      let res = subscribers[id];
+      res.end();
+    }
+}
+  
+
+process.on('SIGINT', close);
+const subscribePaymentResultById = async (req, res) => {
+    const { transactionId } = req?.query ; 
+    const { authorization } = req?.headers ;
+    const b64token = authorization ? authorization.split(' ')[1] : req?.query.token;
+    const token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
+    winstonLogger.info('received token :' + token);
+    try {
+        if (!token) throw new Errors.EnzoError('no token');
+        if (!transactionId) throw new Errors.EnzoError('no transactionId');
+        //get data and verify the token
+        //TODO make a token verification function security check : algo, sign, iss ...
+        const decoded = jwt.decode(token); 
+        const { uuid, hotelId, reservationId, email, steps } = decoded;
+
+        const paySessions = await helpers.getPaymentSession(hotelId, reservationId, transactionId);
+        if (!paySessions.length) throw new Errors.EnzoError('no started payment session found')
+        const paySession = paySessions[0];
+      
+        if (paySession.status === Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED)  throw new Errors.EnzoError('payment session  found but finished');
+        if (paySession.status === Models.PaymentSession.PAYMENT_SESSION_STATUS.CREATED) {
+            paySession.status = Models.PaymentSession.PAYMENT_SESSION_STATUS.STARTED;
+            paySession.updatedAt = Date.now() ;
+        }
+        const result = await helpers.getPaymentResult({ transactionId, hotelId });
+        let code ;
+        let paymentEnded = false ;
+        let paymentSuccess = false ;
+        if (!result)  throw new Errors.EnzoError('no payment transaction found');
+        
+        if ((Date.now() - result.updated.getTime()) > (SETTINGS.PAID_TRANSACTION_EXPIR * 60 * 1000))  throw new Errors.EnzoError('payment transaction expired')
+
+        if (result.status.toUpperCase() !==  PaymentResult.PAYMENT_RESULTS.CREATED) paymentEnded = true ;
+        if (result.status.toUpperCase() ===  PaymentResult.PAYMENT_RESULTS.PAID) paymentSuccess = true ;
+        if (paymentEnded) {
+            paySession.status = Models.PaymentSession.PAYMENT_SESSION_STATUS.FINISHED;
+            paySession.updatedAt = Date.now() ;
+
+            if (paymentSuccess) {
+           
+                //get and update the reservation  
+                const bookings = await helpers.getReservations(hotelId, reservationId);
+                const booking = bookings[0];
+                const roomStay = booking.roomStays[0];
+                let guestFolioIndex = 0;
+                const guestFolio = roomStay.folios.find((f,i) => {
+                    if (f.type === Enzo.EnzoFolio.FOLIO_TYPES.GUEST) { 
+                        guestFolioIndex = i;
+                        return f;
+                    }
+                });
+                guestFolio.addFolioItem(
+                    new Enzo.EnzoFolioItem({ 
+                        name: new Enzo.LocalText({ "en": "PayByLink Payment" }), 
+                        type: Enzo.EnzoFolioItem.FOLIO_ITEM_TYPES.PAYMENT , 
+                        totalAmount:  Number(result.amountPaid), 
+                        unitAmount: Number(result.amountPaid), 
+                        numberOfUnits: 1, 
+                        dateTime: Date.now()
+                    })
+                );
+                roomStay.folios.splice(guestFolioIndex, 1, guestFolio);
+                roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
+                booking.roomStays = [roomStay];
+                await makeQrCodeEmail(hotelId, booking);
+                //trigger the qrCode email
+                //save update roomstay to the pms
+                await helpers.postReservations(hotelId, reservationId, booking);
+            }
+            await helpers.updatePaymentSession(paySession);
+            if (subscribers[transactionId]) return publish(transactionId, result);
+            else return res.send(result);
+        }
+        return onSubscribe(req,res);
+    } catch (e){
+        console.log(e);
+       return  res.status(parseInt(e.code) || 500).send(e.message)
+    }
+}
 const getPaymentLink = async (req, res) => {
   
     const { hotelId, reservationId } = req?.params ;
@@ -238,78 +366,10 @@ const postPaymentResult = (req, res) => {
 
 }
 
-/*
-const getPaymentResult = async ({ transactionId, hotelId }, db = null ) => {
-    try{
-        const payApiUrl = process.env.PAYMENT_API_URL;
-        const api = SETTINGS.PAYMENT_ENDPOINT.GET_PAYMENT_RESULT;
-        const hotelInfo = await helpers.getHotelInfo(hotelId, db); 
-        const applicationId = "checkin";
-        const hotelName = hotelInfo.hotel_name;
-        console.log(hotelInfo)
-        const payload = { 
-            merchantId: hotelName,
-            transactionId: transactionId, 
-        } ;
-        console.log(payload)
-        const payResultRequest = await axios.post(`${payApiUrl}${api}`, payload) ;
-        const payResult = new PaymentResult(payResultRequest.data);
-        return payResult;
-    }catch(e){
-        console.log(e);
-        throw e;
-    }
-}
-
-
-const startPaymentSession = async ({ transactionId, hotelId }) => {
-    if (!paymentSessions) paymentSessions = {} ;
-    if (paymentSessions[transactionId]) throw new Error('a session with this transaction Id already exist');
-    paymentSessions[transactionId] =  {
-        startedAt: Date.now(),
-        hotelId: hotelId, 
-        status: 'CREATED'
-    }
-    startCheckPayResult();
-}
-
-const updatePaymentSession = ({ transactionId, status }) => {
-    if (!paymentSessions) throw new Error('no session');
-    if (!paymentSessions[transactionId]) throw new Error('no session with this transaction Id exist');
-    const session = paymentSessions[transactionId];
-    session.updatedAt = Date.now();
-    session.status = status;  
-    paymentSessions[transactionId] = session;
-    if (status === 'PAID') {
-        
-        //let hasSession = false;
-        for (let i in paymentSessions) {
-            if (paymentSessions[i].startedAt < (Date.now() - 24 * 60 * 60 * 1000)) { 
-                delete paymentSessions[i] ;
-                continue;
-            }
-            if (paymentSessions[i].status === 'CREATED' && paymentSessions[i].startedAt > new Date().setHours(0,0,0,0)) { 
-                hasSession = true; 
-                break;
-            }
-        }
-       // if (!hasSession) stopCheckPayResult();
-    }
-}*/
-//set the getPaymentResultIntervalCheckId variable, to start the payment session result lookup process
-//const startCheckPayResult = () => {
-//    if (!paymentResultCheckIntervalId) paymentResultCheckIntervalId = setInterval(getPaymentsResult, SETTINGS.PAYMENT_RESULT_LOOKUP_INTERVAL * 1000);
-//   console.log('check payment result Interval ID ', paymentResultCheckIntervalId);
-//}
-//
-////unset the intervalCheckID to stop the the email error lookup and resend process
-//const stopCheckPayResult = () => {
-//if (paymentResultCheckIntervalId) clearInterval(paymentResultCheckIntervalId);
-//    console.log('no payment sessions: clear check payment result Interval ID ', paymentResultCheckIntervalId);
-//    paymentResultCheckIntervalId = null;
-//}
 module.exports = {
-    
+    subscribers,
+    close,
+    subscribePaymentResultById,
     getPaymentResultById,
     getPaymentLinkFromToken,
     getPaymentLink,

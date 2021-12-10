@@ -3,7 +3,7 @@ const Errors = require('../Models/errors.js');
 const Enzo = require('../Models/Enzo.js');
 const { MAILTYPES } = require('../Emails/enzoMails.js');
 const helpers = require('../Helpers/helpers.js');
-const { verifyToken, setCheckBooking, unlimitedTokenSign, startTokenSign, makeQrCode } = require('../Utilities/utilities.js');
+const { verifyToken, setCheckBooking, makeQrCode } = require('../Utilities/utilities.js');
 const { winstonLogger } = require('../Logger/loggers.js');
 const { makeQrCodeEmail } = require('./emails.js');
 
@@ -45,7 +45,7 @@ const getBookingFromToken = async (req, res) => {
             
             if (isPreChecked) {
                 let qrCode = await makeQrCode(hotelId, roomStay);
-                roomStay.qrCode = new Enzo.Image({ source: qrCode.toString() });
+                roomStay.qrCode = new Enzo.Image({ source: qrCode });
                 roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
                 reservation.roomStays = [roomStay];
                 bookingHotelStay.reservation = reservation;

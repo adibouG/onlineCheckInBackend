@@ -23,6 +23,7 @@ const isAdmin = (req, res, next) => {
 api.get(`/checkin/qrcode`, email.getQrFromToken); 
 //endpoint to retrieve the reservation data from the token send by email and using the frontend app 
 api.post(`/checkin/getpaymentlink`, payment.getPaymentLinkFromToken);
+api.get(`/checkin/getpaymentresult/subscribe`, payment.subscribePaymentResultById);
 api.get(`/checkin/getpaymentresult`, payment.getPaymentResultById);
 
 api.post(`/checkin`, booking.postBooking);

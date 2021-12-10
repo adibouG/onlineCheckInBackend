@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { winstonLogger } = require('./Logger/loggers.js');
 const app = require('./app.js') ;
+const { close } = require('./Controllers/payments.js') ;
 const { newReservationFinder } = require('./Controllers/findNewBooking.js');
 const { getEmailErrors } = require('./Controllers/emails.js');
 const SETTINGS = require('./settings.json');
@@ -19,6 +20,14 @@ function handle(signal) {
     process.exit();
 }
 
+//delete payment result subscription
+if (process.send) {
+    process.on('message', (msg) => {
+      if (msg === 'shutdown') {
+        close();
+      }
+    });
+ }
 
 //check at start if the tracking contains error from previous runtime that might have crashed unexpectedly
 (async () => await getEmailErrors())();
