@@ -5,6 +5,8 @@ const { MAILTYPES } = require('../Emails/enzoMails.js');
 const helpers = require('../Helpers/helpers.js');
 const { verifyToken, setCheckBooking, unlimitedTokenSign, startTokenSign, makeQrCode } = require('../Utilities/utilities.js');
 const { winstonLogger } = require('../Logger/loggers.js');
+const { makeQrCodeEmail } = require('./emails.js');
+
 const { FINAL_STEP } = require('../settings.json');
 //Request a booking route controller (from token contained in email link acyually)
 const getBookingFromToken = async (req, res) => {
@@ -15,6 +17,7 @@ const getBookingFromToken = async (req, res) => {
     try {
         //get the token
         const { authorization } = req?.headers;
+        const { screen } = req?.query;
         const b64token = authorization ? authorization.split(' ')[1] : req?.query.token;
         token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
         winstonLogger.info('received token :' + token);
@@ -26,29 +29,28 @@ const getBookingFromToken = async (req, res) => {
        // booking = await helpers.getReservations(hotelId, reservationId);
         const bookingHotelStay = await helpers.getReservationsHotelStay(hotelId, reservationId);
         if (!bookingHotelStay) throw new Errors.NotFound() ;        
-        const qrCodeMails = await helpers.getEmailTracking(hotelId, reservationId, MAILTYPES.QR);
         const reservation = bookingHotelStay.reservation;
         const roomStay = reservation.roomStays[0];
-
+        verifyToken(token, roomStay); 
+        //check if there is already a prechecked done
         if (roomStay.status === Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST) {
+            const qrCodeMails = await helpers.getEmailTracking(hotelId, roomStay.pmsId, MAILTYPES.QR);
             let isPreChecked = false;
             if (qrCodeMails.length) isPreChecked = true;
-            else {
-                let hasPaid = await helpers.isPaymentDone(hotelId, reservationId);
-                if (hasPaid) isPreChecked = true;
-            }
+            //else {
+            //    let hasPaid = await helpers.isPaymentDone(hotelId, reservationId);
+            //    if (hasPaid) isPreChecked = true;
+            //}
             //token was signed using the reservation state in order to make it only 1 time use 
             
             if (isPreChecked) {
                 let qrCode = await makeQrCode(hotelId, roomStay);
-                roomStay.qrCode = qrCode.toString();
-                roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
+                roomStay.qrCode = new Enzo.Image({ source: qrCode.toString() });
+                if (screen && (screen.toUpperCase() == FINAL_STEP)) roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
                 reservation.roomStays = [roomStay];
                 bookingHotelStay.reservation = reservation;
             } 
         }
-        verifyToken(token, roomStay); 
-
      
         return res.status(200).send(bookingHotelStay);
     } catch(e) {
@@ -67,6 +69,7 @@ const getBookingFromToken = async (req, res) => {
 const postBooking = async (req, res) => {
     try {
         const { authorization } = req?.headers;
+        const { screen } = req?.query;
         const b64token = authorization ? authorization.split(' ')[1] : req?.query.token;
         const token = b64token ? Buffer.from(b64token, 'base64').toString('utf8') : null ;
         winstonLogger.info('received token :' + token);
@@ -77,15 +80,15 @@ const postBooking = async (req, res) => {
         const { uuid, hotelId, reservationId, email, steps } = decoded;
         const data = req?.body;
         if (!data) throw new Errors.EnzoError('no booking nor update');
-        const stay = new Enzo.EnzoReservation(data);
-        verifyToken(token, stay)
-        await helpers.postReservations(hotelId, reservationId, stay);
-        //if (step == FINAL_STEP) enzoCheckin = setCheckBooking(enzoCheckin);
-       /*
-        const updtBookingData = await helpers.getReservations(hotelId, reservationId);
-        if (!updtBookingData) throw new Errors.NotFound() ;
-        const response = makeCheckInAppResponseBody(updtBookingData[0].roomStays[0], hotelId);
-       */
+        const reservation = new Enzo.EnzoReservation(data);
+        const roomStay = reservation.roomStays[0];
+        verifyToken(token, roomStay)
+        await helpers.postReservations(hotelId, reservationId, reservation);
+        if (step && (step.toUpperCase() === FINAL_STEP)) {
+            reservation.roomStays[0] = setCheckBooking(reservation.roomStays[0]);
+            await makeQrCodeEmail(hotelId, reservation);
+        }
+        
         return res.status(200).send("OK");
     } catch(e) {
         console.log(e) ;

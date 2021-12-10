@@ -89,7 +89,7 @@ const verifyToken = (token, booking = null, cb = null  ) => {
     let test = String((decoded.aud).split('/')[1]).startsWith('TEST') ;
     try {
         let stay;
-        if (booking.roomStays) stay = booking.roomStays[0];
+        if (booking.roomStays && booking.roomStays.length) stay = booking.roomStays[0];
         else stay = booking;
         let sec = !test &&  booking ? secretKey + stay.pmsId + stay.status : secretKey;
         let sign =  test ? unlimitedTokenSign : startTokenSign ;
