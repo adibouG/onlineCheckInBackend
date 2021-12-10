@@ -36,7 +36,7 @@ const getBookingFromToken = async (req, res) => {
         if (roomStay.status === Enzo.EnzoRoomStay.STAY_STATUS.WAITINGFORGUEST) {
             const qrCodeMails = await helpers.getEmailTracking(hotelId, roomStay.pmsId, MAILTYPES.QR);
             let isPreChecked = false;
-            if (qrCodeMails.length) isPreChecked = true;
+            if (qrCodeMails.length || (screen && (screen.toUpperCase() == FINAL_STEP))) isPreChecked = true;
             //else {
             //    let hasPaid = await helpers.isPaymentDone(hotelId, reservationId);
             //    if (hasPaid) isPreChecked = true;
@@ -46,7 +46,7 @@ const getBookingFromToken = async (req, res) => {
             if (isPreChecked) {
                 let qrCode = await makeQrCode(hotelId, roomStay);
                 roomStay.qrCode = new Enzo.Image({ source: qrCode.toString() });
-                if (screen && (screen.toUpperCase() == FINAL_STEP)) roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
+                roomStay.status = Enzo.EnzoRoomStay.STAY_STATUS.PRECHECKEDIN;
                 reservation.roomStays = [roomStay];
                 bookingHotelStay.reservation = reservation;
             } 
