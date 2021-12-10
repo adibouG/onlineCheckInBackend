@@ -84,7 +84,7 @@ const postBooking = async (req, res) => {
         const roomStay = reservation.roomStays[0];
         verifyToken(token, roomStay)
         await helpers.postReservations(hotelId, reservationId, reservation);
-        if (step && (step.toUpperCase() === FINAL_STEP)) {
+        if (screen && (screen.toUpperCase() === FINAL_STEP)) {
             reservation.roomStays[0] = setCheckBooking(reservation.roomStays[0]);
             await makeQrCodeEmail(hotelId, reservation);
         }
