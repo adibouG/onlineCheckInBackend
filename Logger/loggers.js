@@ -1,23 +1,30 @@
 const morgan  = require('morgan');
 const winston = require('winston');
-const path = require('path');
+const DailyRotateFile = require('winston-daily-rotate-file');
 const SETTINGS = require('../settings.json') ;
 
 const { splat, combine, timestamp, printf } = winston.format;
-const myFormat = printf(({ timestamp, level, message }) => (level, `${timestamp}::${level}::${message}`));
+const logFormat = printf(({ timestamp, level, message }) => (level, `${timestamp}::${level}::${message}`));
+
 const winstonLogger = winston.createLogger({
-    transports: [
-      new (winston.transports.Console)({ level:'debug' }),
-      new (winston.transports.File)({ 
-        level:'debug',
-        format: combine(
-          timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-          splat(),
-          myFormat
-        ),
-        filename: path.join( process.cwd(), `${SETTINGS.LOG_STORAGE.PATH}/logs.log`) 
-      })
-    ]
+  level:'debug',
+  format: combine(
+    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    splat(),
+    logFormat
+  ),
+  transports: [
+    new DailyRotateFile({
+      filename: `CheckInAPI-${process.env.HOST}-%DATE%.log`,
+      dirname:  `${SETTINGS.LOG_STORAGE.PATH}`,
+      level: process.env.LOGGER_LEVEL ? process.env.LOGGER_LEVEL : 'info' ,
+      handleExceptions: true,
+      colorize: true,
+      json: false,
+      zippedArchive: true,
+      maxFiles: '100d'
+    })
+  ]
 });
 
 module.exports = {

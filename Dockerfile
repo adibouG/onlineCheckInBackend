@@ -11,6 +11,7 @@ ARG NODE_ENV=dev
 ENV NODE_ENV $NODE_ENV
 
 ENV HOST https://dev.cloud.enzosystems.com:3003
+
 ENV EMAIL_ SERVICE https://dev.cloud.enzosystems.com:6000/messaging/email/sendmessage
 ENV LINK_URL https://dev.cloud.enzosystems.com:3000/
 
