@@ -16,7 +16,7 @@ const winstonLogger = winston.createLogger({
   transports: [
     new DailyRotateFile({
       filename: `CheckInAPI-${process.env.HOST}-%DATE%.log`,
-      dirname:  `${SETTINGS.LOG_STORAGE.PATH}`,
+      dirname:  `${process.cwd()}${SETTINGS.LOG_STORAGE.PATH}`,
       level: process.env.LOGGER_LEVEL ? process.env.LOGGER_LEVEL : 'info' ,
       handleExceptions: true,
       colorize: true,
