@@ -25,6 +25,7 @@
   "homepage": "https://gitlab.com/enzo-software-development/checkin_backend#readme",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.3.0",
+    "@aws-sdk/client-rds-data": "^3.48.0",
     "@aws-sdk/client-s3": "^3.3.0",
     "@aws-sdk/node-http-handler": "^3.3.0",
     "@aws-sdk/types": "^3.3.0",
