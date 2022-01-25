@@ -2,10 +2,8 @@ require('dotenv').config();
 const pg = require('pg');
 const { Pool, Client, types } = pg ;
 
-
-import { RDSDataClient, BatchExecuteStatementCommand } from "@aws-sdk/client-rds-data";
-
-const client = new RDSDataClient({ region: "REGION" });
+//import { RDSDataClient, BatchExecuteStatementCommand } from "@aws-sdk/client-rds-data";
+//const client = new RDSDataClient({ region: "REGION" });
 
 
 const connectionSetting = {

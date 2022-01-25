@@ -4,7 +4,7 @@
      "PATH" :  "./Data/dummyDB.js"
     }, 
     "LOG_STORAGE" : {
-        "PATH" : "./Logs" 
+        "PATH" : "/Logs" 
     }, 
     "TEXT"  : {
         "PATH" : "./Data/text.json"
