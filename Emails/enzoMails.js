@@ -20,9 +20,9 @@ const TITLES = {
 const mailFormat = (type, message, mail, messageId, attach = []) => {
     let TITLE = '';
     let MESSAGE = '';
-    
+    //TODO: attach => confirm that if defined, is array and contains only file elemets instead of just the a  
     let ATTACHMENTS = [];
-    if (attach.length > 0) {
+    if (attach.length) {
         attach.forEach((a, idx) => { 
             if (a) return ATTACHMENTS.push({"content" : `${a.toString()}`, "name": `image_attached${idx}.png`})
         });
@@ -34,11 +34,11 @@ const mailFormat = (type, message, mail, messageId, attach = []) => {
         TITLE = TITLES.START;
         MESSAGE = message;
     }
-    return ATTACHMENTS.length > 0 ? 
+    return ATTACHMENTS.length ? 
         ({
             "attachments": ATTACHMENTS  ,
             "body": {"html": `${MESSAGE}`},
-            "from": "no-reply@enzosystems.com",
+            "from": `${process.env.EMAIL_CC}`,
             "messageId": `${messageId}`,
             "subject": `${TITLE}`,
             "to": [mail],
@@ -46,13 +46,13 @@ const mailFormat = (type, message, mail, messageId, attach = []) => {
         }) :
         ({
             "body": {"html": `${MESSAGE}`},
-            "from": "no-reply@enzosystems.com",
+            "from": `${process.env.EMAIL_FROM_NOREPLY_}`,
             "messageId": `${messageId}`,
             "subject": `${TITLE}`,
             "to": [mail],
-            "cc": ['adrien@enzosystems.com']
+            "cc": [`${process.env.EMAIL_CC}`]
         }); 
-    
+    //TODO : ReFactor the returned object  
 }
 
 const sendEmailRequest = async (type, message, email, messageId, attach = []) => {  
