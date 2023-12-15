@@ -1,35 +1,13 @@
-First use : 
-
-1 - run :
-npm install 
+BackEnd providing the base services for sessions, database, api, ... to a client app (onlineCheckin) and provide base interfaces to manage the 2nd and 3rd party app and services inregrations 
 
 
-2 - Set the .env to fit with your environment ( default http , localhost , port 3003 )  
-
-3 - run :
-npm run dev 
-
-
-Flow :
-
-to start the flow , call the email endpoint with your email address as parameter. if a reservation with this email exist , a checkin start email is send.
-Once the checkin is finished , an email with the Qrcode is send
-
-Note :
-A call to the /reset endpoint can be made manually to reset the db and the reservations 
-
-
-
-
-
-Endpoints : 
+Endpoints to the frontend app  : 
 
 /email 
 accept GET request 
 
 GET : with email query parameter (e,g .../email?email=qwerty@azerty.com)
 
-If a valid reservation (that can be checked in) is found , an email is triggered. This email contains a link to the checkin app with a jsonwebtoken (2 hours validity) as query parameter. This token is then verified before being used to start the checkin process.
 
 
 /reservation 
@@ -49,8 +27,20 @@ accept POST : reset the DB , and set new dates.
 
 
 Explanations:
-You can trigger a new email to start the flow by sending a GET request to /email?email=xxxx@ssss 
-you receive the email, it contains a link that expire after 8 or 10 h (not sure need to check the settings on the instances)
-This link start the prechecking flow if a reservation is found and valid , once you finish the flow you receive a QRcode.
-If you reuse the link , the  prechecked reservation is still retrieve but you re notified that it is already prechcked  and allows you to continue in order to update values . At the end , instead of sending a new QRcode , this 2nd time will reset the reservation to a non -prechecked status
+
+
+
+You trigger the flow using an email address, by sending a GET request to /email?email=xxxx@ssss  , This is for friendly demo usecases, production mode use a wacther daemon, and trigger the email sending according to the reservsation date offset value (per setting)  and the indexing of the job processed.
+. 
+If a valid reservation (that can be checked in and within the date offset) is found , an email is triggered. 
+
+This email contains a link (tokenized for a single personal uses and for 2 hours of validity, valididty values from setting) sllowing the  access the checkin app generic entry point/page.
+At this generic page load, the token get verified and user is redirected to the customized welcome page (data, stuyyles , etc...  setup and pre-filled according to the user case)  . And the "commercial" flow can start. 
+
+Ivarious steps are offered to finalize registartion and payment, once the flow finish and is succeesfully validated, a QRcode is generated , on the screen and sent by email too.
+
+If you reuse the link while valid, the  prechecked reservation is still retrievd but you re notified that it is already prechcked  and allows you to continue in order to update values . 
+
+In the DEMO MODE 
+instead of sending a new 2nd QRcode , this 2nd time end up with the reset of the reservation values and state in the db to eaily porovide a new DEMO flown without access to the backend or manual change 
 Note , you can also reset a reservation by calling a GET /reset?email=xxx@dddd or to /reset?uuid=reservationID
